@@ -63,7 +63,7 @@ method: POST
                  -minimum: 1
                      
           -
-          type: Fidden
+          type: Hidden
           name: type
           value: pheno_form
 
