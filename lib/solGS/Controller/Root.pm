@@ -8,6 +8,8 @@ use CatalystX::GlobalContext ();
 
 use CXGN::Login;
 use CXGN::People::Person;
+use HTML::FormFu;
+use YAML::Any qw/LoadFile/;
 
 BEGIN { extends 'Catalyst::Controller' }
 
@@ -41,15 +43,68 @@ sub index :Path :Args(0) {
 }
 
 
-sub submit :Path('/submit') :Args(0) {
+sub submit :Path('/submit/intro') :Args(0) {
     my ($self, $c) = @_;
-    $c->stash(template=>'/submit/intro.mas')
+    $c->stash(template=>'/submit/intro.mas');
+}
+
+sub details_form :Path('/form/population/details') :Args(0) {
+    my ($self, $c) = @_;
+ 
+    if ($self->get_form($c, "details.yml")->submitted_and_valid ) 
+    {
+        $c->stash(template =>'/form/population/genotype.mas',
+                  form     => $self->get_form($c, "phenotype.yml")
+            );
+    }
+    else 
+    {
+        $c->stash(template =>'/form/population/details.mas',
+                  form     => $self->get_form($c, "details.yml")
+            );
+    }
+}
+
+sub phenotype_form : Path('/form/population/phenotype')  {
+    my ($self, $c) = @_;
+
+#first store population details 
+    if ($self->get_form($c, "phenotype.yml")->submitted_and_valid ) 
+    {
+        $c->stash(template =>'/form/population/genotype.mas',
+                  form     => $self->get_form($c, "genotype.yml")
+            );
+    }
+    else
+    {
+        $c->stash(template =>'/form/population/phenotype.mas',
+                  form     => $self->get_form($c, "phenotype.yml")
+            );
+    }
+}
+sub genotype_form : Path('/form/population/genotype')  {
+    my ($self, $c) = @_;
+
+#first store phenotype data or file
+    
+    $c->stash(template =>'/form/population/genotype.mas',
+              form     => $self->get_form($c, "genotype.yml")
+        )
+}
+
+sub get_form {
+    my ($self, $c, $file) = @_;  
+    my $form = HTML::FormFu->new(LoadFile($c->path_to("yaml", "population", $file)));
+    return $form;
+
 }
 
 sub default :Path {
     my ( $self, $c ) = @_;   
     $c->response->status(404);
 }
+
+
 
 =head2 end
 
