@@ -1,0 +1,32 @@
+<%doc>
+
+=head1 NAME 
+qtl/qtl_form/pop_form.mas - a mason component for the qtl pop detail webform
+
+=AUTHOR
+Isaak Y Tecle (iyt2@cornell.edu)
+
+=cut
+
+</%doc>
+
+<%args>
+
+$form
+
+</%args>
+
+<%perl>
+
+
+</%perl>
+
+
+<& /page/page_title.mas, title => "Step 3: Genotype file" &>
+<&| /page/info_section.mas,
+  title => "Genotype file",
+&>
+
+<% $form->render() %>
+
+</&>
