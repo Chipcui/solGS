@@ -1,0 +1,26 @@
+<%doc>
+
+=head1 NAME 
+qtl/qtl_form/pop_form.mas - a mason component for the qtl pop detail webform
+
+=AUTHOR
+Isaak Y Tecle (iyt2@cornell.edu)
+
+=cut
+
+</%doc>
+
+<%args>
+
+$form
+
+</%args>
+
+<& /page/page_title.mas, title => "Step 1: Submit QTL Population Details" &>
+<&| /page/info_section.mas,
+  title => "Population Details",
+&>
+ 
+<% $form->render %>
+
+</&>
