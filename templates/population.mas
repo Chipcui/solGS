@@ -1,0 +1,46 @@
+<%args>
+
+$pop_id => undef;
+$show_data => 0;
+
+</%args>
+
+<%perl>
+
+
+my $submit_new = qq | <a href="/submit/intro">Submit QTL population</a> |;
+</%perl>
+
+<& /page/page_title.mas, 
+   title => 'Population something'
+&>
+
+<&| /page/info_section.mas, 
+  collapsible => 1, 
+  collapsed   => 0, 
+  title       => "Population summary",
+  subtitle    => $submit_new
+  &>
+ summary of population
+</&>
+
+% if ($show_data) 
+%{
+  <&| /page/info_section.mas, 
+    collapsible => 1, 
+    collapsed   => 0, 
+    title       => "Select Analysis type(s)"
+  &>   
+  list statistical analysis options
+ </&>
+%}
+% else
+%{
+<&| /page/info_section.mas, 
+  collapsible => 1, 
+  collapsed   => 0, 
+  title       => "Data Accessibility",
+  &>
+<p>This is private data.</p>
+</&>
+%}
