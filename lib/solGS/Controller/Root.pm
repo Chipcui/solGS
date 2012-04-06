@@ -65,7 +65,7 @@ sub details_form :Path('/form/population/details') :Args(0) {
     }
 }
 
-sub phenotype_form : Path('/form/population/phenotype')  {
+sub phenotype_form : Path('/form/population/phenotype')   {
     my ($self, $c) = @_;
 
 #first store population details 
@@ -82,20 +82,24 @@ sub phenotype_form : Path('/form/population/phenotype')  {
             );
     }
 }
-sub genotype_form : Path('/form/population/genotype')  {
+sub genotype_form : Path('/form/population/genotype') {
     my ($self, $c) = @_;
-
-#first store phenotype data or file
-    
-    $c->stash(template =>'/form/population/genotype.mas',
-              form     => $self->get_form($c, "genotype.yml")
-        )
+    #first process and store genotype data or file   
+    $c->res->redirect('/population/12');
 }
 
 sub get_form {
     my ($self, $c, $file) = @_;  
     my $form = HTML::FormFu->new(LoadFile($c->path_to("yaml", "population", $file)));
     return $form;
+
+}
+
+sub population : Path('/population') :Args(1) {
+    my ($self, $c, $pop_id) =@_;
+    $c->stash(template => '/population.mas',
+              pop_id   => $pop_id
+        );
 
 }
 
