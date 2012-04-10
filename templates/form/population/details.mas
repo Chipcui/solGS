@@ -21,6 +21,6 @@ $form
   title => "Population Details",
 &>
  
-<% $form->render %>
+<% $form %>
 
 </&>

@@ -27,6 +27,6 @@ $form
   title => "Genotype file",
 &>
 
-<% $form->render() %>
+<% $form %>
 
 </&>
