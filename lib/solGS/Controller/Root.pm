@@ -8,10 +8,8 @@ use CatalystX::GlobalContext ();
 
 use CXGN::Login;
 use CXGN::People::Person;
-use HTML::FormFu;
-use YAML::Any qw/LoadFile/;
 
-BEGIN { extends 'Catalyst::Controller' }
+BEGIN { extends 'Catalyst::Controller::HTML::FormFu' }
 
 #
 # Sets the actions in this controller to be registered with no prefix
@@ -48,59 +46,62 @@ sub submit :Path('/submit/intro') :Args(0) {
     $c->stash(template=>'/submit/intro.mas');
 }
 
-sub details_form :Path('/form/population/details') :Args(0) {
+sub details_form : Path('/form/population/details') Args(0) FormConfig('population/details.yml')  {
     my ($self, $c) = @_;
- 
-    if ($self->get_form($c, "details.yml")->submitted_and_valid ) 
+    my $form = $c->stash->{form}; 
+   
+    if ($form->submitted_and_valid ) 
     {
-        $c->stash(template =>'/form/population/genotype.mas',
-                  form     => $self->get_form($c, "phenotype.yml")
-            );
+        $c->res->redirect('/form/population/phenotype');
     }
     else 
     {
         $c->stash(template =>'/form/population/details.mas',
-                  form     => $self->get_form($c, "details.yml")
+                  form     => $form
             );
     }
 }
 
-sub phenotype_form : Path('/form/population/phenotype')   {
+sub phenotype_form : Path('/form/population/phenotype') Args(0) FormConfig('population/phenotype.yml') {
     my ($self, $c) = @_;
+    my $form = $c->stash->{form};
 
-#first store population details 
-    if ($self->get_form($c, "phenotype.yml")->submitted_and_valid ) 
+    if ($form->submitted_and_valid) 
     {
-        $c->stash(template =>'/form/population/genotype.mas',
-                  form     => $self->get_form($c, "genotype.yml")
-            );
-    }
+      $c->res->redirect('/form/population/genotype');
+    }        
     else
     {
-        $c->stash(template =>'/form/population/phenotype.mas',
-                  form     => $self->get_form($c, "phenotype.yml")
+        $c->stash(template => '/form/population/phenotype.mas',
+                  form     => $form
             );
     }
+
 }
-sub genotype_form : Path('/form/population/genotype') {
+
+
+sub genotype_form : Path('/form/population/genotype') Args(0) FormConfig('population/genotype.yml') {
     my ($self, $c) = @_;
-    #first process and store genotype data or file   
-    $c->res->redirect('/population/12');
+    my $form = $c->stash->{form};
+
+    if ($form->submitted_and_valid) 
+    {
+      $c->res->redirect('/population/12');
+    }        
+    else
+    {
+        $c->stash(template => '/form/population/genotype.mas',
+                  form    => $form
+            );
+    }
+
 }
-
-sub get_form {
-    my ($self, $c, $file) = @_;  
-    my $form = HTML::FormFu->new(LoadFile($c->path_to("yaml", "population", $file)));
-    return $form;
-
-}
-
-sub population : Path('/population') :Args(1) {
-    my ($self, $c, $pop_id) =@_;
+   
+sub population :Path('/population') Args(1) {
+    my ($self, $c, $pop_id) = @_;
     $c->stash(template => '/population.mas',
               pop_id   => $pop_id
         );
-
 }
 
 sub default :Path {
