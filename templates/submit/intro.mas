@@ -19,7 +19,7 @@ Isaak Y Tecle (iyt2@cornell.edu)
 
 <& /page/page_title.mas, title => "Step 0: Introduction" &>
 <&| /page/info_section.mas, title => "Introduction" &>
- <form action="submit/population" method="POST" enctype="MULTIPART/FORM-DATA">  
+ <form action="/form/population/details" method="POST" enctype="MULTIPART/FORM-DATA">  
       <table cellspacing=20>
 	<tr>
           <td>	   
