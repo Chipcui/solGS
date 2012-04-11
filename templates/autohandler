@@ -4,6 +4,7 @@
 <head>
   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
   <link rel="stylesheet" href="/static/sgn.css" type="text/css" />
+  <link rel="stylesheet" href="/static/solgs_formfu.css" type="text/css" />
 </head>
 <body>
 <div id="outercontainer">
@@ -14,8 +15,8 @@
       <hr />
       some header
       <hr />
-% $m->call_next;
 
+% $m->call_next;
 
 <!--add your site's footer stuff here-->
     </td>
