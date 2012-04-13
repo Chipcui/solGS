@@ -16,18 +16,17 @@ elements:
      label: Description
      rows: 5 
      cols: 44
+     constraints:
+       - Required 
    - type: Multi
      name: pop_is_public
      label: Do you want to make the data public
-     elements: 
-        - type: Checkbox
-          name: pop_is_public
-          label: Yes
-          value: true
-        - type: Checkbox
-          name: pop_is_public
-          label: No
-          value: false
+   - type: Radiogroup
+     name: pop_is_public
+     values: [Yes, No]
+     default_empty_value: Yes
+     attrs:
+       class: vertical
    - type: Hidden 
      name: type 
      value: pop_form
