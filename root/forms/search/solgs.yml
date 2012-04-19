@@ -12,7 +12,8 @@ elements:
          name: search_solgs
          size: 40
          constraints:
-            - Required                     
+            - type: Required
+              message: enter search term                
        - type: Submit
          name: search
          value: Search
