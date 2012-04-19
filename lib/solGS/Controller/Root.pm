@@ -91,20 +91,20 @@ sub genotype_form : Path('/form/population/genotype') Args(0) FormConfig('popula
     else
     {
         $c->stash(template => '/form/population/genotype.mas',
-                  form    => $form
+                  form     => $form
             );
     }
 
 }
 
-sub search_form : Path('/search/solgs') Args(0) FormConfig('search/solgs.yml') {
+sub search : Path('/search/solgs') Args(0) FormConfig('search/solgs.yml') {
     my ($self, $c) = @_;
     my $form = $c->stash->{form};
 
     if ($form->submitted_and_valid) 
     {
-        #call traits search function & display results
-     
+        my $query = $form->param_value('search.search_term');
+        $c->res->redirect("/search/results/$query");
     }        
     else
     {
@@ -114,7 +114,27 @@ sub search_form : Path('/search/solgs') Args(0) FormConfig('search/solgs.yml') {
     }
 
 }
+
+sub show_search_result : Path('/search/results') Args(1) {
+    my ($self, $c, $query) = @_;
   
+    #do search and display results
+    my $result = [ ['pop1', 'loc', 2012, 'ER'] ];
+    my $form;
+
+    if ($result)
+    {
+       $c->stash(template => '/search/result.mas',
+                 result   => $result,
+                 form     => $form
+           );
+    }
+    else
+    {
+        $c->res->redirect('/search/solgs');
+    }
+
+}  
 sub population :Path('/population') Args(1) {
     my ($self, $c, $pop_id) = @_;
     $c->stash(template => '/population.mas',
