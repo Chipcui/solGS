@@ -1,0 +1,18 @@
+action: "/search/solgs"
+method: "POST"
+enctype: "multipart/form-data"
+
+auto_fieldset: 1
+ 
+elements:
+   - type: Multi
+     name: search
+     elements:
+       - type: Text
+         name: search_solgs
+         size: 40
+         constraints:
+            - Required                     
+       - type: Submit
+         name: search
+         value: Search
