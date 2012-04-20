@@ -9,7 +9,7 @@ elements:
      name: search
      elements:
        - type: Text
-         name: search_solgs
+         name: search_term
          size: 40
          constraints:
             - type: Required
