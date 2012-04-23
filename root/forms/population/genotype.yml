@@ -14,7 +14,8 @@ elements:
          constraints:
             - type: File::Size
               minimum: 1
-            - Required                     
+            - type: Required
+              message: please, provide a valid genotype file                    
        - type: Hidden
          name: type
          value: geno_form
