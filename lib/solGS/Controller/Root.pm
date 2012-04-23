@@ -119,7 +119,7 @@ sub show_search_result : Path('/search/results') Args(1) {
     my ($self, $c, $query) = @_;
   
     #do search and display results
-    my $result = [ ['pop1', 'loc', 2012, 'ER'] ];
+    my $result = [ [qq|<a href="/population/12">pop1</a>|, 'loc', 2012, 'ER'] ];
     my $form;
 
     if ($result)
