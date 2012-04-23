@@ -119,6 +119,7 @@ sub show_search_result : Path('/search/results') Args(1) {
     my ($self, $c, $query) = @_;
   
     #do search and display results
+    #$result = $c->model('solGS')->search_populations('query');
     my $result = [ [qq|<a href="/population/12">pop1</a>|, 'loc', 2012, 'ER'] ];
     my $form;
 
@@ -141,6 +142,10 @@ sub population :Path('/population') Args(1) {
               pop_id   => $pop_id
         );
 }
+
+
+
+
 
 sub default :Path {
     my ( $self, $c ) = @_;   
