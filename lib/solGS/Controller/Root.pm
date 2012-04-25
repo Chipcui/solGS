@@ -1,7 +1,7 @@
 package solGS::Controller::Root;
 use Moose;
 use namespace::autoclean;
-
+use URI::FromHash 'uri';
 
 use Scalar::Util 'weaken';
 use CatalystX::GlobalContext ();
@@ -104,7 +104,7 @@ sub search : Path('/search/solgs') Args(0) FormConfig('search/solgs.yml') {
     if ($form->submitted_and_valid) 
     {
         my $query = $form->param_value('search.search_term');
-        $c->res->redirect("/search/results/$query");
+        $c->res->redirect("/search/result/traits/$query");
     }        
     else
     {
@@ -115,17 +115,17 @@ sub search : Path('/search/solgs') Args(0) FormConfig('search/solgs.yml') {
 
 }
 
-sub show_search_result : Path('/search/results') Args(1) {
+sub show_search_result_pops : Path('/search/result/populations') Args(1) {
     my ($self, $c, $query) = @_;
   
     #do search and display results
-    #$result = $c->model('solGS')->search_populations('query');
+    #$result = $c->model('solGS')->search_populations('$query');
     my $result = [ [qq|<a href="/population/12">pop1</a>|, 'loc', 2012, 'ER'] ];
     my $form;
 
     if ($result)
     {
-       $c->stash(template => '/search/result.mas',
+       $c->stash(template => '/search/result/populations.mas',
                  result   => $result,
                  form     => $form
            );
@@ -135,16 +135,45 @@ sub show_search_result : Path('/search/results') Args(1) {
         $c->res->redirect('/search/solgs');
     }
 
-}  
+}
+
+sub show_search_result_traits : Path('/search/result/traits') Args(1) {
+    my ($self, $c, $query) = @_;
+  
+    my @rows;
+    my $result = $c->model('solGS')->search_trait($c, $query);
+   
+    while (my $row = $result->next)
+    {
+
+        my $name = $row->name;
+        my $def  = $row->definition;
+        my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
+       
+        push @rows, [ $checkbox, qq |<a href="/search/result/populations">$name</a>|, $def];       
+    }
+
+    if ($result->single)
+    {
+       $c->stash(template   => '/search/result/traits.mas',
+                 result     => \@rows,
+                 query      => $query,
+                 pager      => $result->pager,
+                 page_links => sub {uri ( query => { trait => $query, page => shift } ) }
+           );
+    }
+    else
+    {
+        $c->res->redirect('/search/solgs');
+    }
+
+}    
 sub population :Path('/population') Args(1) {
     my ($self, $c, $pop_id) = @_;
     $c->stash(template => '/population.mas',
               pop_id   => $pop_id
         );
 }
-
-
-
 
 
 sub default :Path {
