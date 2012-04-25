@@ -150,7 +150,7 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1) {
         my $def  = $row->definition;
         my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
        
-        push @rows, [ $checkbox, qq |<a href="/search/result/populations">$name</a>|, $def];       
+        push @rows, [ $checkbox, qq |<a href="/search/result/populations/$name">$name</a>|, $def];       
     }
 
     if ($result->single)
