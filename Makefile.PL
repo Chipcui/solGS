@@ -18,10 +18,15 @@ requires 'CatalystX::GlobalContext' ;
 requires 'Moose';
 requires 'namespace::autoclean';
 requires 'Bio::Chado::Schema' => '0.09020';
-requires 'Uri::FromHash';
+requires 'URI::FromHash';
 requires 'HTML::FormFu';
 requires 'Scalar::Util';
 requires 'HTML::Mason';
+requires 'YAML::Any';
+requires 'List::Compare';
+requires 'File::Temp';
+requires 'File::Slurp';
+requires 'JSON::Any';
 
 requires 'Config::General'; # This should reflect the config file format you've chosen
                  # See Catalyst::Plugin::ConfigLoader for supported formats
