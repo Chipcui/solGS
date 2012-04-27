@@ -1,0 +1,49 @@
+<%doc>
+
+displays list of GS populations evaluated for a trait or traits.
+
+</%doc>
+
+<%args>
+
+$result
+$form
+
+</%args>
+
+<& /page/page_title.mas,
+    title => 'GS Populations evaluated for trait x ',
+&>
+  
+% if ($result) 
+% { 
+
+<&| /page/info_section.mas,
+      title => 'Search Results',
+&>
+
+<& /page/columnar_table.mas,
+     headings    => [ 'Population', 'Location', 'Year', 'PI' ],
+     data        => $result,
+    __alt_freq   => 2,
+    __alt_width  => 1,
+    __align      => 'l'
+ &>
+</&>
+
+%}
+%else
+%{
+<&| /page/info_section.mas,
+      title => 'No Search Results',
+&>
+
+<br>No GS poulations were for trait x.<br />
+
+</&>
+
+%}
+
+
+
+
