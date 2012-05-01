@@ -3,6 +3,7 @@ use Moose;
 use namespace::autoclean;
 use Bio::Chado::Schema;
 
+
 extends 'Catalyst::Model';
 
 =head1 NAME
@@ -26,6 +27,7 @@ it under the same terms as Perl itself.
 
 use File::Path qw/ mkpath /;
 use File::Spec::Functions;
+use strict;
 
 
 sub solgs_phenotype_data {
@@ -89,7 +91,7 @@ sub search_trait {
     {
         my $schema    = $c->dbic_schema("Bio::Chado::Schema");
         $rs = $schema->resultset("Cv::Cvterm")->search(
-            { name  => { 'LIKE' => '%'.$trait .'%'},         
+            { name  => { 'LIKE' => '%'. $trait .'%'},         
             },
             {
               columns => [ qw/ cvterm_id name definition / ] 
@@ -105,10 +107,62 @@ sub search_trait {
 }
 
 sub search_populations {
- #search for GS  populations phenotyped for a trait. 
+    my ($self, $c, $trait_id) = @_;
+    
+ #search for GS  populations evaluated for a trait. 
+    my $schema    = $c->dbic_schema("Bio::Chado::Schema");
+    my $rs = $schema->resultset("Stock::Stock")
+        ->search( { 'observable_id'  =>  $trait_id},
+                  { join => 
+                    { nd_experiment_stocks => 
+                      { nd_experiment => 
+                        {'nd_experiment_phenotypes' => 'phenotype' }
+                      },                    
+                    },                    
+                    distinct => 1
+                  },
+        );
+ 
+    my @stocks_rs;
+    while (my $row = $rs->next)
+    {
+        my $type_id = $schema->resultset("Cv::Cvterm")
+            ->search
+            (
+             { 'name' => 'is_member_of'}
+            )
+            ->single
+            ->cvterm_id;
+        my $rel_rs = $row->search_related('stock_relationship_subjects', 
+                                          {
+                                              'type_id' => $type_id
+                                          }
+                                         );
+        while (my $r = $rel_rs->next) 
+        {
+                push @stocks_rs, $r;
+        }
+    }
+
+return \@stocks_rs;
+
+
+}
+
+sub get_population_details {
+    my ($self, $c, $pop_id) = @_;
+    my $schema = $c->dbic_schema("Bio::Chado::Schema");
+    return $schema->resultset("Stock::Stock")
+        ->search(
+        {
+            'stock_id' => $pop_id
+        }, 
+        );
 }
 
 
 __PACKAGE__->meta->make_immutable;
 
+#####
 1;
+#####
