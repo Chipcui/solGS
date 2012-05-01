@@ -118,15 +118,26 @@ sub search : Path('/search/solgs') Args(0) FormConfig('search/solgs.yml') {
 sub show_search_result_pops : Path('/search/result/populations') Args(1) {
     my ($self, $c, $query) = @_;
   
-    #do search and display results
-    #$result = $c->model('solGS')->search_populations('$query');
-    my $result = [ [qq|<a href="/population/12">pop1</a>|, 'loc', 2012, 'ER'] ];
-    my $form;
+    my $stocks_rs = $c->model('solGS')->search_populations($c, $query);
+    
+    my (@result, @ids);
+    foreach my $stock_rs (@$stocks_rs) 
+    {
+        my $pop_id = $stock_rs->object_id;
+        unless (grep {$_ == $pop_id} @ids) 
+        {
+            push @ids, $pop_id;        
+            my $pop_rs   = $c->model('solGS')->get_population_details($c, $pop_id);
+            my $pop_name = $pop_rs->single->name;
+            push @result, [qq|<a href="/population/$pop_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
+        }
+    }
 
-    if ($result)
+    my $form;
+    if (@$stocks_rs[0]->object_id)
     {
        $c->stash(template => '/search/result/populations.mas',
-                 result   => $result,
+                 result   => \@result,
                  form     => $form
            );
     }
@@ -145,12 +156,12 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1) {
    
     while (my $row = $result->next)
     {
-
+        my $id   = $row->cvterm_id;
         my $name = $row->name;
         my $def  = $row->definition;
         my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
        
-        push @rows, [ $checkbox, qq |<a href="/search/result/populations/$name">$name</a>|, $def];       
+        push @rows, [ $checkbox, qq |<a href="/search/result/populations/$id">$name</a>|, $def];       
     }
 
     if ($result->single)
