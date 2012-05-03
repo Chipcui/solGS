@@ -118,23 +118,26 @@ sub search : Path('/search/solgs') Args(0) FormConfig('search/solgs.yml') {
 sub show_search_result_pops : Path('/search/result/populations') Args(1) {
     my ($self, $c, $query) = @_;
   
-    my $stocks_rs = $c->model('solGS')->search_populations($c, $query);
+    my $stocks_rows = $c->model('solGS')->search_populations($c, $query);
     
     my (@result, @ids);
-    foreach my $stock_rs (@$stocks_rs) 
+    foreach my $stock_row (@$stocks_rows) 
     {
-        my $pop_id = $stock_rs->object_id;
-        unless (grep {$_ == $pop_id} @ids) 
+        if ($stock_row) 
         {
-            push @ids, $pop_id;        
-            my $pop_rs   = $c->model('solGS')->get_population_details($c, $pop_id);
-            my $pop_name = $pop_rs->single->name;
-            push @result, [qq|<a href="/population/$pop_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
+            my $pop_id = $stock_row->object_id;
+            unless (grep {$_ == $pop_id} @ids) 
+            {
+                push @ids, $pop_id;        
+                my $pop_rs   = $c->model('solGS')->get_population_details($c, $pop_id);
+                my $pop_name = $pop_rs->single->name;
+                push @result, [qq|<a href="/population/$pop_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
+            }
         }
     }
 
     my $form;
-    if (@$stocks_rs[0]->object_id)
+    if (@$stocks_rows[0])
     {
        $c->stash(template => '/search/result/populations.mas',
                  result   => \@result,
@@ -157,14 +160,17 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1) {
     while (my $row = $result->next)
     {
         my $id   = $row->cvterm_id;
-        my $name = $row->name;
-        my $def  = $row->definition;
-        my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
+       # if ($c->model('solGS')->is_phenotyped_trait($c, $id)->single) 
+       # {
+            my $name = $row->name;
+            my $def  = $row->definition;
+            my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
        
-        push @rows, [ $checkbox, qq |<a href="/search/result/populations/$id">$name</a>|, $def];       
+            push @rows, [ $checkbox, qq |<a href="/search/result/populations/$id">$name</a>|, $def]; 
+        #}      
     }
 
-    if ($result->single)
+    if (@rows)
     {
        $c->stash(template   => '/search/result/traits.mas',
                  result     => \@rows,
