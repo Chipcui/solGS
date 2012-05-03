@@ -89,8 +89,7 @@ sub search_trait {
     my $rs;
     if ($trait)
     {
-        my $schema    = $c->dbic_schema("Bio::Chado::Schema");
-        $rs = $schema->resultset("Cv::Cvterm")->search(
+        $rs = $self->schema($c)->resultset("Cv::Cvterm")->search(
             { name  => { 'LIKE' => '%'. $trait .'%'},         
             },
             {
@@ -109,9 +108,7 @@ sub search_trait {
 sub search_populations {
     my ($self, $c, $trait_id) = @_;
     
- #search for GS  populations evaluated for a trait. 
-    my $schema    = $c->dbic_schema("Bio::Chado::Schema");
-    my $rs = $schema->resultset("Stock::Stock")
+    my $rs = $self->schema($c)->resultset("Stock::Stock")
         ->search( { 'observable_id'  =>  $trait_id},
                   { join => 
                     { nd_experiment_stocks => 
@@ -123,10 +120,10 @@ sub search_populations {
                   },
         );
  
-    my @stocks_rs;
+    my @stocks_rows;
     while (my $row = $rs->next)
     {
-        my $type_id = $schema->resultset("Cv::Cvterm")
+        my $type_id = $self->schema($c)->resultset("Cv::Cvterm")
             ->search
             (
              { 'name' => 'is_member_of'}
@@ -140,19 +137,19 @@ sub search_populations {
                                          );
         while (my $r = $rel_rs->next) 
         {
-                push @stocks_rs, $r;
+                push @stocks_rows, $r;
         }
     }
 
-return \@stocks_rs;
+return \@stocks_rows;
 
 
 }
 
 sub get_population_details {
     my ($self, $c, $pop_id) = @_;
-    my $schema = $c->dbic_schema("Bio::Chado::Schema");
-    return $schema->resultset("Stock::Stock")
+   
+    return $self->schema($c)->resultset("Stock::Stock")
         ->search(
         {
             'stock_id' => $pop_id
@@ -160,6 +157,10 @@ sub get_population_details {
         );
 }
 
+sub schema {
+    my ($self, $c) = @_;
+    return  $c->dbic_schema("Bio::Chado::Schema");
+} 
 
 __PACKAGE__->meta->make_immutable;
 
