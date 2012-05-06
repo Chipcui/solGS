@@ -107,19 +107,18 @@ sub download_phenotypes :  Path('/phenotypes') Args(1) {
             my %cvterms ; #hash for unique cvterms
             ##############
             # we assume here that all phentypes are loaded on a plot level (population ->HAS accesions -> HAVE plot/s )
-            
-            my $phenotypes  =  $self->_stock_project_phenotypes( $stock );  # call a convenience function in $stock
+
+            my $phenotypes  =  $self->schema->resultset("Stock::Stock")->stock_project_phenotypes($stock);
             ##################
             #these are phentypes of the accessions, if $stock is a population type
             my $subjects = $stock->search_related('stock_relationship_objects')
                 ->search_related('subject');
-            my $subject_phenotypes = $self->_stock_project_phenotypes( $subjects ); # call a convenience function in $stock
-            
+            my $subject_phenotypes  =  $self->schema->resultset("Stock::Stock")->stock_project_phenotypes($stock);
             #these are phenotypes of the plots if $stock is a population. Typically only plots will have phenotype scores.
             my $sub_subjects = $subjects->search_related('stock_relationship_objects')
                 ->search_related('subject');
-            my $sub_subject_phenotypes = $self->_stock_project_phenotypes( $sub_subjects ); # call a convenience function in $stock
-            
+            my $sub_subject_phenotypes  =  $self->schema->resultset("Stock::Stock")->stock_project_phenotypes($stock);
+
             my %all_phenotypes = (%$phenotypes, %$subject_phenotypes, %$sub_subject_phenotypes);
             my $replicate = 1;
             my ($replicateprop) =  $stock->search_related(
@@ -127,9 +126,9 @@ sub download_phenotypes :  Path('/phenotypes') Args(1) {
                     'type.name' => 'replicate'
                 }, { join => 'type' } );
 
-            foreach my $project_name (keys %all_phenotypes ) {
-                my $project = $all_phenotypes{$project_name}->{project} ;
-                my $pheno = $all_phenotypes{$project_name}->{phenotypes} ;
+            foreach my $project_desc (keys %all_phenotypes ) {
+                my $project = $all_phenotypes{$project_desc}->{project} ;
+                my $pheno = $all_phenotypes{$project_desc}->{phenotypes} ;
                 my $replicate = 1;
 		my $cvterm_name;
 		my @sorted_phen = sort { $a->observable->name cmp $b->observable->name } @$pheno ;
@@ -150,14 +149,14 @@ sub download_phenotypes :  Path('/phenotypes') Args(1) {
                     $cvterms{$cvterm->name} = $cvterm->dbxref->db->name . ":" . $cvterm->dbxref->accession;
                     my $accession = $cvterm->dbxref->accession;
                     my $db_name = $cvterm->dbxref->db->name;
-		    my $hash_key = $project_name . "|" . $replicate ; ##$phen_stock->uniquename . "|" . $replicate  ;
+		    my $hash_key = $project_desc . "|" . $replicate ; ##$phen_stock->uniquename . "|" . $replicate  ;
 		    $phen_hashref->{$hash_key}{replicate} = $replicate;
 		    $cvterm_name = $cvterm->name;
 		    $phen_hashref->{$hash_key}{uniquename} =  $ph->uniquename;
                     $phen_hashref->{$hash_key}{$cvterm->name} = $ph->value;
                     $phen_hashref->{$hash_key}{accession} = $db_name . ":" . $accession ;
                     $phen_hashref->{$hash_key}{year} = $year ;  ### add filter by year
-                    $phen_hashref->{$hash_key}{project} = $project_name;
+                    $phen_hashref->{$hash_key}{project} = $project_desc;
                     $phen_hashref->{$hash_key}{stock} = $phen_stock->uniquename;
                     $phen_hashref->{$hash_key}{stock_id} = $phen_stock->stock_id;
                 }
