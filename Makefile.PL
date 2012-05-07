@@ -25,6 +25,8 @@ requires 'HTML::Mason';
 requires 'YAML::Any';
 requires 'List::Compare';
 requires 'File::Temp';
+requires 'File::Path';
+requires 'File::Spec::Functions';
 requires 'File::Slurp';
 requires 'JSON::Any';
 
