@@ -2,7 +2,8 @@ package solGS::Controller::Root;
 use Moose;
 use namespace::autoclean;
 use URI::FromHash 'uri';
-
+use File::Path qw / mkpath  /;
+use File::Spec::Functions qw / catfile catdir/;
 use Scalar::Util 'weaken';
 use CatalystX::GlobalContext ();
 
@@ -156,7 +157,7 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1) {
   
     my @rows;
     my $result = $c->model('solGS')->search_trait($c, $query);
-   
+    
     while (my $row = $result->next)
     {
         my $id   = $row->cvterm_id;
@@ -185,13 +186,41 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1) {
     }
 
 }    
-sub population :Path('/population') Args(1) {
+sub population :Path('gs/population') Args(1) {
     my ($self, $c, $pop_id) = @_;
     $c->stash(template => '/population.mas',
               pop_id   => $pop_id
         );
 }
 
+sub input_files :Private {
+    my ($self, $c, $pop_id) = @_;
+    my $pheno_file = $self->phenotype_file;#somehow get the phenotype file
+    my $geno_file  = $self->genotype_file;#somehow get the genotype file
+    my $trait_file = $self->trait_file;
+}
+
+sub run_rrblup  :Private {
+    my ($self, $c, $pop_id) = @_;
+   
+    #get all input files & arguments for rrblup, run rrblup and save output in solgs user dir
+}
+
+sub get_solgs_dirs :Private {
+    my ($self, $c) = @_;
+   
+    my $solgs_dir       = $c->config->{solgs_dir};
+    my $solgs_cache     = catdir($solgs_dir, 'cache'); 
+    my $solgs_tempfiles = catdir($solgs_dir, 'tempfiles');
+  
+    mkpath ([$solgs_dir, $solgs_cache, $solgs_tempfiles], 0, 0755);
+      
+    $c->stash(solgs_dir       => $solgs_dir, 
+              solgs_cache     => $solgs_cache, 
+              solgs_tempfiles => $solgs_tempfiles
+        );
+
+}
 
 sub default :Path {
     my ( $self, $c ) = @_;   
