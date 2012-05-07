@@ -87,13 +87,13 @@ sub _filter_stock_rs {
 
 =head1 PRIVATE ACTIONS
 
-=head2 download_phenotypes
+=head2 solgs_download_phenotypes
 
 =cut
 
 
-sub download_phenotypes :  Path('/phenotypes') Args(1) {
-    my ($self, $c, $stock_id ) = @_; # stock should be population type only?
+sub solgs_download_phenotypes : Path('/solgs/phenotypes') Args(1) {
+     my ($self, $c, $stock_id ) = @_; # stock should be population type only?
     if ($stock_id) {
         my $stock = $self->schema->resultset('Stock::Stock')->find ( { stock_id => $stock_id } );
         my $tmp_dir = $c->get_conf('basepath') . "/" . $c->get_conf('stock_tempfiles');
@@ -113,11 +113,11 @@ sub download_phenotypes :  Path('/phenotypes') Args(1) {
             #these are phentypes of the accessions, if $stock is a population type
             my $subjects = $stock->search_related('stock_relationship_objects')
                 ->search_related('subject');
-            my $subject_phenotypes  =  $self->schema->resultset("Stock::Stock")->stock_project_phenotypes($stock);
+            my $subject_phenotypes  =  $self->schema->resultset("Stock::Stock")->stock_project_phenotypes($subjects);
             #these are phenotypes of the plots if $stock is a population. Typically only plots will have phenotype scores.
             my $sub_subjects = $subjects->search_related('stock_relationship_objects')
                 ->search_related('subject');
-            my $sub_subject_phenotypes  =  $self->schema->resultset("Stock::Stock")->stock_project_phenotypes($stock);
+            my $sub_subject_phenotypes  =  $self->schema->resultset("Stock::Stock")->stock_project_phenotypes($sub_subjects);
 
             my %all_phenotypes = (%$phenotypes, %$subject_phenotypes, %$sub_subject_phenotypes);
             my $replicate = 1;
@@ -128,12 +128,12 @@ sub download_phenotypes :  Path('/phenotypes') Args(1) {
 
             foreach my $project_desc (keys %all_phenotypes ) {
                 my $project = $all_phenotypes{$project_desc}->{project} ;
-                my $pheno = $all_phenotypes{$project_desc}->{phenotypes} ;
+                my $phenotype_rs = $all_phenotypes{$project_desc}->{phenotypes} ;
                 my $replicate = 1;
 		my $cvterm_name;
-		my @sorted_phen = sort { $a->observable->name cmp $b->observable->name } @$pheno ;
+		my @sorted_phen = sort { $a->observable->name cmp $b->observable->name } $phenotype_rs->all if $phenotype_rs ;
 		foreach my $ph  (@sorted_phen) {
-                    my ($nd_experiment) = $ph->search_related('nd_experiment_phenotypes')->search_related('nd_expermient');
+                    my ($nd_experiment) = $ph->search_related('nd_experiment_phenotypes')->search_related('nd_experiment');
                     #add optional filter for location
                     my $geolocation = $nd_experiment->nd_geolocation;
                     #add optional filter by year/s
@@ -196,8 +196,8 @@ sub download_phenotypes :  Path('/phenotypes') Args(1) {
 =cut
 
 
-sub download_genotypes : Chained('get_stock') PathPart('genotypes') Args(0) {
-    my ($self, $c) = @_;
+sub download_genotypes : Path('genotypes') Args(1) {
+    my ($self, $c, $stock_id ) = @_;
     my $stock = $c->stash->{stock_row};
     my $stock_id = $stock->stock_id;
     my $stock_name = $stock->uniquename;
