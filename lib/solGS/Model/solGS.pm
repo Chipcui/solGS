@@ -89,18 +89,21 @@ sub search_trait {
     my $rs;
     if ($trait)
     {
-        $rs = $self->schema($c)->resultset("Cv::Cvterm")->search(
-            { name  => { 'LIKE' => '%'. $trait .'%'},         
-            },
-            {
-              columns => [ qw/ cvterm_id name definition / ] 
-            },    
-            { 
-              page     => $c->req->param('page') || 1,
-              rows     => 10,
-              order_by => 'name'
-            }
-            );       
+        $rs = $self->schema($c)->resultset("Phenotype::Phenotype")
+            ->search({})
+            ->search_related('phenotype_cvterms')
+            ->search_related('cvterm', 
+                             {name => {'LIKE' => '%' . $trait . '%'}
+                             },
+                             {
+                                 columns => [ qw/ cvterm_id name definition / ] 
+                             },    
+                             { distinct =>1,
+                               page     => $c->req->param('page') || 1,
+                               rows     => 10,
+                               order_by => 'name'              
+                             },                                                        
+            );             
     }
     return $rs;      
 }
