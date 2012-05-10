@@ -98,19 +98,21 @@ sub genotype_form : Path('/form/population/genotype') Args(0) FormConfig('popula
 
 }
 
-sub search : Path('/search/solgs') Args(0) FormConfig('search/solgs.yml') {
+sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
     my ($self, $c) = @_;
     my $form = $c->stash->{form};
-
+    
+    my $query;
     if ($form->submitted_and_valid) 
     {
-        my $query = $form->param_value('search.search_term');
+        $query = $form->param_value('search.search_term');
         $c->res->redirect("/search/result/traits/$query");
     }        
     else
     {
         $c->stash(template => '/search/solgs.mas',
-                  form     => $form
+                  form     => $form,
+                  message  => $query
             );
     }
 
@@ -120,7 +122,7 @@ sub show_search_result_pops : Path('/search/result/populations') Args(1) {
     my ($self, $c, $query) = @_;
   
     my $stocks_rows = $c->model('solGS')->search_populations($c, $query);
-    
+  
     my (@result, @ids);
     foreach my $stock_row (@$stocks_rows) 
     {
@@ -147,17 +149,17 @@ sub show_search_result_pops : Path('/search/result/populations') Args(1) {
     }
     else
     {
-        $c->res->redirect('/search/solgs');
+        $c->res->redirect('/search/solgs');     
     }
 
 }
 
-sub show_search_result_traits : Path('/search/result/traits') Args(1) {
+sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfig('search/solgs.yml'){
     my ($self, $c, $query) = @_;
   
     my @rows;
     my $result = $c->model('solGS')->search_trait($c, $query);
-    
+ 
     while (my $row = $result->next)
     {
         my $id   = $row->cvterm_id;
@@ -182,11 +184,15 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1) {
     }
     else
     {
-        $c->res->redirect('/search/solgs');
+        my $form = $c->stash->{form};
+        $c->stash(template => '/search/solgs.mas',
+                  form     => $form,
+                  message  => $query
+            );  
     }
 
 }    
-sub population :Path('gs/population') Args(1) {
+sub population :Path('/population') Args(1) {
     my ($self, $c, $pop_id) = @_;
     $c->stash(template => '/population.mas',
               pop_id   => $pop_id
