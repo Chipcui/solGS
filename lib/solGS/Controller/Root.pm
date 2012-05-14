@@ -4,11 +4,14 @@ use namespace::autoclean;
 use URI::FromHash 'uri';
 use File::Path qw / mkpath  /;
 use File::Spec::Functions qw / catfile catdir/;
+use File::Temp qw / tempfile tempdir /;
+use Tiny::Try;
 use Scalar::Util 'weaken';
 use CatalystX::GlobalContext ();
 
 use CXGN::Login;
 use CXGN::People::Person;
+use CXGN::Tools::Run;
 
 BEGIN { extends 'Catalyst::Controller::HTML::FormFu' }
 
@@ -208,9 +211,63 @@ sub input_files :Private {
 
 sub run_rrblup  :Private {
     my ($self, $c, $pop_id) = @_;
-   
-    #get all input files & arguments for rrblup, run rrblup and save output in solgs user dir
+    
+    #get all input files & arguments for rrblup, 
+    #run rrblup and save output in solgs user dir
+    my $input_files = $self->input_files($pop_id);
+    $self->get_solgs_dirs;
+
+    CXGN::Tools::Run->temp_base($c->stash->{solgs_tempfiles});
+    my ( $r_in_temp, $r_out_temp ) =
+        map 
+    {
+            my ( undef, $filename ) =
+                tempfile(
+                    catfile(
+                        CXGN::Tools::Run->temp_base(),
+                        "gs-rrblup-$pop_id-$_-XXXXXX",
+                    ),
+                );
+            $filename
+    } qw / in out /;
+    {
+        my $r_cmd_file = $c->path_to('R/gs.r');
+        copy($r_cmd_file, $r_in_temp)
+            or die "could not copy '$r_cmd_file' to '$r_in_temp'";
+    }
+
+    try 
+    {
+        my $r_process = CXGN::Tools::Run->run_cluster(
+            'R', 'CMD', 'BATCH',
+            '--slave',
+            "--args $input_files",
+            $r_in_temp,
+            $r_out_temp,
+            {
+                working_dir => $c->stash->{solgs_tempfiles},
+                max_cluster_jobs => 1_000_000_000,
+            },
+            );
+
+        $r_process->wait; 
+    }
+    catch 
+    {
+        my $err = $_;
+        $err =~ s/\n at .+//s; 
+        try
+        { 
+            $err .= "\n=== R output ===\n".file($r_out_temp)->slurp."\n=== end R output ===\n" 
+        };
+        $c->throw_client_error(public_message    => "There was an error running rrblup.",
+                               developer_message => $err
+            );
+    };
+
+   #return or stash output files
 }
+   
 
 sub get_solgs_dirs :Private {
     my ($self, $c) = @_;
@@ -227,6 +284,7 @@ sub get_solgs_dirs :Private {
         );
 
 }
+
 
 sub default :Path {
     my ( $self, $c ) = @_;   
