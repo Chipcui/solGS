@@ -93,7 +93,7 @@ sub search_trait {
             ->search({})
             ->search_related('phenotype_cvterms')
             ->search_related('cvterm', 
-                             {name => {'LIKE' => '%' . $trait . '%'}
+                             {'cvterm.name' => {'LIKE' => '%' . $trait . '%'}
                              },
                              {
                                  columns => [ qw/ cvterm_id name definition / ] 
