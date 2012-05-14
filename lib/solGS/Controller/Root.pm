@@ -5,7 +5,7 @@ use URI::FromHash 'uri';
 use File::Path qw / mkpath  /;
 use File::Spec::Functions qw / catfile catdir/;
 use File::Temp qw / tempfile tempdir /;
-use Tiny::Try;
+use Try::Tiny;
 use Scalar::Util 'weaken';
 use CatalystX::GlobalContext ();
 
@@ -124,26 +124,22 @@ sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
 sub show_search_result_pops : Path('/search/result/populations') Args(1) {
     my ($self, $c, $query) = @_;
   
-    my $stocks_rows = $c->model('solGS')->search_populations($c, $query);
+    my $pop_ids = $c->model('solGS')->search_populations($c, $query);
   
-    my (@result, @ids);
-    foreach my $stock_row (@$stocks_rows) 
-    {
-        if ($stock_row) 
+    my (@result, @unique_ids);
+    foreach my $pop_id (@$pop_ids) 
+    {      
+        unless (grep {$_ == $pop_id} @unique_ids) 
         {
-            my $pop_id = $stock_row->object_id;
-            unless (grep {$_ == $pop_id} @ids) 
-            {
-                push @ids, $pop_id;        
-                my $pop_rs   = $c->model('solGS')->get_population_details($c, $pop_id);
-                my $pop_name = $pop_rs->single->name;
-                push @result, [qq|<a href="/population/$pop_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
-            }
+            push @unique_ids, $pop_id;        
+            my $pop_rs   = $c->model('solGS')->get_population_details($c, $pop_id);
+            my $pop_name = $pop_rs->single->name;
+            push @result, [qq|<a href="/population/$pop_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
         }
     }
 
     my $form;
-    if (@$stocks_rows[0])
+    if (@$pop_ids[0])
     {
        $c->stash(template => '/search/result/populations.mas',
                  result   => \@result,
@@ -288,7 +284,7 @@ sub get_solgs_dirs :Private {
 
 sub default :Path {
     my ( $self, $c ) = @_;   
-    $c->response->status(404);
+    $c->forward('search');
 }
 
 
