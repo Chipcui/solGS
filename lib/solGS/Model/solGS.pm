@@ -110,42 +110,29 @@ sub search_trait {
 
 sub search_populations {
     my ($self, $c, $trait_id) = @_;
-    
-    my $rs = $self->schema($c)->resultset("Stock::Stock")
-        ->search( { 'observable_id'  =>  $trait_id},
-                  { join => 
-                    { nd_experiment_stocks => 
-                      { nd_experiment => 
-                        {'nd_experiment_phenotypes' => 'phenotype' }
-                      },                    
-                    },                    
-                    distinct => 1
-                  },
+
+    my $type_id = $self->schema($c)->resultset('Cv::Cvterm')
+        ->search( {name => {'ilike' => 'member_of'}})
+        ->single
+        ->cvterm_id;
+                                                                   
+    my $rs = $self->schema($c)->resultset("Phenotype::Phenotype")
+        ->search( {'observable_id'  =>  $trait_id})
+        ->search_related('nd_experiment_phenotypes')
+        ->search_related('nd_experiment')
+        ->search_related('nd_experiment_stocks')
+        ->search_related('stock')
+        ->search_related('stock_relationship_subjects', 
+                         {'stock_relationship_subjects.type_id' => $type_id}
         );
  
-    my @stocks_rows;
+    my @pop_ids;
     while (my $row = $rs->next)
-    {
-        my $type_id = $self->schema($c)->resultset("Cv::Cvterm")
-            ->search
-            (
-             { 'name' => 'is_member_of'}
-            )
-            ->single
-            ->cvterm_id;
-        my $rel_rs = $row->search_related('stock_relationship_subjects', 
-                                          {
-                                              'type_id' => $type_id
-                                          }
-                                         );
-        while (my $r = $rel_rs->next) 
-        {
-                push @stocks_rows, $r;
-        }
+    {       
+        push @pop_ids, $row->object_id;
     }
 
-return \@stocks_rows;
-
+    return \@pop_ids;
 
 }
 
