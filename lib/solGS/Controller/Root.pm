@@ -162,14 +162,11 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
     while (my $row = $result->next)
     {
         my $id   = $row->cvterm_id;
-       # if ($c->model('solGS')->is_phenotyped_trait($c, $id)->single) 
-       # {
             my $name = $row->name;
             my $def  = $row->definition;
             my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
        
-            push @rows, [ $checkbox, qq |<a href="/search/result/populations/$id">$name</a>|, $def]; 
-        #}      
+            push @rows, [ $checkbox, qq |<a href="/search/result/populations/$id">$name</a>|, $def];      
     }
 
     if (@rows)
@@ -200,11 +197,19 @@ sub population :Path('/population') Args(1) {
 
 sub input_files :Private {
     my ($self, $c, $pop_id) = @_;
-    my $pheno_file = $self->phenotype_file;#somehow get the phenotype file
+    my $pheno_file = $c->stash->{phenotype_file};#somehow get the phenotype file
     my $geno_file  = $self->genotype_file;#somehow get the genotype file
     my $trait_file = $self->trait_file;
 }
 
+sub phenotype_file :Private {
+    my ($self, $c, $pop_id) =@_;
+    
+    $c->controller('Stock')->solgs_download_phenotypes($pop_id);
+    my $pheno_file = "stock_" . $pop_id . "_plot_phenotypes.csv";
+    $pheno_file    =  catfile($c->config->{solgs_tempfiles}, $pheno_file);
+    $c->stash->{phenotype_file} = $pheno_file;
+}
 sub run_rrblup  :Private {
     my ($self, $c, $pop_id) = @_;
     
@@ -333,6 +338,7 @@ sub auto : Private {
     $c->stash->{c} = $c;
     weaken $c->stash->{c};
 
+    $self->get_solgs_dirs;
     # gluecode for logins
     #
     unless( $c->config->{'disable_login'} ) {
