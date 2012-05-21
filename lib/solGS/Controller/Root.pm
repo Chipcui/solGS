@@ -197,8 +197,11 @@ sub population :Path('/population') Args(1) {
 
 sub input_files :Private {
     my ($self, $c, $pop_id) = @_;
-    my $pheno_file = $c->stash->{phenotype_file};#somehow get the phenotype file
-    my $geno_file  = $self->genotype_file;#somehow get the genotype file
+    my $geno_file  = $self->genotype_file($c, $pop_id);
+    my $geno_file  = $self->phenotype_file($c, $pop_id);
+    my $pheno_file = $c->stash->{phenotype_file};
+    my $geno_file = $c->stash->{genotype_file};
+ 
     my $trait_file = $self->trait_file;
 }
 
@@ -207,8 +210,39 @@ sub phenotype_file :Private {
     
     $c->controller('Stock')->solgs_download_phenotypes($pop_id);
     my $pheno_file = "stock_" . $pop_id . "_plot_phenotypes.csv";
-    $pheno_file    =  catfile($c->config->{solgs_tempfiles}, $pheno_file);
-    $c->stash->{phenotype_file} = $pheno_file;
+    
+    if (-s $pheno_file >= 100 )
+    {
+        $pheno_file  =  catfile($c->config->{solgs_tempfiles}, $pheno_file);
+        $c->stash->{phenotype_file} = $pheno_file;
+    }
+    else
+    {
+        $c->throw_client_error( public_message => "The phenotype data file $pheno_file
+                                               does not seem to contain data."
+            );
+    }
+
+}
+
+sub genotype_file :Private {
+    my ($self, $c, $pop_id) =@_;
+    
+    $c->controller('Stock')->download_genotypes($pop_id);
+    my $geno_file = "stock_" . $pop_id . "_plot_genotypes.csv";
+    
+    if (-s $geno_file >= 100 )
+    {
+        $geno_file  =  catfile($c->config->{solgs_tempfiles}, $geno_file);
+        $c->stash->{genotype_file} = $geno_file;
+    }
+    else
+    {
+        $c->throw_client_error( public_message => "The genotype data file $geno_file
+                                               does not seem to contain data."
+            );
+    }
+
 }
 sub run_rrblup  :Private {
     my ($self, $c, $pop_id) = @_;
