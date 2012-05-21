@@ -109,7 +109,7 @@ sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
     if ($form->submitted_and_valid) 
     {
         $query = $form->param_value('search.search_term');
-        $c->res->redirect("/search/result/traits/$query");
+        $c->res->redirect("/search/result/traits/$query");       
     }        
     else
     {
@@ -202,7 +202,14 @@ sub input_files :Private {
     my $pheno_file = $c->stash->{phenotype_file};
     my $geno_file = $c->stash->{genotype_file};
  
-    my $trait_file = $self->trait_file;
+   # my $trait_file = $self->trait_file;
+}
+
+sub get_trait_name {
+    my ($self, $c, $trait_id) = @_;
+    my $trait_name = $c->model('solGS')->trait_name($c, $trait_id);
+    
+    return $trait_name;
 }
 
 sub phenotype_file :Private {
@@ -210,10 +217,10 @@ sub phenotype_file :Private {
     
     $c->controller('Stock')->solgs_download_phenotypes($pop_id);
     my $pheno_file = "stock_" . $pop_id . "_plot_phenotypes.csv";
-    
+     $pheno_file   =  catfile($c->config->{solgs_tempfiles}, $pheno_file);
     if (-s $pheno_file >= 100 )
     {
-        $pheno_file  =  catfile($c->config->{solgs_tempfiles}, $pheno_file);
+       
         $c->stash->{phenotype_file} = $pheno_file;
     }
     else
@@ -230,10 +237,10 @@ sub genotype_file :Private {
     
     $c->controller('Stock')->download_genotypes($pop_id);
     my $geno_file = "stock_" . $pop_id . "_plot_genotypes.csv";
-    
+    $geno_file    =  catfile($c->config->{solgs_tempfiles}, $geno_file);
     if (-s $geno_file >= 100 )
     {
-        $geno_file  =  catfile($c->config->{solgs_tempfiles}, $geno_file);
+        
         $c->stash->{genotype_file} = $geno_file;
     }
     else
