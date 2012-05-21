@@ -147,6 +147,19 @@ sub get_population_details {
         );
 }
 
+sub trait_name {
+    my ($self, $c, $trait_id) = @_;
+
+    my $trait_name = $self->schema($c)->resultset('Cv::Cvterm')
+        ->search( {cvterm_id => $trait_id})
+        ->single
+        ->name;
+
+    return $trait_name;
+
+}
+
+
 sub schema {
     my ($self, $c) = @_;
     return  $c->dbic_schema("Bio::Chado::Schema");
