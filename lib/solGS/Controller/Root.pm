@@ -288,7 +288,7 @@ sub get_solgs_dirs :Private {
 
 
 sub default :Path {
-    my ( $self, $c ) = @_;   
+    my ( $self, $c ) = @_; 
     $c->forward('search');
 }
 
@@ -338,7 +338,7 @@ sub auto : Private {
     $c->stash->{c} = $c;
     weaken $c->stash->{c};
 
-    $self->get_solgs_dirs;
+    $self->get_solgs_dirs($c);
     # gluecode for logins
     #
     unless( $c->config->{'disable_login'} ) {
