@@ -263,7 +263,6 @@ sub abrreviate_term {
 sub gebv_marker_file {
     my ($self, $c, $pop_id, $trait) = @_;
    
-    $self->get_solgs_dirs($c);
     my $solgs_cache = $c->stash->{solgs_cache};
     my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
     $file_cache->purge();
@@ -284,8 +283,7 @@ sub gebv_marker_file {
 
 sub gebv_kinship_file {
     my ($self, $c, $pop_id, $trait) = @_;
-   
-    $self->get_solgs_dirs($c);
+       
     my $solgs_cache = $c->stash->{solgs_cache};
     my $file_cache  = Cache::File->new( cache_root => $solgs_cache  );
     $file_cache->purge();
