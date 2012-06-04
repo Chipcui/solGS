@@ -26,6 +26,7 @@ requires 'YAML::Any';
 requires 'List::Compare';
 requires 'File::Temp';
 requires 'File::Path';
+requires 'Cache::File';
 requires 'Try::Tiny';
 requires 'File::Spec::Functions';
 requires 'File::Slurp';
