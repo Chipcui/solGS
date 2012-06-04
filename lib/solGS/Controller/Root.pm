@@ -5,6 +5,7 @@ use URI::FromHash 'uri';
 use File::Path qw / mkpath  /;
 use File::Spec::Functions qw / catfile catdir/;
 use File::Temp qw / tempfile tempdir /;
+use Cache::File;
 use Try::Tiny;
 use Scalar::Util 'weaken';
 use CatalystX::GlobalContext ();
@@ -197,12 +198,109 @@ sub population :Path('/population') Args(1) {
 
 sub input_files :Private {
     my ($self, $c, $pop_id) = @_;
-    my $geno_file  = $self->genotype_file($c, $pop_id);
-    my $geno_file  = $self->phenotype_file($c, $pop_id);
+    $self->genotype_file($c, $pop_id);
+    $self->phenotype_file($c, $pop_id);
     my $pheno_file = $c->stash->{phenotype_file};
     my $geno_file = $c->stash->{genotype_file};
  
    # my $trait_file = $self->trait_file;
+}
+
+sub output_files :Private {
+    my ($self, $c, $pop_id, $trait_id) = @_;
+    my $trait = $self->get_trait_name($c, $trait_id);
+    $trait = $self->abbreviate_term($trait);
+   
+    $self->gebv_kinship_file($c, $trait, $pop_id);
+    $self->gebv_marker_file($c, $trait, $pop_id);
+    
+    my $file_list = join ("\t",
+                          $c->stash->{gebv_kinship_file},
+                          $c->stash->{gebv_marker_file}
+        );
+                          
+    my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
+
+    my ($fh, $tempfile) = tempfile("output_files_${trait}_$pop_id-XXXXX", DIR => $tmp_dir);
+    $fh->print($file_list);
+    
+    return $tempfile;
+
+}
+
+sub abrreviate_term {
+    my ($self, $term) = @_;
+  
+    my @words = split(/\s/, $term);
+    my $acronym;
+	
+    if (scalar(@words) == 1) 
+    {
+	$acronym .= shift(@words);
+    }  
+    else 
+    {
+	foreach my $word (@words) 
+        {
+	    if ($word=~/^\D/)
+            {
+		my $l = substr($word,0,1,q{}); 
+		$acronym .= $l;
+	    } 
+            else 
+            {
+                $acronym .= $word;
+            }
+	    $acronym = uc($acronym);
+	    $acronym =~/(\w+)/;
+	    $acronym = $1;
+	}	   
+    }
+    return $acronym;
+
+}
+
+sub gebv_marker_file {
+    my ($self, $c, $pop_id, $trait) = @_;
+   
+    $self->get_solgs_dirs($c);
+    my $solgs_cache = $c->stash->{solgs_cache};
+    my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
+    $file_cache->purge();
+
+    my $key               = "gebv_marker_" . $pop_id . "_".  $trait;
+    my $gebv_marker_file  = $file_cache->get($key);
+
+    unless ($gebv_marker_file)
+    {      
+        my $file = catfile($solgs_cache, "gebv_marker_" . $trait . "_" . $pop_id);
+        $file_cache->set( $key, $file, '30 days' );
+        $gebv_marker_file = $file_cache->get($key);
+    }
+
+    $c->stash->{gebv_marker_file} = $gebv_marker_file;
+    
+}
+
+sub gebv_kinship_file {
+    my ($self, $c, $pop_id, $trait) = @_;
+   
+    $self->get_solgs_dirs($c);
+    my $solgs_cache = $c->stash->{solgs_cache};
+    my $file_cache  = Cache::File->new( cache_root => $solgs_cache  );
+    $file_cache->purge();
+
+    my $key                = "gebv_kinship_" . $pop_id . "_".  $trait;
+    my $gebv_kinship_file  = $file_cache->get($key);
+
+    unless ($gebv_kinship_file)
+    {      
+        my $file = catfile($solgs_cache, "gebv_kinship_" . $trait . "_" . $pop_id);
+        $file_cache->set( $key, $file, '30 days' );
+        $gebv_kinship_file = $file_cache->get($key);
+    }
+
+    $c->stash->{gebv_kinship_file} = $gebv_kinship_file;
 }
 
 sub get_trait_name {
@@ -252,13 +350,13 @@ sub genotype_file :Private {
 
 }
 sub run_rrblup  :Private {
-    my ($self, $c, $pop_id) = @_;
+    my ($self, $c, $pop_id, $trait_id) = @_;
     
     #get all input files & arguments for rrblup, 
     #run rrblup and save output in solgs user dir
-    my $input_files = $self->input_files($pop_id);
-    $self->get_solgs_dirs;
-
+    my $input_files  = $self->input_files($c, $pop_id, $trait_id);
+    my $output_files = $self->output_files($c, $pop_id, $trait_id);
+   
     CXGN::Tools::Run->temp_base($c->stash->{solgs_tempfiles});
     my ( $r_in_temp, $r_out_temp ) =
         map 
@@ -283,7 +381,7 @@ sub run_rrblup  :Private {
         my $r_process = CXGN::Tools::Run->run_cluster(
             'R', 'CMD', 'BATCH',
             '--slave',
-            "--args $input_files",
+            "--args $input_files, $output_files",
             $r_in_temp,
             $r_out_temp,
             {
@@ -321,11 +419,13 @@ sub get_solgs_dirs :Private {
     mkpath ([$solgs_dir, $solgs_cache, $solgs_tempfiles], 0, 0755);
       
     $c->stash(solgs_dir       => $solgs_dir, 
-              solgs_cache     => $solgs_cache, 
-              solgs_tempfiles => $solgs_tempfiles
+              solgs_cache_dir     => $solgs_cache, 
+              solgs_tempfiles_dir => $solgs_tempfiles
         );
 
 }
+
+
 
 
 sub default :Path {
