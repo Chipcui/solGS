@@ -123,29 +123,33 @@ sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
 }
 
 sub show_search_result_pops : Path('/search/result/populations') Args(1) {
-    my ($self, $c, $query) = @_;
+    my ($self, $c, $trait_id) = @_;
   
-    my $pop_ids = $c->model('solGS')->search_populations($c, $query);
+    my $pop_ids = $c->model('solGS')->search_populations($c, $trait_id);
   
     my (@result, @unique_ids);
-    foreach my $pop_id (@$pop_ids) 
-    {      
-        unless (grep {$_ == $pop_id} @unique_ids) 
-        {
-            push @unique_ids, $pop_id;        
-            my $pop_rs   = $c->model('solGS')->get_population_details($c, $pop_id);
-            my $pop_name = $pop_rs->single->name;
-            push @result, [qq|<a href="/population/$pop_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
-        }
-    }
-
+   
+    
     my $form;
     if (@$pop_ids[0])
     {
-       $c->stash(template => '/search/result/populations.mas',
-                 result   => \@result,
-                 form     => $form
-           );
+        foreach my $pop_id (@$pop_ids) 
+        {      
+            unless (grep {$_ == $pop_id} @unique_ids) 
+            {
+                push @unique_ids, $pop_id;        
+                my $pop_rs   = $c->model('solGS')->get_population_details($c, $pop_id);
+                my $pop_name = $pop_rs->single->name;
+                push @result, [qq|<a href="/population/$pop_id/trait/$trait_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
+            }
+        }
+        
+        $self->get_trait_name($c, $trait_id);
+
+        $c->stash(template => '/search/result/populations.mas',
+                  result   => \@result,
+                  form     => $form
+            );
     }
     else
     {
@@ -163,11 +167,11 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
     while (my $row = $result->next)
     {
         my $id   = $row->cvterm_id;
-            my $name = $row->name;
-            my $def  = $row->definition;
-            my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
+        my $name = $row->name;
+        my $def  = $row->definition;
+        my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
        
-            push @rows, [ $checkbox, qq |<a href="/search/result/populations/$id">$name</a>|, $def];      
+        push @rows, [ $checkbox, qq |<a href="/search/result/populations/$id">$name</a>|, $def];      
     }
 
     if (@rows)
@@ -189,31 +193,56 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
     }
 
 }    
-sub population :Path('/population') Args(1) {
-    my ($self, $c, $pop_id) = @_;
+sub population :Path('/population') Args(3) {
+    my ($self, $c, $pop_id, $key, $trait_id) = @_;
+    
+    $self->population_files($c, $trait_id, $pop_id);
+
     $c->stash(template => '/population.mas',
               pop_id   => $pop_id
         );
 }
 
+sub population_files {
+    my ($self, $c, $trait_id, $pop_id) = @_;
+    
+    $self->get_trait_name($c, $trait_id);
+    my $trait  = $c->stash->{trait_abbr};
+
+   # $self->phenotype_file($c, $pop_id);
+   # $self->genotype_file($c, $pop_id);
+    $self->gebv_kinship_file($c, $pop_id, $trait);
+    $self->gebv_marker_file($c, $pop_id, $trait);
+
+}
+
 sub input_files :Private {
     my ($self, $c, $pop_id) = @_;
-    $self->genotype_file($c, $pop_id);
-    $self->phenotype_file($c, $pop_id);
+
     my $pheno_file = $c->stash->{phenotype_file};
-    my $geno_file = $c->stash->{genotype_file};
- 
-   # my $trait_file = $self->trait_file;
+    my $geno_file  = $c->stash->{genotype_file};
+    my $trait      = $c->stash->{trait_abbr};
+   
+    my $input_files = join ("\t",
+                          $c->stash->{phenotype_file},
+                          $c->stash->{genotype_file}                        
+        );
+
+    my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
+    my ($fh, $tempfile) = tempfile("input_files_${trait}_$pop_id-XXXXX", 
+                                   DIR => $tmp_dir
+        );
+
+    $fh->print($input_files);
+    
+    return $tempfile;
+  
 }
 
 sub output_files :Private {
-    my ($self, $c, $pop_id, $trait_id) = @_;
-    my $trait = $self->get_trait_name($c, $trait_id);
-    $trait = $self->abbreviate_term($trait);
-   
-    $self->gebv_kinship_file($c, $trait, $pop_id);
-    $self->gebv_marker_file($c, $trait, $pop_id);
-    
+    my ($self, $c, $pop_id) = @_;
+
+    my $trait = $c->stash->{trait_abbr};       
     my $file_list = join ("\t",
                           $c->stash->{gebv_kinship_file},
                           $c->stash->{gebv_marker_file}
@@ -221,14 +250,71 @@ sub output_files :Private {
                           
     my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
 
-    my ($fh, $tempfile) = tempfile("output_files_${trait}_$pop_id-XXXXX", DIR => $tmp_dir);
+    my ($fh, $tempfile) = tempfile("output_files_${trait}_$pop_id-XXXXX", 
+                                   DIR => $tmp_dir
+        );
+
     $fh->print($file_list);
     
     return $tempfile;
 
 }
 
-sub abrreviate_term {
+
+
+sub gebv_marker_file {
+    my ($self, $c, $pop_id, $trait) = @_;
+   
+    my $solgs_cache = $c->stash->{solgs_cache_dir};
+    my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
+    $file_cache->purge();
+
+    my $key               = "gebv_marker_" . $pop_id . "_".  $trait;
+    my $gebv_marker_file  = $file_cache->get($key);
+
+    unless ($gebv_marker_file)
+    {  
+        my $file = catfile($solgs_cache, "gebv_marker_" . $trait . "_" . $pop_id);
+        $file_cache->set( $key, $file, '30 days' );
+        $gebv_marker_file = $file_cache->get($key);
+        
+    }
+
+    $c->stash->{gebv_marker_file} = $gebv_marker_file;
+    
+}
+
+sub gebv_kinship_file {
+    my ($self, $c, $pop_id, $trait) = @_;
+       
+    my $solgs_cache = $c->stash->{solgs_cache_dir};
+    my $file_cache  = Cache::File->new( cache_root => $solgs_cache  );
+    $file_cache->purge();
+
+    my $key                = "gebv_kinship_" . $pop_id . "_".  $trait;
+    my $gebv_kinship_file  = $file_cache->get($key);
+
+    unless ($gebv_kinship_file)
+    {      
+        my $file = catfile($solgs_cache, "gebv_kinship_" . $trait . "_" . $pop_id);
+        $file_cache->set( $key, $file, '30 days' );
+        $gebv_kinship_file = $file_cache->get($key);
+    }
+
+    $c->stash->{gebv_kinship_file} = $gebv_kinship_file;
+}
+
+sub get_trait_name {
+    my ($self, $c, $trait_id) = @_;
+    my $trait_name = $c->model('solGS')->trait_name($c, $trait_id);
+    
+    my $abbr = $self->abbreviate_term($trait_name);
+
+    $c->stash->{trait_name} = $trait_name;
+    $c->stash->{trait_abbr} = $abbr;
+}
+
+sub abbreviate_term {
     my ($self, $term) = @_;
   
     my @words = split(/\s/, $term);
@@ -258,54 +344,6 @@ sub abrreviate_term {
     }
     return $acronym;
 
-}
-
-sub gebv_marker_file {
-    my ($self, $c, $pop_id, $trait) = @_;
-   
-    my $solgs_cache = $c->stash->{solgs_cache};
-    my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
-    $file_cache->purge();
-
-    my $key               = "gebv_marker_" . $pop_id . "_".  $trait;
-    my $gebv_marker_file  = $file_cache->get($key);
-
-    unless ($gebv_marker_file)
-    {      
-        my $file = catfile($solgs_cache, "gebv_marker_" . $trait . "_" . $pop_id);
-        $file_cache->set( $key, $file, '30 days' );
-        $gebv_marker_file = $file_cache->get($key);
-    }
-
-    $c->stash->{gebv_marker_file} = $gebv_marker_file;
-    
-}
-
-sub gebv_kinship_file {
-    my ($self, $c, $pop_id, $trait) = @_;
-       
-    my $solgs_cache = $c->stash->{solgs_cache};
-    my $file_cache  = Cache::File->new( cache_root => $solgs_cache  );
-    $file_cache->purge();
-
-    my $key                = "gebv_kinship_" . $pop_id . "_".  $trait;
-    my $gebv_kinship_file  = $file_cache->get($key);
-
-    unless ($gebv_kinship_file)
-    {      
-        my $file = catfile($solgs_cache, "gebv_kinship_" . $trait . "_" . $pop_id);
-        $file_cache->set( $key, $file, '30 days' );
-        $gebv_kinship_file = $file_cache->get($key);
-    }
-
-    $c->stash->{gebv_kinship_file} = $gebv_kinship_file;
-}
-
-sub get_trait_name {
-    my ($self, $c, $trait_id) = @_;
-    my $trait_name = $c->model('solGS')->trait_name($c, $trait_id);
-    
-    return $trait_name;
 }
 
 sub phenotype_file :Private {
@@ -416,7 +454,7 @@ sub get_solgs_dirs :Private {
   
     mkpath ([$solgs_dir, $solgs_cache, $solgs_tempfiles], 0, 0755);
       
-    $c->stash(solgs_dir       => $solgs_dir, 
+    $c->stash(solgs_dir           => $solgs_dir, 
               solgs_cache_dir     => $solgs_cache, 
               solgs_tempfiles_dir => $solgs_tempfiles
         );
