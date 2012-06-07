@@ -195,37 +195,47 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
 }    
 sub population :Path('/population') Args(3) {
     my ($self, $c, $pop_id, $key, $trait_id) = @_;
-    
-    $self->population_files($c, $trait_id, $pop_id);
+   
+    if ($pop_id && $trait_id)
+    {   
+        $self->get_trait_name($c, $trait_id);    
+        $self->population_files($c);
 
-    $c->stash(template => '/population.mas',
-              pop_id   => $pop_id
-        );
+        $c->stash( trait_id => $trait_id,
+                   pop_id   => $pop_id,
+                   template => "/population.mas"
+            );
+
+    }
+    else 
+    {
+        $c->stash(template => "/error_message.mas",
+                  error    => "Population id or trait id is missing."
+            );
+    }
 }
 
 sub population_files {
-    my ($self, $c, $trait_id, $pop_id) = @_;
+    my ($self, $c) = @_;
     
-    $self->get_trait_name($c, $trait_id);
-    my $trait  = $c->stash->{trait_abbr};
-
-   # $self->phenotype_file($c, $pop_id);
-   # $self->genotype_file($c, $pop_id);
-    $self->gebv_kinship_file($c, $pop_id, $trait);
-    $self->gebv_marker_file($c, $pop_id, $trait);
-
+    #$self->phenotype_file($c);
+    #$self->genotype_file($c);
+    $self->gebv_kinship_file($c);
+    $self->gebv_marker_file($c);
+  
 }
 
 sub input_files :Private {
-    my ($self, $c, $pop_id) = @_;
+    my ($self, $c) = @_;
 
     my $pheno_file = $c->stash->{phenotype_file};
     my $geno_file  = $c->stash->{genotype_file};
     my $trait      = $c->stash->{trait_abbr};
-   
+    my $pop_id     = $c->stash->{pop_id};
+
     my $input_files = join ("\t",
-                          $c->stash->{phenotype_file},
-                          $c->stash->{genotype_file}                        
+                            $c->stash->{phenotype_file},
+                            $c->stash->{genotype_file}                        
         );
 
     my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
@@ -240,9 +250,11 @@ sub input_files :Private {
 }
 
 sub output_files :Private {
-    my ($self, $c, $pop_id) = @_;
-
-    my $trait = $c->stash->{trait_abbr};       
+    my ($self, $c) = @_;
+    
+    my $pop_id = $c->stash->{pop_id};
+    my $trait  = $c->stash->{trait_abbr}; 
+      
     my $file_list = join ("\t",
                           $c->stash->{gebv_kinship_file},
                           $c->stash->{gebv_marker_file}
@@ -263,8 +275,11 @@ sub output_files :Private {
 
 
 sub gebv_marker_file {
-    my ($self, $c, $pop_id, $trait) = @_;
+    my ($self, $c) = @_;
    
+    my $pop_id = $c->stash->{pop_id};
+    my $trait  = $c->stash->{trait_abbr};
+
     my $solgs_cache = $c->stash->{solgs_cache_dir};
     my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
     $file_cache->purge();
@@ -285,8 +300,11 @@ sub gebv_marker_file {
 }
 
 sub gebv_kinship_file {
-    my ($self, $c, $pop_id, $trait) = @_;
-       
+    my ($self, $c) = @_;
+
+    my $pop_id = $c->stash->{pop_id};
+    my $trait  = $c->stash->{trait_abbr};
+
     my $solgs_cache = $c->stash->{solgs_cache_dir};
     my $file_cache  = Cache::File->new( cache_root => $solgs_cache  );
     $file_cache->purge();
@@ -306,6 +324,7 @@ sub gebv_kinship_file {
 
 sub get_trait_name {
     my ($self, $c, $trait_id) = @_;
+
     my $trait_name = $c->model('solGS')->trait_name($c, $trait_id);
     
     my $abbr = $self->abbreviate_term($trait_name);
@@ -347,14 +366,15 @@ sub abbreviate_term {
 }
 
 sub phenotype_file :Private {
-    my ($self, $c, $pop_id) =@_;
+    my ($self, $c) = @_;
     
+    my $pop_id = $c->stash->{pop_id};
+
     $c->controller('Stock')->solgs_download_phenotypes($pop_id);
     my $pheno_file = "stock_" . $pop_id . "_plot_phenotypes.csv";
      $pheno_file   =  catfile($c->config->{solgs_tempfiles}, $pheno_file);
     if (-s $pheno_file >= 100 )
-    {
-       
+    {       
         $c->stash->{phenotype_file} = $pheno_file;
     }
     else
@@ -367,8 +387,10 @@ sub phenotype_file :Private {
 }
 
 sub genotype_file :Private {
-    my ($self, $c, $pop_id) =@_;
-    
+    my ($self, $c) = @_;
+
+    my $pop_id = $c->stash->{pop_id};
+
     $c->controller('Stock')->download_genotypes($pop_id);
     my $geno_file = "stock_" . $pop_id . "_plot_genotypes.csv";
     $geno_file    =  catfile($c->config->{solgs_tempfiles}, $geno_file);
@@ -386,12 +408,15 @@ sub genotype_file :Private {
 
 }
 sub run_rrblup  :Private {
-    my ($self, $c, $pop_id, $trait_id) = @_;
-    
+    my ($self, $c) = @_;
+   
     #get all input files & arguments for rrblup, 
     #run rrblup and save output in solgs user dir
-    my $input_files  = $self->input_files($c, $pop_id, $trait_id);
-    my $output_files = $self->output_files($c, $pop_id, $trait_id);
+    my $pop_id   = $c->stash->{pop_id};
+    my $trait_id = $c->stash->{pop_id};
+
+    my $input_files  = $self->input_files($c);
+    my $output_files = $self->output_files($c);
    
     CXGN::Tools::Run->temp_base($c->stash->{solgs_tempfiles});
     my ( $r_in_temp, $r_out_temp ) =
@@ -401,7 +426,7 @@ sub run_rrblup  :Private {
                 tempfile(
                     catfile(
                         CXGN::Tools::Run->temp_base(),
-                        "gs-rrblup-$pop_id-$_-XXXXXX",
+                        "gs-rrblup-${trait_id}-${pop_id}-$_-XXXXXX",
                     ),
                 );
             $filename
