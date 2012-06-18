@@ -198,13 +198,11 @@ sub population :Path('/population') Args(3) {
    
     if ($pop_id && $trait_id)
     {   
-        $self->get_trait_name($c, $trait_id);    
+        $self->get_trait_name($c, $trait_id);
+        $c->stash->{pop_id} = $pop_id;
         $self->population_files($c);
 
-        $c->stash( trait_id => $trait_id,
-                   pop_id   => $pop_id,
-                   template => "/population.mas"
-            );
+        $c->stash->{template} = "/population.mas";
 
     }
     else 
@@ -222,7 +220,8 @@ sub population_files {
     #$self->genotype_file($c);
     $self->gebv_kinship_file($c);
     $self->gebv_marker_file($c);
-  
+    $self->validation_file($c);
+
 }
 
 sub input_files :Private {
@@ -257,7 +256,8 @@ sub output_files :Private {
       
     my $file_list = join ("\t",
                           $c->stash->{gebv_kinship_file},
-                          $c->stash->{gebv_marker_file}
+                          $c->stash->{gebv_marker_file},
+                          $c->stash->{validation_file}
         );
                           
     my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
@@ -322,13 +322,28 @@ sub gebv_kinship_file {
     $c->stash->{gebv_kinship_file} = $gebv_kinship_file;
 }
 
+sub validation_file {
+    my ($self, $c) = @_;
+
+    my $pop_id = $c->stash->{pop_id};
+    my $trait  = $c->stash->{trait_abbr};
+
+    my $solgs_temp_dir = $c->stash->{solgs_tempfiles_dir};
+    my ($fh, $file) = tempfile("validation_${trait}_${pop_id}-XXXXX", 
+                               DIR => $solgs_temp_dir,
+        );
+   
+    $c->stash->{validation_file} = $file;
+}
+
 sub get_trait_name {
     my ($self, $c, $trait_id) = @_;
 
     my $trait_name = $c->model('solGS')->trait_name($c, $trait_id);
     
     my $abbr = $self->abbreviate_term($trait_name);
-
+    
+    $c->stash->{trait_id}   = $trait_id;
     $c->stash->{trait_name} = $trait_name;
     $c->stash->{trait_abbr} = $abbr;
 }
