@@ -218,9 +218,7 @@ sub population_files {
     
     #$self->phenotype_file($c);
     #$self->genotype_file($c);
-    $self->gebv_kinship_file($c);
-    $self->gebv_marker_file($c);
-    $self->validation_file($c);
+    $self->output_files($c);
 
 }
 
@@ -254,6 +252,10 @@ sub output_files :Private {
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr}; 
       
+    $self->gebv_kinship_file($c);
+    $self->gebv_marker_file($c);
+    $self->validation_file($c);
+
     my $file_list = join ("\t",
                           $c->stash->{gebv_kinship_file},
                           $c->stash->{gebv_marker_file},
