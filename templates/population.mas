@@ -1,7 +1,8 @@
 <%args>
 
 $pop_id => undef;
-$show_data => 0;
+$show_data => 1;
+$accuracy_report
 
 </%args>
 
@@ -33,6 +34,11 @@ my $submit_new = qq | <a href="/submit/intro">Submit QTL population</a> |;
   &>   
   list statistical analysis options
  </&>
+
+<& /model/accuracy.mas, 
+   accuracy_report => $accuracy_report 
+&>
+
 %}
 % else
 %{
