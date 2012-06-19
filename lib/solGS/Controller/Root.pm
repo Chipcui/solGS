@@ -145,7 +145,7 @@ sub show_search_result_pops : Path('/search/result/populations') Args(1) {
         }
         
         $self->get_trait_name($c, $trait_id);
-
+       
         $c->stash(template => '/search/result/populations.mas',
                   result   => \@result,
                   form     => $form
@@ -207,8 +207,8 @@ sub population :Path('/population') Args(3) {
     }
     else 
     {
-        $c->stash(template => "/error_message.mas",
-                  error    => "Population id or trait id is missing."
+        $c->throw(public_message =>"Required population id or/and trait id are missing.", 
+                  is_client_error => 1, 
             );
     }
 }
@@ -342,7 +342,14 @@ sub get_trait_name {
     my ($self, $c, $trait_id) = @_;
 
     my $trait_name = $c->model('solGS')->trait_name($c, $trait_id);
-    
+  
+    if (!$trait_name) 
+    { 
+        $c->throw(public_message =>"No trait name corresponding to the id was found in the database.", 
+                  is_client_error => 1, 
+            );
+    }
+
     my $abbr = $self->abbreviate_term($trait_name);
     
     $c->stash->{trait_id}   = $trait_id;
@@ -536,7 +543,7 @@ sub end : Private {
 
     # insert our javascript packages into the rendered view
     if( $c->res->content_type eq 'text/html' ) {
-        $c->forward('/js/insert_js_pack_html');
+        #$c->forward('/js/insert_js_pack_html');
         $c->res->headers->push_header('Vary', 'Cookie');
     } else {
         $c->log->debug("skipping JS pack insertion for page with content type ".$c->res->content_type)
@@ -575,7 +582,6 @@ sub auto : Private {
 
     return 1;
 }
-
 
 
 
