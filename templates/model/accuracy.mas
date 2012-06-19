@@ -16,19 +16,20 @@ $accuracy_report
 
 </%args>
 
+
 <&| /page/info_section.mas, 
   collapsible => 1, 
-  collapsed   => 1, 
-  title       => "10 folds cross-validation (r)" 
+  collapsed   => 0, 
+  title       => "10 folds cross-validation report" 
 &> 
 
 <& /page/columnar_table.mas,
   headings     => ["Runs", "Accuracy(r)"], 
   data         => $accuracy_report,
-  __alt_freq   =>2,
-  __alt_width  =>1,
-  __alt_offset =>3,
-  __align      =>'l',
+  __alt_freq   => 2,
+  __alt_width  => 1,
+  __alt_offset => 3,
+  __align      => 'l',
 &>
 
 </&>
