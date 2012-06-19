@@ -5,6 +5,9 @@
   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
   <link rel="stylesheet" href="/static/sgn.css" type="text/css" />
   <link rel="stylesheet" href="/static/solgs_formfu.css" type="text/css" />
+ 
+  <& /header/js.mas &>
+
 </head>
 <body>
 <div id="outercontainer">
