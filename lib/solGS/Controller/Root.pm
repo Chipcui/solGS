@@ -1,10 +1,12 @@
 package solGS::Controller::Root;
+
 use Moose;
 use namespace::autoclean;
 use URI::FromHash 'uri';
 use File::Path qw / mkpath  /;
 use File::Spec::Functions qw / catfile catdir/;
 use File::Temp qw / tempfile tempdir /;
+use File::Slurp qw / read_file /;
 use Cache::File;
 use Try::Tiny;
 use Scalar::Util 'weaken';
@@ -219,6 +221,7 @@ sub population_files {
     #$self->phenotype_file($c);
     #$self->genotype_file($c);
     $self->output_files($c);
+    $self->model_accuracy($c);
 
 }
 
@@ -331,13 +334,29 @@ sub validation_file {
     my $trait  = $c->stash->{trait_abbr};
 
     my $solgs_temp_dir = $c->stash->{solgs_tempfiles_dir};
-    my ($fh, $file) = tempfile("validation_${trait}_${pop_id}-XXXXX", 
-                               DIR => $solgs_temp_dir,
+    my ($fh, $file)    = tempfile("validation_${trait}_${pop_id}-XXXXX", 
+                                  DIR => $solgs_temp_dir,
         );
    
     $c->stash->{validation_file} = $file;
 }
 
+sub model_accuracy {
+    my ($self, $c) = @_;
+    my $file = $c->stash->{validation_file};
+    my @report =();
+
+    if ( !-e $file) { @report = (["Validation file doesn't exist.", "None"]);}
+    if ( -s $file == 0) { @report = (["There is no cross-validation output report.", "None"]);}
+    
+    if (!@report) 
+    {
+        @report =  map  { [ split( /\t/, $_) ]}  read_file( $file );
+    }
+
+    $c->stash->{accuracy_report} = \@report;
+   
+}
 sub get_trait_name {
     my ($self, $c, $trait_id) = @_;
 
@@ -543,7 +562,7 @@ sub end : Private {
 
     # insert our javascript packages into the rendered view
     if( $c->res->content_type eq 'text/html' ) {
-        #$c->forward('/js/insert_js_pack_html');
+        $c->forward('/js/insert_js_pack_html');
         $c->res->headers->push_header('Vary', 'Cookie');
     } else {
         $c->log->debug("skipping JS pack insertion for page with content type ".$c->res->content_type)
