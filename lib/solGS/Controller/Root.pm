@@ -222,7 +222,7 @@ sub population_files {
     #$self->genotype_file($c);
     $self->output_files($c);
     $self->model_accuracy($c);
-    $self->top_blups($c);
+    $self->blups_file($c);
 
 }
 
@@ -328,15 +328,41 @@ sub gebv_kinship_file {
     $c->stash->{gebv_kinship_file} = $gebv_kinship_file;
 }
 
+sub blups_file {
+    my ($self, $c) = @_;
+    
+    my $blups_file = $c->stash->{gebv_kinship_file} 
+                     ? $c->stash->{gebv_kinship_file}
+                     : $c->stash->{gebv_marker_file}
+                     ;
+    
+    $c->stash->{blups} = $blups_file;
+    $self->top_blups($c);
+
+}
+
+sub download_blups :Path('/download/blups/pop') Args(3) {
+    my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
+ 
+    $self->blups_file($c);
+    my $blups_file = $c->stash->{blups};
+
+    unless (!-e $blups_file || -s $blups_file == 0) 
+    {
+        my @blups =  map { [ split(/\t/) ] }  read_file($blups_file);
+    
+        $c->stash->{'csv'}={ data => \@blups };
+        $c->forward("solGS::View::Download::CSV");
+    } 
+
+}
+
 sub top_blups {
     my ($self, $c) = @_;
     
-    my $blup_file = $c->stash->{gebv_kinship_file} 
-                    ? $c->stash->{gebv_kinship_file}
-                    : $c->stash->{gebv_marker_file}
-                    ;
-
-    open my $fh, $blup_file or die "couldnot open $blup_file: $!";
+    my $blups_file = $c->stash->{blups};
+    
+    open my $fh, $blups_file or die "couldnot open $blups_file: $!";
     
     my @top_blups;
     
