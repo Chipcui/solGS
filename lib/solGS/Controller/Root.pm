@@ -222,6 +222,7 @@ sub population_files {
     #$self->genotype_file($c);
     $self->output_files($c);
     $self->model_accuracy($c);
+    $self->top_blups($c);
 
 }
 
@@ -311,7 +312,7 @@ sub gebv_kinship_file {
     my $trait  = $c->stash->{trait_abbr};
 
     my $solgs_cache = $c->stash->{solgs_cache_dir};
-    my $file_cache  = Cache::File->new( cache_root => $solgs_cache  );
+    my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
     $file_cache->purge();
 
     my $key                = "gebv_kinship_" . $pop_id . "_".  $trait;
@@ -320,11 +321,34 @@ sub gebv_kinship_file {
     unless ($gebv_kinship_file)
     {      
         my $file = catfile($solgs_cache, "gebv_kinship_" . $trait . "_" . $pop_id);
-        $file_cache->set( $key, $file, '30 days' );
+        $file_cache->set($key, $file, '30 days');
         $gebv_kinship_file = $file_cache->get($key);
     }
 
     $c->stash->{gebv_kinship_file} = $gebv_kinship_file;
+}
+
+sub top_blups {
+    my ($self, $c) = @_;
+    
+    my $blup_file = $c->stash->{gebv_kinship_file} 
+                    ? $c->stash->{gebv_kinship_file}
+                    : $c->stash->{gebv_marker_file}
+                    ;
+
+    open my $fh, $blup_file or die "couldnot open $blup_file: $!";
+    
+    my @top_blups;
+    
+    while (<$fh>)
+    {
+        push @top_blups,  map { [ split(/\t/) ] } $_;
+        last if $. == 11;
+    }
+
+    shift(@top_blups); #add condition
+
+    $c->stash->{top_blups} = \@top_blups;
 }
 
 sub validation_file {
@@ -351,12 +375,13 @@ sub model_accuracy {
     
     if (!@report) 
     {
-        @report =  map  { [ split( /\t/, $_) ]}  read_file( $file );
+        @report =  map  { [ split(/\t/, $_) ]}  read_file($file);
     }
 
     $c->stash->{accuracy_report} = \@report;
    
 }
+
 sub get_trait_name {
     my ($self, $c, $trait_id) = @_;
 
