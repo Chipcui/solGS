@@ -3,13 +3,14 @@
 $pop_id => undef;
 $show_data => 1;
 $accuracy_report
+$top_blups
 
 </%args>
 
 <%perl>
 
-
 my $submit_new = qq | <a href="/submit/intro">Submit QTL population</a> |;
+
 </%perl>
 
 <& /page/page_title.mas, 
@@ -34,6 +35,10 @@ my $submit_new = qq | <a href="/submit/intro">Submit QTL population</a> |;
   &>   
   list statistical analysis options
  </&>
+
+<& /model/top_blups.mas, 
+   top_blups => $top_blups
+&>
 
 <& /model/accuracy.mas, 
    accuracy_report => $accuracy_report 
