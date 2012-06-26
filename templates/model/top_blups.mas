@@ -1,0 +1,37 @@
+<%doc>
+
+=head1 NAME
+ 
+/mode/top_blups.mas - displays genotypes with the top blups
+
+=AUTHOR
+
+Isaak Y Tecle (iyt2@cornell.edu)
+
+=cut
+
+</%doc>
+
+<%args>
+
+$top_blups
+
+</%args>
+
+
+<&| /page/info_section.mas, 
+  collapsible => 1, 
+  collapsed   => 0, 
+  title       => "Genotypes with the highest predicted breeding values (BLUPs)" 
+&> 
+
+<& /page/columnar_table.mas,
+  headings     => ["Genotypes", "BLUP"], 
+  data         => $top_blups,
+  __alt_freq   => 2,
+  __alt_width  => 1,
+  __alt_offset => 3,
+  __align      => 'l',
+&>
+
+</&>
