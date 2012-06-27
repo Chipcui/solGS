@@ -4,6 +4,7 @@ $pop_id => undef;
 $show_data => 1;
 $accuracy_report
 $top_blups
+$blups_download_url
 
 </%args>
 
@@ -37,7 +38,8 @@ my $submit_new = qq | <a href="/submit/intro">Submit QTL population</a> |;
  </&>
 
 <& /model/top_blups.mas, 
-   top_blups => $top_blups
+   top_blups => $top_blups,
+   blups_download_url => $blups_download_url
 &>
 
 <& /model/accuracy.mas, 
