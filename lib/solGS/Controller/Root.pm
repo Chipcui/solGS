@@ -223,7 +223,7 @@ sub population_files {
     $self->output_files($c);
     $self->model_accuracy($c);
     $self->blups_file($c);
-
+    $self->blups_download_url($c);
 }
 
 sub input_files :Private {
@@ -357,6 +357,16 @@ sub download_blups :Path('/download/blups/pop') Args(3) {
 
 }
 
+sub blups_download_url {
+    my ($self, $c) = @_;
+    
+    my $pop_id   = $c->stash->{pop_id};
+    my $trait_id = $c->stash->{trait_id};
+
+    $c->stash->{blups_download_url} = qq |<a href="/download/blups/pop/$pop_id/trait/$trait_id">Download all GEBVs</a> |;
+
+}
+
 sub top_blups {
     my ($self, $c) = @_;
     
@@ -403,6 +413,8 @@ sub model_accuracy {
     {
         @report =  map  { [ split(/\t/, $_) ]}  read_file($file);
     }
+
+    shift(@report); #add condition
 
     $c->stash->{accuracy_report} = \@report;
    
