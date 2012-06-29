@@ -5,6 +5,8 @@ $show_data => 1;
 $accuracy_report
 $top_blups
 $blups_download_url
+$marker_effects_download_url
+$marker_effects
 
 </%args>
 
@@ -40,6 +42,11 @@ my $submit_new = qq | <a href="/submit/intro">Submit QTL population</a> |;
 <& /model/top_blups.mas, 
    top_blups => $top_blups,
    blups_download_url => $blups_download_url
+&>
+
+<& /model/marker_effects.mas, 
+   marker_effects => $marker_effects,
+   marker_effects_download_url => $marker_effects_download_url
 &>
 
 <& /model/accuracy.mas, 
