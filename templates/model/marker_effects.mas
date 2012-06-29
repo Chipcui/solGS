@@ -2,7 +2,7 @@
 
 =head1 NAME
  
-/mode/marker_effcts.mas - displays top marker effects and data download link
+/model/marker_effcts.mas - displays top marker effects and data download link
 
 =AUTHOR
 
@@ -14,7 +14,7 @@ Isaak Y Tecle (iyt2@cornell.edu)
 
 <%args>
 
-$marker_effects
+$top_marker_effects
 $marker_effects_download_url
 
 </%args>
@@ -30,7 +30,7 @@ $marker_effects_download_url
 
 <& /page/columnar_table.mas,
   headings     => ["Marker", "Effects"], 
-  data         => $marker_effects,
+  data         => $top_marker_effects,
   __alt_freq   => 2,
   __alt_width  => 1,
   __alt_offset => 3,
