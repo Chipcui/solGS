@@ -1,14 +1,20 @@
 package solGS::Controller::Root;
+
 use Moose;
 use namespace::autoclean;
 use URI::FromHash 'uri';
 use File::Path qw / mkpath  /;
 use File::Spec::Functions qw / catfile catdir/;
+use File::Temp qw / tempfile tempdir /;
+use File::Slurp qw / read_file /;
+use Cache::File;
+use Try::Tiny;
 use Scalar::Util 'weaken';
 use CatalystX::GlobalContext ();
 
 use CXGN::Login;
 use CXGN::People::Person;
+use CXGN::Tools::Run;
 
 BEGIN { extends 'Catalyst::Controller::HTML::FormFu' }
 
@@ -106,7 +112,7 @@ sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
     if ($form->submitted_and_valid) 
     {
         $query = $form->param_value('search.search_term');
-        $c->res->redirect("/search/result/traits/$query");
+        $c->res->redirect("/search/result/traits/$query");       
     }        
     else
     {
@@ -119,33 +125,33 @@ sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
 }
 
 sub show_search_result_pops : Path('/search/result/populations') Args(1) {
-    my ($self, $c, $query) = @_;
+    my ($self, $c, $trait_id) = @_;
   
-    my $stocks_rows = $c->model('solGS')->search_populations($c, $query);
+    my $pop_ids = $c->model('solGS')->search_populations($c, $trait_id);
   
-    my (@result, @ids);
-    foreach my $stock_row (@$stocks_rows) 
+    my (@result, @unique_ids);
+   
+    
+    my $form;
+    if (@$pop_ids[0])
     {
-        if ($stock_row) 
-        {
-            my $pop_id = $stock_row->object_id;
-            unless (grep {$_ == $pop_id} @ids) 
+        foreach my $pop_id (@$pop_ids) 
+        {      
+            unless (grep {$_ == $pop_id} @unique_ids) 
             {
-                push @ids, $pop_id;        
+                push @unique_ids, $pop_id;        
                 my $pop_rs   = $c->model('solGS')->get_population_details($c, $pop_id);
                 my $pop_name = $pop_rs->single->name;
-                push @result, [qq|<a href="/population/$pop_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
+                push @result, [qq|<a href="/population/$pop_id/trait/$trait_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
             }
         }
-    }
-
-    my $form;
-    if (@$stocks_rows[0])
-    {
-       $c->stash(template => '/search/result/populations.mas',
-                 result   => \@result,
-                 form     => $form
-           );
+        
+        $self->get_trait_name($c, $trait_id);
+       
+        $c->stash(template => '/search/result/populations.mas',
+                  result   => \@result,
+                  form     => $form
+            );
     }
     else
     {
@@ -163,14 +169,11 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
     while (my $row = $result->next)
     {
         my $id   = $row->cvterm_id;
-       # if ($c->model('solGS')->is_phenotyped_trait($c, $id)->single) 
-       # {
-            my $name = $row->name;
-            my $def  = $row->definition;
-            my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
+        my $name = $row->name;
+        my $def  = $row->definition;
+        my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
        
-            push @rows, [ $checkbox, qq |<a href="/search/result/populations/$id">$name</a>|, $def]; 
-        #}      
+        push @rows, [ $checkbox, qq |<a href="/search/result/populations/$id">$name</a>|, $def];      
     }
 
     if (@rows)
@@ -192,25 +195,386 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
     }
 
 }    
-sub population :Path('/population') Args(1) {
-    my ($self, $c, $pop_id) = @_;
-    $c->stash(template => '/population.mas',
-              pop_id   => $pop_id
-        );
+sub population :Path('/population') Args(3) {
+    my ($self, $c, $pop_id, $key, $trait_id) = @_;
+   
+    if ($pop_id && $trait_id)
+    {   
+        $self->get_trait_name($c, $trait_id);
+        $c->stash->{pop_id} = $pop_id;
+        $self->population_files($c);
+
+        $c->stash->{template} = "/population.mas";
+
+    }
+    else 
+    {
+        $c->throw(public_message =>"Required population id or/and trait id are missing.", 
+                  is_client_error => 1, 
+            );
+    }
+}
+
+sub population_files {
+    my ($self, $c) = @_;
+    
+    #$self->phenotype_file($c);
+    #$self->genotype_file($c);
+    $self->output_files($c);
+    $self->model_accuracy($c);
+    $self->blups_file($c);
+    $self->blups_download_url($c);
 }
 
 sub input_files :Private {
-    my ($self, $c, $pop_id) = @_;
-    my $pheno_file = $self->phenotype_file;#somehow get the phenotype file
-    my $geno_file  = $self->genotype_file;#somehow get the genotype file
-    my $trait_file = $self->trait_file;
+    my ($self, $c) = @_;
+
+    my $pheno_file = $c->stash->{phenotype_file};
+    my $geno_file  = $c->stash->{genotype_file};
+    my $trait      = $c->stash->{trait_abbr};
+    my $pop_id     = $c->stash->{pop_id};
+
+    my $input_files = join ("\t",
+                            $c->stash->{phenotype_file},
+                            $c->stash->{genotype_file}                        
+        );
+
+    my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
+    my ($fh, $tempfile) = tempfile("input_files_${trait}_$pop_id-XXXXX", 
+                                   DIR => $tmp_dir
+        );
+
+    $fh->print($input_files);
+    
+    return $tempfile;
+  
 }
 
-sub run_rrblup  :Private {
-    my ($self, $c, $pop_id) = @_;
-   
-    #get all input files & arguments for rrblup, run rrblup and save output in solgs user dir
+sub output_files :Private {
+    my ($self, $c) = @_;
+    
+    my $pop_id = $c->stash->{pop_id};
+    my $trait  = $c->stash->{trait_abbr}; 
+      
+    $self->gebv_kinship_file($c);
+    $self->gebv_marker_file($c);
+    $self->validation_file($c);
+
+    my $file_list = join ("\t",
+                          $c->stash->{gebv_kinship_file},
+                          $c->stash->{gebv_marker_file},
+                          $c->stash->{validation_file}
+        );
+                          
+    my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
+
+    my ($fh, $tempfile) = tempfile("output_files_${trait}_$pop_id-XXXXX", 
+                                   DIR => $tmp_dir
+        );
+
+    $fh->print($file_list);
+    
+    return $tempfile;
+
 }
+
+
+
+sub gebv_marker_file {
+    my ($self, $c) = @_;
+   
+    my $pop_id = $c->stash->{pop_id};
+    my $trait  = $c->stash->{trait_abbr};
+
+    my $solgs_cache = $c->stash->{solgs_cache_dir};
+    my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
+    $file_cache->purge();
+
+    my $key               = "gebv_marker_" . $pop_id . "_".  $trait;
+    my $gebv_marker_file  = $file_cache->get($key);
+
+    unless ($gebv_marker_file)
+    {  
+        my $file = catfile($solgs_cache, "gebv_marker_" . $trait . "_" . $pop_id);
+        $file_cache->set( $key, $file, '30 days' );
+        $gebv_marker_file = $file_cache->get($key);
+        
+    }
+
+    $c->stash->{gebv_marker_file} = $gebv_marker_file;
+    
+}
+
+sub gebv_kinship_file {
+    my ($self, $c) = @_;
+
+    my $pop_id = $c->stash->{pop_id};
+    my $trait  = $c->stash->{trait_abbr};
+
+    my $solgs_cache = $c->stash->{solgs_cache_dir};
+    my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
+    $file_cache->purge();
+
+    my $key                = "gebv_kinship_" . $pop_id . "_".  $trait;
+    my $gebv_kinship_file  = $file_cache->get($key);
+
+    unless ($gebv_kinship_file)
+    {      
+        my $file = catfile($solgs_cache, "gebv_kinship_" . $trait . "_" . $pop_id);
+        $file_cache->set($key, $file, '30 days');
+        $gebv_kinship_file = $file_cache->get($key);
+    }
+
+    $c->stash->{gebv_kinship_file} = $gebv_kinship_file;
+}
+
+sub blups_file {
+    my ($self, $c) = @_;
+    
+    my $blups_file = $c->stash->{gebv_kinship_file} 
+                     ? $c->stash->{gebv_kinship_file}
+                     : $c->stash->{gebv_marker_file}
+                     ;
+    
+    $c->stash->{blups} = $blups_file;
+    $self->top_blups($c);
+
+}
+
+sub download_blups :Path('/download/blups/pop') Args(3) {
+    my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
+ 
+    $self->blups_file($c);
+    my $blups_file = $c->stash->{blups};
+
+    unless (!-e $blups_file || -s $blups_file == 0) 
+    {
+        my @blups =  map { [ split(/\t/) ] }  read_file($blups_file);
+    
+        $c->stash->{'csv'}={ data => \@blups };
+        $c->forward("solGS::View::Download::CSV");
+    } 
+
+}
+
+sub blups_download_url {
+    my ($self, $c) = @_;
+    
+    my $pop_id   = $c->stash->{pop_id};
+    my $trait_id = $c->stash->{trait_id};
+
+    $c->stash->{blups_download_url} = qq |<a href="/download/blups/pop/$pop_id/trait/$trait_id">Download all GEBVs</a> |;
+
+}
+
+sub top_blups {
+    my ($self, $c) = @_;
+    
+    my $blups_file = $c->stash->{blups};
+    
+    open my $fh, $blups_file or die "couldnot open $blups_file: $!";
+    
+    my @top_blups;
+    
+    while (<$fh>)
+    {
+        push @top_blups,  map { [ split(/\t/) ] } $_;
+        last if $. == 11;
+    }
+
+    shift(@top_blups); #add condition
+
+    $c->stash->{top_blups} = \@top_blups;
+}
+
+sub validation_file {
+    my ($self, $c) = @_;
+
+    my $pop_id = $c->stash->{pop_id};
+    my $trait  = $c->stash->{trait_abbr};
+
+    my $solgs_temp_dir = $c->stash->{solgs_tempfiles_dir};
+    my ($fh, $file)    = tempfile("validation_${trait}_${pop_id}-XXXXX", 
+                                  DIR => $solgs_temp_dir,
+        );
+   
+    $c->stash->{validation_file} = $file;
+}
+
+sub model_accuracy {
+    my ($self, $c) = @_;
+    my $file = $c->stash->{validation_file};
+    my @report =();
+
+    if ( !-e $file) { @report = (["Validation file doesn't exist.", "None"]);}
+    if ( -s $file == 0) { @report = (["There is no cross-validation output report.", "None"]);}
+    
+    if (!@report) 
+    {
+        @report =  map  { [ split(/\t/, $_) ]}  read_file($file);
+    }
+
+    shift(@report); #add condition
+
+    $c->stash->{accuracy_report} = \@report;
+   
+}
+
+sub get_trait_name {
+    my ($self, $c, $trait_id) = @_;
+
+    my $trait_name = $c->model('solGS')->trait_name($c, $trait_id);
+  
+    if (!$trait_name) 
+    { 
+        $c->throw(public_message =>"No trait name corresponding to the id was found in the database.", 
+                  is_client_error => 1, 
+            );
+    }
+
+    my $abbr = $self->abbreviate_term($trait_name);
+    
+    $c->stash->{trait_id}   = $trait_id;
+    $c->stash->{trait_name} = $trait_name;
+    $c->stash->{trait_abbr} = $abbr;
+}
+
+sub abbreviate_term {
+    my ($self, $term) = @_;
+  
+    my @words = split(/\s/, $term);
+    my $acronym;
+	
+    if (scalar(@words) == 1) 
+    {
+	$acronym .= shift(@words);
+    }  
+    else 
+    {
+	foreach my $word (@words) 
+        {
+	    if ($word=~/^\D/)
+            {
+		my $l = substr($word,0,1,q{}); 
+		$acronym .= $l;
+	    } 
+            else 
+            {
+                $acronym .= $word;
+            }
+	    $acronym = uc($acronym);
+	    $acronym =~/(\w+)/;
+	    $acronym = $1;
+	}	   
+    }
+    return $acronym;
+
+}
+
+sub phenotype_file :Private {
+    my ($self, $c) = @_;
+    
+    my $pop_id = $c->stash->{pop_id};
+
+    $c->controller('Stock')->solgs_download_phenotypes($pop_id);
+    my $pheno_file = "stock_" . $pop_id . "_plot_phenotypes.csv";
+     $pheno_file   =  catfile($c->config->{solgs_tempfiles}, $pheno_file);
+    if (-s $pheno_file >= 100 )
+    {       
+        $c->stash->{phenotype_file} = $pheno_file;
+    }
+    else
+    {
+        $c->throw_client_error( public_message => "The phenotype data file $pheno_file
+                                               does not seem to contain data."
+            );
+    }
+
+}
+
+sub genotype_file :Private {
+    my ($self, $c) = @_;
+
+    my $pop_id = $c->stash->{pop_id};
+
+    $c->controller('Stock')->download_genotypes($pop_id);
+    my $geno_file = "stock_" . $pop_id . "_plot_genotypes.csv";
+    $geno_file    =  catfile($c->config->{solgs_tempfiles}, $geno_file);
+    if (-s $geno_file >= 100 )
+    {
+        
+        $c->stash->{genotype_file} = $geno_file;
+    }
+    else
+    {
+        $c->throw_client_error( public_message => "The genotype data file $geno_file
+                                               does not seem to contain data."
+            );
+    }
+
+}
+sub run_rrblup  :Private {
+    my ($self, $c) = @_;
+   
+    #get all input files & arguments for rrblup, 
+    #run rrblup and save output in solgs user dir
+    my $pop_id   = $c->stash->{pop_id};
+    my $trait_id = $c->stash->{pop_id};
+
+    my $input_files  = $self->input_files($c);
+    my $output_files = $self->output_files($c);
+   
+    CXGN::Tools::Run->temp_base($c->stash->{solgs_tempfiles});
+    my ( $r_in_temp, $r_out_temp ) =
+        map 
+    {
+            my ( undef, $filename ) =
+                tempfile(
+                    catfile(
+                        CXGN::Tools::Run->temp_base(),
+                        "gs-rrblup-${trait_id}-${pop_id}-$_-XXXXXX",
+                    ),
+                );
+            $filename
+    } qw / in out /;
+    {
+        my $r_cmd_file = $c->path_to('R/gs.r');
+        copy($r_cmd_file, $r_in_temp)
+            or die "could not copy '$r_cmd_file' to '$r_in_temp'";
+    }
+
+    try 
+    {
+        my $r_process = CXGN::Tools::Run->run_cluster(
+            'R', 'CMD', 'BATCH',
+            '--slave',
+            "--args $input_files, $output_files",
+            $r_in_temp,
+            $r_out_temp,
+            {
+                working_dir => $c->stash->{solgs_tempfiles},
+                max_cluster_jobs => 1_000_000_000,
+            },
+            );
+
+        $r_process->wait; 
+    }
+    catch 
+    {
+        my $err = $_;
+        $err =~ s/\n at .+//s; 
+        try
+        { 
+            $err .= "\n=== R output ===\n".file($r_out_temp)->slurp."\n=== end R output ===\n" 
+        };
+        $c->throw_client_error(public_message    => "There was an error running rrblup.",
+                               developer_message => $err
+            );
+    };
+
+   #return or stash output files
+}
+   
 
 sub get_solgs_dirs :Private {
     my ($self, $c) = @_;
@@ -221,16 +585,19 @@ sub get_solgs_dirs :Private {
   
     mkpath ([$solgs_dir, $solgs_cache, $solgs_tempfiles], 0, 0755);
       
-    $c->stash(solgs_dir       => $solgs_dir, 
-              solgs_cache     => $solgs_cache, 
-              solgs_tempfiles => $solgs_tempfiles
+    $c->stash(solgs_dir           => $solgs_dir, 
+              solgs_cache_dir     => $solgs_cache, 
+              solgs_tempfiles_dir => $solgs_tempfiles
         );
 
 }
 
+
+
+
 sub default :Path {
-    my ( $self, $c ) = @_;   
-    $c->response->status(404);
+    my ( $self, $c ) = @_; 
+    $c->forward('search');
 }
 
 
@@ -279,6 +646,7 @@ sub auto : Private {
     $c->stash->{c} = $c;
     weaken $c->stash->{c};
 
+    $self->get_solgs_dirs($c);
     # gluecode for logins
     #
     unless( $c->config->{'disable_login'} ) {
@@ -296,7 +664,6 @@ sub auto : Private {
 
     return 1;
 }
-
 
 
 

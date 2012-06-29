@@ -87,13 +87,13 @@ sub _filter_stock_rs {
 
 =head1 PRIVATE ACTIONS
 
-=head2 download_phenotypes
+=head2 solgs_download_phenotypes
 
 =cut
 
 
-sub download_phenotypes :  Path('/phenotypes') Args(1) {
-    my ($self, $c, $stock_id ) = @_; # stock should be population type only?
+sub solgs_download_phenotypes : Path('/solgs/phenotypes') Args(1) {
+     my ($self, $c, $stock_id ) = @_; # stock should be population type only?
     if ($stock_id) {
 	my $results = [];# listref for recursive subject stock_phenotypes resultsets
 	#recursively get the stock_id and the ids of its subjects from stock_relationship                                        
@@ -118,8 +118,8 @@ sub download_phenotypes :  Path('/phenotypes') Args(1) {
 =cut
 
 
-sub download_genotypes : Chained('get_stock') PathPart('genotypes') Args(0) {
-    my ($self, $c) = @_;
+sub download_genotypes : Path('genotypes') Args(1) {
+    my ($self, $c, $stock_id ) = @_;
     my $stock = $c->stash->{stock_row};
     my $stock_id = $stock->stock_id;
     my $stock_name = $stock->uniquename;
