@@ -223,7 +223,8 @@ sub population_files {
     $self->output_files($c);
     $self->model_accuracy($c);
     $self->blups_file($c);
-    $self->blups_download_url($c);
+    $self->download_urls($c);
+    $self->top_markers($c);
 }
 
 sub input_files :Private {
@@ -302,7 +303,7 @@ sub gebv_marker_file {
     }
 
     $c->stash->{gebv_marker_file} = $gebv_marker_file;
-    
+
 }
 
 sub gebv_kinship_file {
@@ -326,17 +327,13 @@ sub gebv_kinship_file {
     }
 
     $c->stash->{gebv_kinship_file} = $gebv_kinship_file;
+   
 }
 
 sub blups_file {
     my ($self, $c) = @_;
     
-    my $blups_file = $c->stash->{gebv_kinship_file} 
-                     ? $c->stash->{gebv_kinship_file}
-                     : $c->stash->{gebv_marker_file}
-                     ;
-    
-    $c->stash->{blups} = $blups_file;
+    $c->stash->{blups} = $c->stash->{gebv_kinship_file};
     $self->top_blups($c);
 
 }
@@ -357,14 +354,33 @@ sub download_blups :Path('/download/blups/pop') Args(3) {
 
 }
 
-sub blups_download_url {
+sub download_marker_effects :Path('/download/marker/pop') Args(3) {
+    my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
+ 
+    $self->gebv_marker_file($c);
+    my $markers_file = $c->stash->{gebv_marker_file};
+
+    unless (!-e $markers_file || -s $markers_file == 0) 
+    {
+        my @effects =  map { [ split(/\t/) ] }  read_file($markers_file);
+    
+        $c->stash->{'csv'}={ data => \@effects };
+        $c->forward("solGS::View::Download::CSV");
+    } 
+
+}
+
+sub download_urls {
     my ($self, $c) = @_;
     
-    my $pop_id   = $c->stash->{pop_id};
-    my $trait_id = $c->stash->{trait_id};
+    my $pop_id     = $c->stash->{pop_id};
+    my $trait_id   = $c->stash->{trait_id};
+    my $blups_url  = qq | <a href="/download/blups/pop/$pop_id/trait/$trait_id">Download all GEBVs</a> |;
+    my $marker_url = qq | <a href="/download/marker/pop/$pop_id/trait/$trait_id">Download all marker effects</a> |;
 
-    $c->stash->{blups_download_url} = qq |<a href="/download/blups/pop/$pop_id/trait/$trait_id">Download all GEBVs</a> |;
-
+    $c->stash(blups_download_url          => $blups_url,
+              marker_effects_download_url => $marker_url
+        );
 }
 
 sub top_blups {
@@ -385,6 +401,26 @@ sub top_blups {
     shift(@top_blups); #add condition
 
     $c->stash->{top_blups} = \@top_blups;
+}
+
+sub top_markers {
+    my ($self, $c) = @_;
+    
+    my $markers_file = $c->stash->{gebv_marker_file};
+
+    open my $fh, $markers_file or die "couldnot open $markers_file: $!";
+    
+    my @top_markers;
+    
+    while (<$fh>)
+    {
+        push @top_markers,  map { [ split(/\t/) ] } $_;
+        last if $. == 11;
+    }
+
+    shift(@top_markers); #add condition
+
+    $c->stash->{top_marker_effects} = \@top_markers;
 }
 
 sub validation_file {
