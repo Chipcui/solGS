@@ -23,7 +23,7 @@ $blups_download_url
 <&| /page/info_section.mas, 
   collapsible => 1, 
   collapsed   => 0, 
-  title       => "Predicted genomc estimated breeding values (GEBVs)" 
+  title       => "Predicted genomc estimated breeding values (GEBVs) - based on kinship" 
 &>
  
 <i>Top 10 genotypes</i>:
