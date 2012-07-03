@@ -6,7 +6,7 @@ use URI::FromHash 'uri';
 use File::Path qw / mkpath  /;
 use File::Spec::Functions qw / catfile catdir/;
 use File::Temp qw / tempfile tempdir /;
-use File::Slurp qw / read_file /;
+use File::Slurp qw /write_file read_file/;
 use Cache::File;
 use Try::Tiny;
 use Scalar::Util 'weaken';
@@ -218,17 +218,19 @@ sub population :Path('/population') Args(3) {
 sub population_files {
     my ($self, $c) = @_;
     
-    #$self->phenotype_file($c);
     #$self->genotype_file($c);
     $self->output_files($c);
+    $self->input_files($c);
     $self->model_accuracy($c);
     $self->blups_file($c);
     $self->download_urls($c);
     $self->top_markers($c);
 }
 
-sub input_files :Private {
+sub input_files {
     my ($self, $c) = @_;
+    
+    $self->phenotype_file($c);
 
     my $pheno_file = $c->stash->{phenotype_file};
     my $geno_file  = $c->stash->{genotype_file};
@@ -335,7 +337,6 @@ sub blups_file {
     
     $c->stash->{blups} = $c->stash->{gebv_kinship_file};
     $self->top_blups($c);
-
 }
 
 sub download_blups :Path('/download/blups/pop') Args(3) {
@@ -507,24 +508,27 @@ sub abbreviate_term {
 
 }
 
-sub phenotype_file :Private {
+sub phenotype_file {
     my ($self, $c) = @_;
-    
-    my $pop_id = $c->stash->{pop_id};
+    my $pop_id     = $c->stash->{pop_id};
+ 
+    my $file_cache  = Cache::File->new(cache_root => $c->stash->{solgs_cache_dir});
+    $file_cache->purge();
+   
+    my $key        = "phenotype_data_" . $pop_id;
+    my $pheno_file = $file_cache->get($key);
 
-    $c->controller('Stock')->solgs_download_phenotypes($pop_id);
-    my $pheno_file = "stock_" . $pop_id . "_plot_phenotypes.csv";
-     $pheno_file   =  catfile($c->config->{solgs_tempfiles}, $pheno_file);
-    if (-s $pheno_file >= 100 )
-    {       
-        $c->stash->{phenotype_file} = $pheno_file;
+    unless ($pheno_file)
+    {  
+        $pheno_file = catfile($c->stash->{solgs_cache_dir}, "phenotype_data_" . $pop_id . ".txt");
+        $c->model('solGS')->phenotype_data($c, $pop_id);
+        my $data = $c->stash->{phenotype_data};    
+        write_file($pheno_file, $data);
+
+        $file_cache->set($key, $pheno_file, '30 days');
     }
-    else
-    {
-        $c->throw_client_error( public_message => "The phenotype data file $pheno_file
-                                               does not seem to contain data."
-            );
-    }
+
+    $c->stash->{phenotype_file} = $pheno_file;
 
 }
 
@@ -532,7 +536,6 @@ sub genotype_file :Private {
     my ($self, $c) = @_;
 
     my $pop_id = $c->stash->{pop_id};
-
     $c->controller('Stock')->download_genotypes($pop_id);
     my $geno_file = "stock_" . $pop_id . "_plot_genotypes.csv";
     $geno_file    =  catfile($c->config->{solgs_tempfiles}, $geno_file);
@@ -612,7 +615,7 @@ sub run_rrblup  :Private {
 }
    
 
-sub get_solgs_dirs :Private {
+sub get_solgs_dirs {
     my ($self, $c) = @_;
    
     my $solgs_dir       = $c->config->{solgs_dir};
@@ -620,7 +623,7 @@ sub get_solgs_dirs :Private {
     my $solgs_tempfiles = catdir($solgs_dir, 'tempfiles');
   
     mkpath ([$solgs_dir, $solgs_cache, $solgs_tempfiles], 0, 0755);
-      
+   
     $c->stash(solgs_dir           => $solgs_dir, 
               solgs_cache_dir     => $solgs_cache, 
               solgs_tempfiles_dir => $solgs_tempfiles
