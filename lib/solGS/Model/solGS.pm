@@ -1,7 +1,11 @@
 package solGS::Model::solGS;
+
 use Moose;
 use namespace::autoclean;
 use Bio::Chado::Schema;
+use Bio::Chado::NaturalDiversity::Reports;
+use File::Path qw/ mkpath /;
+use File::Spec::Functions;
 
 
 extends 'Catalyst::Model';
@@ -25,9 +29,6 @@ it under the same terms as Perl itself.
 
 =cut
 
-use File::Path qw/ mkpath /;
-use File::Spec::Functions;
-use strict;
 
 
 sub solgs_phenotype_data {
@@ -159,6 +160,20 @@ sub trait_name {
 
 }
 
+sub phenotype_data {
+     my ($self, $c, $pop_id ) = @_; 
+    
+     if ($pop_id) 
+     {
+         my $results  = [];                                    
+         my $stock_rs = $self->schema($c)->resultset("Stock::Stock")->search( { stock_id => $pop_id } );
+         $results     =  $self->schema($c)->resultset("Stock::Stock")->recursive_phenotypes_rs($stock_rs, $results);
+         my $report   = Bio::Chado::NaturalDiversity::Reports->new;
+         my $data     = $report->phenotypes_by_trait($results);
+      
+         $c->stash->{phenotype_data} = $data;               
+    }
+}
 
 sub schema {
     my ($self, $c) = @_;
