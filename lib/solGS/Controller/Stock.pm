@@ -93,20 +93,18 @@ sub _filter_stock_rs {
 
 
 sub solgs_download_phenotypes : Path('/solgs/phenotypes') Args(1) {
-     my ($self, $c, $stock_id ) = @_; # stock should be population type only?
+    my ($self, $c, $stock_id ) = @_; # stock should be population type only?
+    
     if ($stock_id) {
-	my $results = [];# listref for recursive subject stock_phenotypes resultsets
-	#recursively get the stock_id and the ids of its subjects from stock_relationship                                        
-	my $stock_rs = $self->schema->resultset("Stock::Stock")->search( { stock_id => $stock_id } );
-        $results =  $self->schema->resultset("Stock::Stock")->recursive_phenotypes_rs($stock_rs, $results);
-        my $report = Bio::Chado::NaturalDiversity::Reports->new;
-        my $d = $report->phenotypes_by_trait($results);
-
+        $c->model('solGS')->phenotype_data($c, $stock_id);
+        my $d = $c->stash->{phenotype_data};  
         my @info  = split(/\n/ , $d);
         my @data;
+       
         foreach (@info) {
             push @data, [ split(/\t/) ] ;
         }
+        
         $c->stash->{'csv'}={ data => \@data};
         $c->forward("View::Download::CSV");
     }
