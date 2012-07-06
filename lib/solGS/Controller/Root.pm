@@ -6,7 +6,7 @@ use URI::FromHash 'uri';
 use File::Path qw / mkpath  /;
 use File::Spec::Functions qw / catfile catdir/;
 use File::Temp qw / tempfile tempdir /;
-use File::Slurp qw /write_file read_file/;
+use File::Slurp qw /write_file read_file :edit prepend_file/;
 use Cache::File;
 use Try::Tiny;
 use Scalar::Util 'weaken';
@@ -522,14 +522,43 @@ sub phenotype_file {
     {  
         $pheno_file = catfile($c->stash->{solgs_cache_dir}, "phenotype_data_" . $pop_id . ".txt");
         $c->model('solGS')->phenotype_data($c, $pop_id);
-        my $data = $c->stash->{phenotype_data};    
+        my $data = $c->stash->{phenotype_data};
+               
+        $data = $self->format_trait_names($data);    
         write_file($pheno_file, $data);
 
         $file_cache->set($key, $pheno_file, '30 days');
     }
-
+   
     $c->stash->{phenotype_file} = $pheno_file;
 
+}
+
+sub format_trait_names {
+    my ($self, $data) = @_;
+    
+    my @rows = split (/\n/, $data);
+    
+    $rows[0] =~ s/SP\:\d+\|//g;  
+   
+    my @headers = split(/\t/, $rows[0]);
+    
+    my $header;
+    my $cnt = 0;
+    
+    foreach (@headers)
+    {
+        $cnt++;
+        $header .= $self->abbreviate_term($_);    
+        unless ($cnt == scalar(@headers))
+        {
+            $header .= "\t";
+        }
+    }
+    
+    @rows[0] = $header;
+
+    return \@rows;
 }
 
 sub genotype_file :Private {
