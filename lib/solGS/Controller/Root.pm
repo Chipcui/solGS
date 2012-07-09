@@ -556,7 +556,7 @@ sub format_trait_names {
         }
     }
     
-    @rows[0] = $header;
+    $rows[0] = $header;
 
     
     foreach (@rows)
