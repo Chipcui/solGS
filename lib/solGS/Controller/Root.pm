@@ -7,6 +7,7 @@ use File::Path qw / mkpath  /;
 use File::Spec::Functions qw / catfile catdir/;
 use File::Temp qw / tempfile tempdir /;
 use File::Slurp qw /write_file read_file :edit prepend_file/;
+use File::Copy;
 use Cache::File;
 use Try::Tiny;
 use Scalar::Util 'weaken';
@@ -202,6 +203,9 @@ sub population :Path('/population') Args(3) {
     {   
         $self->get_trait_name($c, $trait_id);
         $c->stash->{pop_id} = $pop_id;
+       
+
+        $self->run_rrblup($c);
         $self->population_files($c);
 
         $c->stash->{template} = "/population.mas";
@@ -219,8 +223,8 @@ sub population_files {
     my ($self, $c) = @_;
     
     #$self->genotype_file($c);
-    $self->output_files($c);
-    $self->input_files($c);
+   # $self->output_files($c);
+   # $self->input_files($c);
     $self->model_accuracy($c);
     $self->blups_file($c);
     $self->download_urls($c);
@@ -253,14 +257,14 @@ sub input_files {
   
 }
 
-sub output_files :Private {
+sub output_files {
     my ($self, $c) = @_;
     
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr}; 
-      
-    $self->gebv_kinship_file($c);
-    $self->gebv_marker_file($c);
+    
+    $self->gebv_marker_file($c);  
+    $self->gebv_kinship_file($c); 
     $self->validation_file($c);
 
     my $file_list = join ("\t",
@@ -293,18 +297,17 @@ sub gebv_marker_file {
     my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
     $file_cache->purge();
 
-    my $key               = "gebv_marker_" . $pop_id . "_".  $trait;
-    my $gebv_marker_file  = $file_cache->get($key);
+    my $key   = "gebv_marker_" . $pop_id . "_".  $trait;
+    my $file  = $file_cache->get($key);
 
-    unless ($gebv_marker_file)
+    unless ($file)
     {  
-        my $file = catfile($solgs_cache, "gebv_marker_" . $trait . "_" . $pop_id);
-        $file_cache->set( $key, $file, '30 days' );
-        $gebv_marker_file = $file_cache->get($key);
-        
+        $file = catfile($solgs_cache, "gebv_marker_" . $trait . "_" . $pop_id);
+        write_file($file);
+        $file_cache->set( $key, $file, '30 days' );        
     }
 
-    $c->stash->{gebv_marker_file} = $gebv_marker_file;
+    $c->stash->{gebv_marker_file} = $file;
 
 }
 
@@ -318,17 +321,17 @@ sub gebv_kinship_file {
     my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
     $file_cache->purge();
 
-    my $key                = "gebv_kinship_" . $pop_id . "_".  $trait;
-    my $gebv_kinship_file  = $file_cache->get($key);
+    my $key   = "gebv_kinship_" . $pop_id . "_".  $trait;
+    my $file  = $file_cache->get($key);
 
-    unless ($gebv_kinship_file)
+    unless ($file)
     {      
-        my $file = catfile($solgs_cache, "gebv_kinship_" . $trait . "_" . $pop_id);
+        $file = catfile($solgs_cache, "gebv_kinship_" . $trait . "_" . $pop_id);
+        write_file($file);
         $file_cache->set($key, $file, '30 days');
-        $gebv_kinship_file = $file_cache->get($key);
     }
 
-    $c->stash->{gebv_kinship_file} = $gebv_kinship_file;
+    $c->stash->{gebv_kinship_file} = $file;
    
 }
 
@@ -389,7 +392,7 @@ sub top_blups {
     
     my $blups_file = $c->stash->{blups};
     
-    open my $fh, $blups_file or die "couldnot open $blups_file: $!";
+    open my $fh, "<", $blups_file or die "couldnot open $blups_file: $!";
     
     my @top_blups;
     
@@ -587,30 +590,30 @@ sub genotype_file :Private {
     }
 
 }
-sub run_rrblup  :Private {
+sub run_rrblup  {
     my ($self, $c) = @_;
    
     #get all input files & arguments for rrblup, 
     #run rrblup and save output in solgs user dir
-    my $pop_id   = $c->stash->{pop_id};
-    my $trait_id = $c->stash->{pop_id};
-
+    my $pop_id       = $c->stash->{pop_id};
+    my $trait_id     = $c->stash->{trait_id};
     my $input_files  = $self->input_files($c);
     my $output_files = $self->output_files($c);
    
-    CXGN::Tools::Run->temp_base($c->stash->{solgs_tempfiles});
+    CXGN::Tools::Run->temp_base($c->stash->{solgs_tempfiles_dir});
     my ( $r_in_temp, $r_out_temp ) =
         map 
     {
-            my ( undef, $filename ) =
-                tempfile(
-                    catfile(
-                        CXGN::Tools::Run->temp_base(),
-                        "gs-rrblup-${trait_id}-${pop_id}-$_-XXXXXX",
-                    ),
-                );
-            $filename
-    } qw / in out /;
+        my ( undef, $filename ) =
+            tempfile(
+                catfile(
+                    CXGN::Tools::Run->temp_base(),
+                    "gs-rrblup-${trait_id}-${pop_id}-$_-XXXXXX",
+                ),
+            );
+        $filename
+    } 
+    qw / in out /;
     {
         my $r_cmd_file = $c->path_to('R/gs.r');
         copy($r_cmd_file, $r_in_temp)
@@ -626,7 +629,7 @@ sub run_rrblup  :Private {
             $r_in_temp,
             $r_out_temp,
             {
-                working_dir => $c->stash->{solgs_tempfiles},
+                working_dir => $c->stash->{solgs_tempfiles_dir},
                 max_cluster_jobs => 1_000_000_000,
             },
             );
@@ -641,15 +644,12 @@ sub run_rrblup  :Private {
         { 
             $err .= "\n=== R output ===\n".file($r_out_temp)->slurp."\n=== end R output ===\n" 
         };
-        $c->throw_client_error(public_message    => "There was an error running rrblup.",
-                               developer_message => $err
-            );
+        
+        $c->throw($err);
     };
 
-   #return or stash output files
 }
    
-
 sub get_solgs_dirs {
     my ($self, $c) = @_;
    
