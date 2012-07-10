@@ -381,9 +381,11 @@ sub download_urls {
     my $trait_id   = $c->stash->{trait_id};
     my $blups_url  = qq | <a href="/download/blups/pop/$pop_id/trait/$trait_id">Download all GEBVs</a> |;
     my $marker_url = qq | <a href="/download/marker/pop/$pop_id/trait/$trait_id">Download all marker effects</a> |;
-
+    my $validation_url = qq | <a href="/download/validation/pop/$pop_id/trait/$trait_id">Download</a> |;
+    
     $c->stash(blups_download_url          => $blups_url,
-              marker_effects_download_url => $marker_url
+              marker_effects_download_url => $marker_url,
+              validation_download_url     => $validation_url
         );
 }
 
@@ -440,6 +442,23 @@ sub validation_file {
    
     $c->stash->{validation_file} = $file;
 }
+
+sub download_validation :Path('/download/validation/pop') Args(3) {
+    my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
+ 
+    $self->validation_file($c);
+    my $validation_file = $c->stash->{validation_file};
+
+    unless (!-e $validation_file || -s $validation_file == 0) 
+    {
+        my @validation =  map { [ split(/\t/) ] }  read_file($validation_file);
+    
+        $c->stash->{'csv'}={ data => \@validation };
+        $c->forward("solGS::View::Download::CSV");
+    } 
+
+}
+
 
 sub model_accuracy {
     my ($self, $c) = @_;
