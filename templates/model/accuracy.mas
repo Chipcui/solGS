@@ -13,6 +13,7 @@ Isaak Y Tecle (iyt2@cornell.edu)
 <%args>
 
 $accuracy_report
+$validation_download_url
 
 </%args>
 
@@ -31,5 +32,8 @@ $accuracy_report
   __alt_offset => 3,
   __align      => 'l',
 &>
+
+<br />
+[ <% $validation_download_url %> ]
 
 </&>
