@@ -17,7 +17,7 @@ requires 'Catalyst::Controller::HTML::FormFu';
 requires 'CatalystX::GlobalContext' ;
 requires 'Moose';
 requires 'namespace::autoclean';
-requires 'Bio::Chado::Schema' => '0.09020';
+requires 'Bio::Chado::Schema' => '0.20000';
 #requires 'Bio::Chado::NaturalDiverstity';
 requires 'URI::FromHash';
 requires 'HTML::FormFu';
