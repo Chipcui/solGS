@@ -203,13 +203,11 @@ sub population :Path('/population') Args(3) {
     {   
         $self->get_trait_name($c, $trait_id);
         $c->stash->{pop_id} = $pop_id;
-       
-
+               
         $self->run_rrblup($c);
         $self->population_files($c);
 
         $c->stash->{template} = "/population.mas";
-
     }
     else 
     {
@@ -292,7 +290,7 @@ sub gebv_marker_file {
    
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
-
+    
     my $solgs_cache = $c->stash->{solgs_cache_dir};
     my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
     $file_cache->purge();
@@ -316,7 +314,7 @@ sub gebv_kinship_file {
 
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
-
+ 
     my $solgs_cache = $c->stash->{solgs_cache_dir};
     my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
     $file_cache->purge();
@@ -345,6 +343,10 @@ sub blups_file {
 sub download_blups :Path('/download/blups/pop') Args(3) {
     my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
  
+    $self->get_trait_name($c, $trait_id);
+    $c->stash->{pop_id} = $pop_id;
+
+    $self->output_files($c);
     $self->blups_file($c);
     my $blups_file = $c->stash->{blups};
 
@@ -361,6 +363,9 @@ sub download_blups :Path('/download/blups/pop') Args(3) {
 sub download_marker_effects :Path('/download/marker/pop') Args(3) {
     my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
  
+    $self->get_trait_name($c, $trait_id);
+    $c->stash->{pop_id} = $pop_id;
+
     $self->gebv_marker_file($c);
     my $markers_file = $c->stash->{gebv_marker_file};
 
@@ -377,10 +382,10 @@ sub download_marker_effects :Path('/download/marker/pop') Args(3) {
 sub download_urls {
     my ($self, $c) = @_;
     
-    my $pop_id     = $c->stash->{pop_id};
-    my $trait_id   = $c->stash->{trait_id};
-    my $blups_url  = qq | <a href="/download/blups/pop/$pop_id/trait/$trait_id">Download all GEBVs</a> |;
-    my $marker_url = qq | <a href="/download/marker/pop/$pop_id/trait/$trait_id">Download all marker effects</a> |;
+    my $pop_id         = $c->stash->{pop_id};
+    my $trait_id       = $c->stash->{trait_id};
+    my $blups_url      = qq | <a href="/download/blups/pop/$pop_id/trait/$trait_id">Download all GEBVs</a> |;
+    my $marker_url     = qq | <a href="/download/marker/pop/$pop_id/trait/$trait_id">Download all marker effects</a> |;
     my $validation_url = qq | <a href="/download/validation/pop/$pop_id/trait/$trait_id">Download</a> |;
     
     $c->stash(blups_download_url          => $blups_url,
@@ -435,10 +440,19 @@ sub validation_file {
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
 
-    my $solgs_temp_dir = $c->stash->{solgs_tempfiles_dir};
-    my ($fh, $file)    = tempfile("validation_${trait}_${pop_id}-XXXXX", 
-                                  DIR => $solgs_temp_dir,
-        );
+    my $solgs_cache = $c->stash->{solgs_cache_dir};
+    my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
+    $file_cache->purge();
+
+    my $key   = "cross_validation_" . $pop_id . "_".  $trait;
+    my $file  = $file_cache->get($key);
+
+    unless ($file)
+    {      
+        $file = catfile($solgs_cache, "cross_validation_" . $trait . "_" . $pop_id);
+        write_file($file);
+        $file_cache->set($key, $file, '30 days');
+    }
    
     $c->stash->{validation_file} = $file;
 }
@@ -446,6 +460,9 @@ sub validation_file {
 sub download_validation :Path('/download/validation/pop') Args(3) {
     my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
  
+    $self->get_trait_name($c, $trait_id);
+    $c->stash->{pop_id} = $pop_id;
+
     $self->validation_file($c);
     my $validation_file = $c->stash->{validation_file};
 
