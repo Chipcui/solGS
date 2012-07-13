@@ -48,7 +48,6 @@ sub index :Path :Args(0) {
     $c->stash(template=>'home.mas')
 }
 
-
 sub submit :Path('/submit/intro') :Args(0) {
     my ($self, $c) = @_;
     $c->stash(template=>'/submit/intro.mas');
@@ -86,7 +85,6 @@ sub phenotype_form : Path('/form/population/phenotype') Args(0) FormConfig('popu
     }
 
 }
-
 
 sub genotype_form : Path('/form/population/genotype') Args(0) FormConfig('population/genotype.yml') {
     my ($self, $c) = @_;
@@ -195,7 +193,8 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
             );  
     }
 
-}    
+}   
+ 
 sub population :Path('/population') Args(3) {
     my ($self, $c, $pop_id, $key, $trait_id) = @_;
    
@@ -204,7 +203,7 @@ sub population :Path('/population') Args(3) {
         $self->get_trait_name($c, $trait_id);
         $c->stash->{pop_id} = $pop_id;
                
-        $self->run_rrblup($c);
+        $self->get_rrblup_output($c);
         $self->population_files($c);
 
         $c->stash->{template} = "/population.mas";
@@ -221,8 +220,6 @@ sub population_files {
     my ($self, $c) = @_;
     
     #$self->genotype_file($c);
-   # $self->output_files($c);
-   # $self->input_files($c);
     $self->model_accuracy($c);
     $self->blups_file($c);
     $self->download_urls($c);
@@ -282,8 +279,6 @@ sub output_files {
     return $tempfile;
 
 }
-
-
 
 sub gebv_marker_file {
     my ($self, $c) = @_;
@@ -476,7 +471,6 @@ sub download_validation :Path('/download/validation/pop') Args(3) {
 
 }
 
-
 sub model_accuracy {
     my ($self, $c) = @_;
     my $file = $c->stash->{validation_file};
@@ -626,6 +620,20 @@ sub genotype_file :Private {
     }
 
 }
+
+sub get_rrblup_output {
+    my ($self, $c) = @_;
+
+    if (!$self->gebv_kinship_file($c) ||
+        !$self->gebv_marker_file($c)  ||
+        !$self->validation_file($c)  
+        )
+    {
+        $self->run_rrblup($c);
+    }
+
+}
+
 sub run_rrblup  {
     my ($self, $c) = @_;
    
@@ -701,9 +709,6 @@ sub get_solgs_dirs {
         );
 
 }
-
-
-
 
 sub default :Path {
     my ( $self, $c ) = @_; 
