@@ -229,20 +229,22 @@ sub population_files {
 sub input_files {
     my ($self, $c) = @_;
     
+    #$self->genotype_file($c);
     $self->phenotype_file($c);
-
+    $self->traits_to_analyze($c);
+   
     my $pheno_file = $c->stash->{phenotype_file};
-    my $geno_file  = $c->stash->{genotype_file};
-    my $trait      = $c->stash->{trait_abbr};
-    my $pop_id     = $c->stash->{pop_id};
+  #  my $geno_file  = $c->stash->{genotype_file};
+    my $traits_file = $c->stash->{traits_file};
+    my $pop_id      = $c->stash->{pop_id};
 
     my $input_files = join ("\t",
-                            $c->stash->{phenotype_file},
-                            $c->stash->{genotype_file}                        
+                            $pheno_file,
+                            $traits_file                            
         );
 
-    my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
-    my ($fh, $tempfile) = tempfile("input_files_${trait}_$pop_id-XXXXX", 
+    my $tmp_dir         = $c->stash->{solgs_tempfiles_dir};
+    my ($fh, $tempfile) = tempfile("input_files_$pop_id-XXXXX", 
                                    DIR => $tmp_dir
         );
 
@@ -507,6 +509,24 @@ sub get_trait_name {
     $c->stash->{trait_id}   = $trait_id;
     $c->stash->{trait_name} = $trait_name;
     $c->stash->{trait_abbr} = $abbr;
+}
+
+sub traits_to_analyze {
+    my ($self, $c) = @_;
+    
+    #add all selected traits to analyze in tab-delimited format
+    my $pop_id  = $c->stash->{pop_id};
+    my $traits  = $c->stash->{trait_abbr};
+    my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
+    
+    my ($fh, $file) = tempfile("traits_pop_${pop_id}-XXXXX", 
+                               DIR => $tmp_dir
+        );
+
+    $fh->print($traits);
+   
+    $c->stash->{trait_file} = $file;
+
 }
 
 sub abbreviate_term {
