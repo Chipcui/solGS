@@ -203,7 +203,7 @@ sub population :Path('/population') Args(3) {
         $self->get_trait_name($c, $trait_id);
         $c->stash->{pop_id} = $pop_id;
                
-        $self->get_rrblup_ouput($c);
+        $self->get_rrblup_output($c);
         $self->population_files($c);
 
         $c->stash->{template} = "/population.mas";
@@ -288,9 +288,9 @@ sub gebv_marker_file {
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
     
-    my $cache_data = {key        => 'gebv_marker_' . $pop_id . '_'.  $trait,
-                       file      => 'gebv_marker_' . $trait . '_' . $pop_id,
-                       stash_key => 'gebv_marker_file'
+    my $cache_data = {key       => 'gebv_marker_' . $pop_id . '_'.  $trait,
+                      file      => 'gebv_marker_' . $trait . '_' . $pop_id,
+                      stash_key => 'gebv_marker_file'
     };
 
     $self->cache_file($c, $cache_data);
