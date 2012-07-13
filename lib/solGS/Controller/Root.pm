@@ -203,7 +203,7 @@ sub population :Path('/population') Args(3) {
         $self->get_trait_name($c, $trait_id);
         $c->stash->{pop_id} = $pop_id;
                
-        $self->get_rrblup_output($c);
+        $self->get_rrblup_ouput($c);
         $self->population_files($c);
 
         $c->stash->{template} = "/population.mas";
@@ -288,21 +288,12 @@ sub gebv_marker_file {
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
     
-    my $solgs_cache = $c->stash->{solgs_cache_dir};
-    my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
-    $file_cache->purge();
+    my $cache_data = {key        => 'gebv_marker_' . $pop_id . '_'.  $trait,
+                       file      => 'gebv_marker_' . $trait . '_' . $pop_id,
+                       stash_key => 'gebv_marker_file'
+    };
 
-    my $key   = "gebv_marker_" . $pop_id . "_".  $trait;
-    my $file  = $file_cache->get($key);
-
-    unless ($file)
-    {  
-        $file = catfile($solgs_cache, "gebv_marker_" . $trait . "_" . $pop_id);
-        write_file($file);
-        $file_cache->set( $key, $file, '30 days' );        
-    }
-
-    $c->stash->{gebv_marker_file} = $file;
+    $self->cache_file($c, $cache_data);
 
 }
 
@@ -312,22 +303,13 @@ sub gebv_kinship_file {
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
  
-    my $solgs_cache = $c->stash->{solgs_cache_dir};
-    my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
-    $file_cache->purge();
+    my $cache_data = {key       => 'gebv_kinship_' . $pop_id . '_'.  $trait,
+                      file      => 'gebv_kinship_' . $trait . '_' . $pop_id,
+                      stash_key => 'gebv_kinship_file'
+    };
 
-    my $key   = "gebv_kinship_" . $pop_id . "_".  $trait;
-    my $file  = $file_cache->get($key);
+    $self->cache_file($c, $cache_data);
 
-    unless ($file)
-    {      
-        $file = catfile($solgs_cache, "gebv_kinship_" . $trait . "_" . $pop_id);
-        write_file($file);
-        $file_cache->set($key, $file, '30 days');
-    }
-
-    $c->stash->{gebv_kinship_file} = $file;
-   
 }
 
 sub blups_file {
@@ -436,22 +418,14 @@ sub validation_file {
 
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
+    
+    my $cache_data = {key       => 'cross_validation_' . $pop_id . '_'.  $trait, 
+                      file      => 'cross_validation_' . $trait . '_' . $pop_id,
+                      stash_key => 'validation_file'
+    };
 
-    my $solgs_cache = $c->stash->{solgs_cache_dir};
-    my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
-    $file_cache->purge();
+    $self->cache_file($c, $cache_data);
 
-    my $key   = "cross_validation_" . $pop_id . "_".  $trait;
-    my $file  = $file_cache->get($key);
-
-    unless ($file)
-    {      
-        $file = catfile($solgs_cache, "cross_validation_" . $trait . "_" . $pop_id);
-        write_file($file);
-        $file_cache->set($key, $file, '30 days');
-    }
-   
-    $c->stash->{validation_file} = $file;
 }
 
 sub download_validation :Path('/download/validation/pop') Args(3) {
@@ -728,6 +702,25 @@ sub get_solgs_dirs {
               solgs_tempfiles_dir => $solgs_tempfiles
         );
 
+}
+
+sub cache_file {
+    my ($self, $c, $cache_data) = @_;
+    
+    my $solgs_cache = $c->stash->{solgs_cache_dir};
+    my $file_cache  = Cache::File->new(cache_root => $solgs_cache);
+    $file_cache->purge();
+
+    my $file  = $file_cache->get($cache_data->{key});
+
+    unless ($file)
+    {      
+        $file = catfile($solgs_cache, $cache_data->{file});
+        write_file($file);
+        $file_cache->set($cache_data->{key}, $file, '30 days');
+    }
+
+    $c->stash->{$cache_data->{stash_key}} = $file;
 }
 
 sub default :Path {
