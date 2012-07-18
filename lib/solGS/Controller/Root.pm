@@ -566,8 +566,9 @@ sub format_trait_names {
     
     my @rows = split (/\n/, $data);
     
-    $rows[0] =~ s/SP\:\d+\|//g;  
-   
+    $rows[0] =~ s/SP:\d+\|//g;  
+    $rows[0] =~ s/\w+:\w+\|//g;
+
     my @headers = split(/\t/, $rows[0]);
     
     my $header;
