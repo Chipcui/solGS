@@ -618,13 +618,16 @@ sub genotype_file :Private {
 sub get_rrblup_output {
     my ($self, $c) = @_;
 
-    if (!$self->gebv_kinship_file($c) ||
-        !$self->gebv_marker_file($c)  ||
-        !$self->validation_file($c)  
-        )
-    {
+    $self->gebv_kinship_file($c);
+    $self->gebv_marker_file($c);
+    $self->validation_file($c); 
+    
+    if (-s $c->stash->{gebv_kinship_file} == 0 ||
+        -s $c->stash->{gebv_marker_file}  == 0 ||
+        -s $c->stash->{validation_file}   == 0)
+     {
         $self->run_rrblup($c);
-    }
+     }
 
 }
 
