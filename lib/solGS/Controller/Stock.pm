@@ -96,8 +96,12 @@ sub solgs_download_phenotypes : Path('/solgs/phenotypes') Args(1) {
     my ($self, $c, $stock_id ) = @_; # stock should be population type only?
     
     if ($stock_id) {
-        $c->model('solGS')->phenotype_data($c, $stock_id);
-        my $d = $c->stash->{phenotype_data};  
+        
+        $c->stash->{pop_id} = $stock_id;
+        $c->controller('Root')->phenotype_file($c);
+        
+        my $d = read_file($c->stash->{phenotype_file});
+              
         my @info  = split(/\n/ , $d);
         my @data;
        
@@ -119,7 +123,7 @@ sub solgs_download_phenotypes : Path('/solgs/phenotypes') Args(1) {
 sub download_genotypes : Path('genotypes') Args(1) {
     my ($self, $c, $stock_id ) = @_;
     my $stock = $c->stash->{stock_row};
-    my $stock_id = $stock->stock_id;
+    $stock_id = $stock->stock_id;
     my $stock_name = $stock->uniquename;
     if ($stock_id) {
         my $tmp_dir = $c->get_conf('basepath') . "/" . $c->get_conf('stock_tempfiles');
