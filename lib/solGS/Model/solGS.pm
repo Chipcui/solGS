@@ -89,23 +89,25 @@ sub search_trait {
     
     my $rs;
     if ($trait)
-    {
+    {       
         $rs = $self->schema($c)->resultset("Phenotype::Phenotype")
             ->search({})
-            ->search_related('phenotype_cvterms')
-            ->search_related('cvterm', 
-                             {'cvterm.name' => {'LIKE' => '%' . $trait . '%'}
+            ->search_related('observable', 
+                             {
+                                 'observable.name' => {'iLIKE' => '%' . $trait . '%'}
                              },
                              {
                                  columns => [ qw/ cvterm_id name definition / ] 
                              },    
-                             { distinct =>1,
-                               page     => $c->req->param('page') || 1,
-                               rows     => 10,
-                               order_by => 'name'              
+                             { 
+                                 distinct => 1,
+                                 page     => $c->req->param('page') || 1,
+                                 rows     => 10,
+                                 order_by => 'name'              
                              },                                                        
             );             
     }
+
     return $rs;      
 }
 
@@ -116,8 +118,8 @@ sub search_populations {
         ->search( {name => {'ilike' => 'member_of'}})
         ->single
         ->cvterm_id;
-                                                                   
-    my $rs = $self->schema($c)->resultset("Phenotype::Phenotype")
+   
+       my $rs = $self->schema($c)->resultset("Phenotype::Phenotype")
         ->search( {'observable_id'  =>  $trait_id})
         ->search_related('nd_experiment_phenotypes')
         ->search_related('nd_experiment')
@@ -167,7 +169,7 @@ sub phenotype_data {
      {
          my $results  = [];                                    
          my $stock_rs = $self->schema($c)->resultset("Stock::Stock")->search( { stock_id => $pop_id } );
-         $results     =  $self->schema($c)->resultset("Stock::Stock")->recursive_phenotypes_rs($stock_rs, $results);
+         $results     = $self->schema($c)->resultset("Stock::Stock")->recursive_phenotypes_rs($stock_rs, $results);
          my $report   = Bio::Chado::NaturalDiversity::Reports->new;
          my $data     = $report->phenotypes_by_trait($results);
       
