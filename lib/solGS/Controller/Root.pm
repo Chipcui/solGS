@@ -232,24 +232,24 @@ sub input_files {
     #$self->genotype_file($c);
     $self->phenotype_file($c);
     $self->traits_to_analyze($c);
-   
+    my $trait  = $c->stash->{trait_abbr}; 
     my $pheno_file = $c->stash->{phenotype_file};
   #  my $geno_file  = $c->stash->{genotype_file};
     my $traits_file = $c->stash->{traits_file};
     my $pop_id      = $c->stash->{pop_id};
-
+   
     my $input_files = join ("\t",
                             $pheno_file,
                             $traits_file                            
         );
 
     my $tmp_dir         = $c->stash->{solgs_tempfiles_dir};
-    my ($fh, $tempfile) = tempfile("input_files_$pop_id-XXXXX", 
+    my ($fh, $tempfile) = tempfile("input_files_${pop_id}-XXXXX", 
                                    DIR => $tmp_dir
         );
 
     $fh->print($input_files);
-    
+   
     return $tempfile;
   
 }
@@ -499,7 +499,7 @@ sub traits_to_analyze {
 
     $fh->print($traits);
    
-    $c->stash->{trait_file} = $file;
+    $c->stash->{traits_file} = $file;
 
 }
 
@@ -667,7 +667,7 @@ sub run_rrblup  {
         my $r_process = CXGN::Tools::Run->run_cluster(
             'R', 'CMD', 'BATCH',
             '--slave',
-            "--args $input_files, $output_files",
+            "--args $input_files $output_files",
             $r_in_temp,
             $r_out_temp,
             {
@@ -792,7 +792,7 @@ sub auto : Private {
                 password => $sp_person->get_password(),
             });
         }
-    }
+   }
 
     return 1;
 }
