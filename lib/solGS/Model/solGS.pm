@@ -124,13 +124,20 @@ sub search_populations {
         ->search_related('object')
         ->search_related('stock_relationship_subjects');
 
-    my @pop_ids;    
+    my @stock_ids;    
     while (my $row = $rs->next)
     {                    
-        push @pop_ids, $row->object_id;
+        push @stock_ids, $row->object_id;
     }
 
-    @pop_ids = uniq(@pop_ids);
+    @stock_ids = uniq @stock_ids;
+
+    my @pop_ids;
+    foreach my $st (@stock_ids)
+    {
+        push @pop_ids, $st  if ($self->check_stock_type($c, $st) eq 'population');
+    }
+
     return \@pop_ids;
 
 }
@@ -156,6 +163,20 @@ sub trait_name {
 
     return $trait_name;
 
+}
+
+sub check_stock_type {
+    my ($self, $c, $stock_id) = @_;
+
+    my $type_id = $self->schema($c)->resultset("Stock::Stock")
+        ->search({'stock_id' => $stock_id})
+        ->single
+        ->type_id;
+
+    return $self->schema($c)->resultset('Cv::Cvterm')
+        ->search({cvterm_id => $type_id})
+        ->single
+        ->name;
 }
 
 sub phenotype_data {
