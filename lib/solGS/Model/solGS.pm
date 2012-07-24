@@ -4,9 +4,9 @@ use Moose;
 use namespace::autoclean;
 use Bio::Chado::Schema;
 use Bio::Chado::NaturalDiversity::Reports;
-use File::Path qw/ mkpath /;
+use File::Path qw / mkpath /;
 use File::Spec::Functions;
-
+use List::MoreUtils qw / uniq /;
 
 extends 'Catalyst::Model';
 
@@ -113,28 +113,24 @@ sub search_trait {
 
 sub search_populations {
     my ($self, $c, $trait_id) = @_;
-
-    my $type_id = $self->schema($c)->resultset('Cv::Cvterm')
-        ->search( {name => {'ilike' => 'member_of'}})
-        ->single
-        ->cvterm_id;
-   
-       my $rs = $self->schema($c)->resultset("Phenotype::Phenotype")
-        ->search( {'observable_id'  =>  $trait_id})
+    
+    my $rs = $self->schema($c)->resultset("Phenotype::Phenotype")
+        ->search({'observable_id' =>  $trait_id})
         ->search_related('nd_experiment_phenotypes')
         ->search_related('nd_experiment')
         ->search_related('nd_experiment_stocks')
         ->search_related('stock')
-        ->search_related('stock_relationship_subjects', 
-                         {'stock_relationship_subjects.type_id' => $type_id}
-        );
- 
-    my @pop_ids;
+        ->search_related('stock_relationship_subjects')
+        ->search_related('object')
+        ->search_related('stock_relationship_subjects');
+
+    my @pop_ids;    
     while (my $row = $rs->next)
-    {       
+    {                    
         push @pop_ids, $row->object_id;
     }
 
+    @pop_ids = uniq(@pop_ids);
     return \@pop_ids;
 
 }
