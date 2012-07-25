@@ -14,8 +14,11 @@ inFile <- grep("input_files",
                perl = TRUE,
                value = TRUE
                )
-
+print("input files start reading")
 print(inFile)
+
+
+
 outFile <- grep("output_files",
                 allArgs,
                 ignore.case = TRUE,
@@ -24,21 +27,37 @@ outFile <- grep("output_files",
                 )
 
 outFiles <- scan(outFile,
-                 what="character"
+                 what = "character"
                  )
 print(outFile)
 print(outFiles)
 
+inFiles <- scan(inFile,
+                what = "character"
+                )
+
+print("input files end reading")
+
+traitsFile <- grep("traits",
+                   inFiles,
+                   ignore.case = TRUE,
+                   fixed = FALSE,
+                   value = TRUE
+                   )
+print(inFile)
+print("traits")
+print(traitsFile)
+
 phenoFile <- grep("pheno",
-                  inFile,
+                  inFiles,
                   ignore.case = TRUE,
                   fixed = FALSE,
                   value = TRUE
                   )
 
 genoFile <- grep("geno",
-                 inFile,
-                 ignore.case=TRUE,
+                 inFiles,
+                 ignore.case = TRUE,
                  fixed = FALSE,
                  value = TRUE
                )
@@ -55,18 +74,18 @@ print(validationFile)
 
 blupFile <- grep("kinship",
                  outFiles,
-                 ignore.case=TRUE,
+                 ignore.case = TRUE,
                  fixed = FALSE,
-                 value=TRUE
+                 value = TRUE
                  )
 
 print(blupFile)
 
 markerFile <- grep("marker",
                    outFiles,
-                   ignore.case=TRUE,
+                   ignore.case = TRUE,
                    fixed = FALSE,
-                   value=TRUE
+                   value = TRUE
                    )
 print(markerFile)
 
