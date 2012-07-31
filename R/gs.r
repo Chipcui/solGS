@@ -29,40 +29,6 @@ outFile <- grep("output_files",
 outFiles <- scan(outFile,
                  what = "character"
                  )
-print(outFile)
-print(outFiles)
-
-inFiles <- scan(inFile,
-                what = "character"
-                )
-
-print("input files end reading")
-
-traitsFile <- grep("traits",
-                   inFiles,
-                   ignore.case = TRUE,
-                   fixed = FALSE,
-                   value = TRUE
-                   )
-print(inFile)
-print("traits")
-print(traitsFile)
-
-phenoFile <- grep("pheno",
-                  inFiles,
-                  ignore.case = TRUE,
-                  fixed = FALSE,
-                  value = TRUE
-                  )
-
-genoFile <- grep("geno",
-                 inFiles,
-                 ignore.case = TRUE,
-                 fixed = FALSE,
-                 value = TRUE
-               )
-
-print(phenoFile)
 
 validationFile <- grep("validation",
                        outFiles,
@@ -70,7 +36,6 @@ validationFile <- grep("validation",
                        fixed = FALSE,
                        value=TRUE
                        )
-print(validationFile)
 
 blupFile <- grep("kinship",
                  outFiles,
@@ -79,31 +44,65 @@ blupFile <- grep("kinship",
                  value = TRUE
                  )
 
-print(blupFile)
-
 markerFile <- grep("marker",
                    outFiles,
                    ignore.case = TRUE,
                    fixed = FALSE,
                    value = TRUE
                    )
-print(markerFile)
 
-#test
-#validationFile <- c("/data/prod/tmp/solgs/tecle/tempfiles/validation.txt")
-#blupFile <- c("/data/prod/tmp/solgs/tecle/tempfiles/top_blup.txt")
-#markerFile <- c("/data/prod/tmp/solgs/tecle/tempfiles/marker_effects.txt")
-phenoFile <- c("/home/tecle/Desktop/R data/Genomic Selection/barley_jl/cap123Don_sorted.csv")
-genoFile <- c("/home/tecle/Desktop/R data/Genomic Selection/barley_jl/cap123geno_sorted.csv")
-###
+inFiles <- scan(inFile,
+                what = "character"
+                )
+
+traitsFile <- grep("traits",
+                   inFiles,
+                   ignore.case = TRUE,
+                   fixed = FALSE,
+                   value = TRUE
+                   )
+
+trait <- scan(traitsFile,
+               what = "character",
+               )
+
+phenoFile <- grep("pheno",
+                  inFiles,
+                  ignore.case = TRUE,
+                  fixed = FALSE,
+                  value = TRUE
+                  )
 
 phenoData <- read.table(phenoFile,
                         header = TRUE,
-                        row.names = 1,
-                        sep = ",",
+                        row.names = 3,
+                        sep = "\t",
                         na.strings = c("NA", " ", "--", "-"),
                         dec = "."
                         )
+
+phenoData <- data.matrix(phenoData[order(row.names(phenoData)), ])
+
+#dropColumns <- c("uniquename", "stock_id")
+#phenoData <- phenoData[,!(names(phenoData) %in% dropColumns)]
+#print("dropped fields")
+print(phenoData)
+
+phenoTrait <- subset(phenoData,
+                     select = c(trait)
+                     )
+print("select pheno trait")
+print(phenoTrait)
+#phenoData <- phenoTrait
+
+genoFile <- grep("geno",
+                 inFiles,
+                 ignore.case = TRUE,
+                 fixed = FALSE,
+                 value = TRUE
+                 )
+
+genoFile <- c("/home/tecle/Desktop/R data/Genomic Selection/barley_jl/cap123geno_sorted.csv")
 
 genoData <- read.table(genoFile,
                        header = TRUE,
@@ -112,19 +111,26 @@ genoData <- read.table(genoFile,
                        na.strings = c("NA", " ", "--", "-"),
                        dec = "."
                       )
-#add checks for all input data
 
-#convert dataframes into data matrix
-phenoDataMatrix <- data.matrix(phenoData)
-genoDataMatrix <- data.matrix(genoData)
-genoDataMatrix <- round(genoDataMatrix, digits = 1)
+genoData <- data.matrix(genoData[order(row.names(genoData)), ])
+
+#add checks for all input data
+genotypesDiff <- setdiff(row.names(phenoTrait), row.names(genoData))
+
+if (length(genotypesDiff) > 0)
+  stop("Genotypes in the phenotype and genotype datasets don't match.")
+
+
+phenoTrait <- data.matrix(phenoTrait)
+genoDataMatrix  <- data.matrix(genoData)
+genoDataMatrix  <- round(genoDataMatrix, digits = 1)
 
 
 #use REML (default) to calculate variance components
 
 #calculate GEBV using marker effects (as random effects)
 #genoDataMatrix<-round(genoDataMatrix)
-markerGEBV <- mixed.solve(y = phenoDataMatrix,
+markerGEBV <- mixed.solve(y = phenoTrait,
                           Z = genoDataMatrix
                           )
 ordered.markerGEBV2 <- data.matrix(markerGEBV$u)
@@ -143,9 +149,9 @@ colnames(ordered.markerGEBV2) <-c("Marker Effects")
 genocrsprd<-tcrossprod(genoDataMatrix)
 
 #construct an identity matrix for genotypes
-identityMatrix <- diag(nrow(phenoDataMatrix))
+identityMatrix <- diag(nrow(phenoTrait))
                      
-iGEBV <- mixed.solve(y = phenoDataMatrix,
+iGEBV <- mixed.solve(y = phenoTrait,
                      Z = identityMatrix,
                      K = genocrsprd
                      )
@@ -163,7 +169,7 @@ iGEBV <- data.matrix(iGEBVu)
 ordered.iGEBV <- as.data.frame(iGEBV [order(-iGEBV[, 1]), ] )
 
 ordered.iGEBV <- round(data.matrix(ordered.iGEBV),
-                       digits=2
+                       digits = 2
                        )
 
 colnames(ordered.iGEBV) <- c("blup")
@@ -173,12 +179,12 @@ colnames(ordered.iGEBV) <- c("blup")
                      
 #cross-validation
 
-reps <- round_any(nrow(phenoDataMatrix), 10, f = ceiling) %/% 10
+reps <- round_any(nrow(phenoTrait), 10, f = ceiling) %/% 10
 
-genotypeGroups <- rep(1:10, reps) [- (nrow(phenoDataMatrix) %% 10)]
+genotypeGroups <- rep(1:10, reps) [- (nrow(phenoTrait) %% 10)]
 
 set.seed(4567)                                   
-genotypeGroups <- genotypeGroups[order (runif(nrow(phenoDataMatrix))) ]                     
+genotypeGroups <- genotypeGroups[order (runif(nrow(phenoTrait))) ]                     
 
 ##convert genotype values from [1,2] to [0,1]
 genoDataMatrix <- genoDataMatrix - 1
@@ -198,7 +204,7 @@ for (i in 1:10)
 
   kblup <- paste("rKblup", i, sep = ".")
   
-  result <- kinship.BLUP(y = phenoDataMatrix[trG],
+  result <- kinship.BLUP(y = phenoTrait[trG],
                          G.train = genoDataMatrix[trG, ],
                          G.pred = genoDataMatrix[slG, ],
                          mixed.method = "REML",
@@ -208,7 +214,7 @@ for (i in 1:10)
   assign(kblup, result)
  
 #calculate cross-validation accuracy
-  accuracy <- try(cor(result$g.pred, phenoDataMatrix[slG]))
+  accuracy <- try(cor(result$g.pred, phenoTrait[slG]))
 
   validation <- paste("validation", i, sep = ".")
 
@@ -243,8 +249,6 @@ if (is.null(validationAll) == FALSE)
     validationAll <- rbind(validationAll, validationMean)
     colnames(validationAll) <- c("Correlation")
   }
-
-
 
 if(is.null(validationAll) == FALSE)
     {
