@@ -492,7 +492,7 @@ sub traits_to_analyze {
     my $pop_id  = $c->stash->{pop_id};
     my $traits  = $c->stash->{trait_abbr};
     my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
-    
+ 
     my ($fh, $file) = tempfile("traits_pop_${pop_id}-XXXXX", 
                                DIR => $tmp_dir
         );
@@ -551,7 +551,7 @@ sub phenotype_file {
         $c->model('solGS')->phenotype_data($c, $pop_id);
         my $data = $c->stash->{phenotype_data};
                
-        $data = $self->format_trait_names($data);    
+        $data = $self->format_phenotype_dataset($data);
         write_file($pheno_file, $data);
 
         $file_cache->set($key, $pheno_file, '30 days');
@@ -561,14 +561,14 @@ sub phenotype_file {
 
 }
 
-sub format_trait_names {
+sub format_phenotype_dataset {
     my ($self, $data) = @_;
     
     my @rows = split (/\n/, $data);
     
     $rows[0] =~ s/SP:\d+\|//g;  
     $rows[0] =~ s/\w+:\w+\|//g;
-
+  
     my @headers = split(/\t/, $rows[0]);
     
     my $header;
@@ -585,10 +585,10 @@ sub format_trait_names {
     }
     
     $rows[0] = $header;
-
     
     foreach (@rows)
     {
+        $_ =~ s/\s+plot//g;
         $_ .= "\n";
     }
 
