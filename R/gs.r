@@ -58,9 +58,13 @@ traitsFile <- grep("traits",
                    value = TRUE
                    )
 
-trait <- scan(traitsFile,
+traits <- scan(traitsFile,
                what = "character",
                )
+
+traitList<-strsplit(traits, "\t");
+traitsTotal<-length(traitList)
+trait<-traitList[[1]]
 
 phenoFile <- grep("pheno",
                   inFiles,
