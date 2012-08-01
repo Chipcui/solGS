@@ -14,10 +14,6 @@ inFile <- grep("input_files",
                perl = TRUE,
                value = TRUE
                )
-print("input files start reading")
-print(inFile)
-
-
 
 outFile <- grep("output_files",
                 allArgs,
@@ -81,19 +77,14 @@ phenoData <- read.table(phenoFile,
                         dec = "."
                         )
 
-phenoData <- data.matrix(phenoData[order(row.names(phenoData)), ])
+phenoData <- phenoData[order(row.names(phenoData)), ]
 
-#dropColumns <- c("uniquename", "stock_id")
-#phenoData <- phenoData[,!(names(phenoData) %in% dropColumns)]
-#print("dropped fields")
-print(phenoData)
+dropColumns <- c("uniquename", "stock_id")
+phenoData   <- phenoData[,!(names(phenoData) %in% dropColumns)]
 
 phenoTrait <- subset(phenoData,
                      select = c(trait)
                      )
-print("select pheno trait")
-print(phenoTrait)
-#phenoData <- phenoTrait
 
 genoFile <- grep("geno",
                  inFiles,
