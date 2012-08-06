@@ -26,27 +26,6 @@ outFiles <- scan(outFile,
                  what = "character"
                  )
 
-validationFile <- grep("validation",
-                       outFiles,
-                       ignore.case=TRUE,
-                       fixed = FALSE,
-                       value=TRUE
-                       )
-
-blupFile <- grep("kinship",
-                 outFiles,
-                 ignore.case = TRUE,
-                 fixed = FALSE,
-                 value = TRUE
-                 )
-
-markerFile <- grep("marker",
-                   outFiles,
-                   ignore.case = TRUE,
-                   fixed = FALSE,
-                   value = TRUE
-                   )
-
 inFiles <- scan(inFile,
                 what = "character"
                 )
@@ -58,13 +37,58 @@ traitsFile <- grep("traits",
                    value = TRUE
                    )
 
-traits <- scan(traitsFile,
+traitFile <- grep("trait_",
+                   inFiles,
+                   ignore.case = TRUE,
+                   fixed = FALSE,
+                   value = TRUE
+                   )
+
+## traits <- scan(traitsFile,
+##                what = "character",
+##                )
+
+trait <- scan(traitFile,
                what = "character",
                )
 
-traitList<-strsplit(traits, "\t");
-traitsTotal<-length(traitList)
-trait<-traitList[[1]]
+#traitList<-strsplit(traits, "\t");
+#traitsTotal<-length(traitList)
+#trait<-traitList[[1]]
+print("trait")
+#print(traitsTotal)
+print(trait)
+
+validationTrait <- paste("validation", trait, sep = "_")
+
+print(validationTrait)
+validationFile  <- grep(validationTrait,
+                        outFiles,
+                        ignore.case=TRUE,
+                        fixed = FALSE,
+                        value=TRUE
+                        )
+print(validationFile)
+kinshipTrait <- paste("kinship", trait, sep = "_")
+
+print(kinshipTrait)
+blupFile <- grep(kinshipTrait,
+                 outFiles,
+                 ignore.case = TRUE,
+                 fixed = FALSE,
+                 value = TRUE
+                 )
+print(blupFile)
+
+markerTrait <- paste("marker", trait, sep = "_")
+print(markerTrait)
+markerFile  <- grep(markerTrait,
+                   outFiles,
+                   ignore.case = TRUE,
+                   fixed = FALSE,
+                   value = TRUE
+                   )
+print(markerFile)
 
 phenoFile <- grep("pheno",
                   inFiles,
@@ -117,8 +141,8 @@ if (length(genotypesDiff) > 0)
 
 
 phenoTrait <- data.matrix(phenoTrait)
-genoDataMatrix  <- data.matrix(genoData)
-genoDataMatrix  <- round(genoDataMatrix, digits = 1)
+genoDataMatrix <- data.matrix(genoData)
+genoDataMatrix <- round(genoDataMatrix, digits = 1)
 
 
 #use REML (default) to calculate variance components
@@ -134,14 +158,14 @@ ordered.markerGEBV2 <- round(ordered.markerGEBV2,
                              digits=2
                              )
 
-colnames(ordered.markerGEBV2) <-c("Marker Effects")
+colnames(ordered.markerGEBV2) <- c("Marker Effects")
 
 #additive relationship model
 #calculate the inner products for
 #genotypes (realized relationship matrix)
 #(change genotype coding to [-1, 0, 1], to use the A.mat )
 
-genocrsprd<-tcrossprod(genoDataMatrix)
+genocrsprd <- tcrossprod(genoDataMatrix)
 
 #construct an identity matrix for genotypes
 identityMatrix <- diag(nrow(phenoTrait))
@@ -261,6 +285,7 @@ if(is.null(validationAll) == FALSE)
 if(is.null(ordered.iGEBV) == FALSE)
     {
       print("kinship start")
+      print(ordered.iGEBV)
       write.table(ordered.iGEBV,
                   file = blupFile,
                   sep = "\t",
