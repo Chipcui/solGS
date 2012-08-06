@@ -232,15 +232,19 @@ sub input_files {
     #$self->genotype_file($c);
     $self->phenotype_file($c);
     $self->traits_to_analyze($c);
-    my $trait  = $c->stash->{trait_abbr}; 
+
+   
     my $pheno_file = $c->stash->{phenotype_file};
-  #  my $geno_file  = $c->stash->{genotype_file};
+    #  my $geno_file  = $c->stash->{genotype_file};
+   # my $trait       = $c->stash->{trait_abbr}; 
     my $traits_file = $c->stash->{traits_file};
+    my $trait_file  = $c->stash->{trait_file};
     my $pop_id      = $c->stash->{pop_id};
    
     my $input_files = join ("\t",
                             $pheno_file,
-                            $traits_file                            
+                            $traits_file,
+                            $trait_file
         );
 
     my $tmp_dir         = $c->stash->{solgs_tempfiles_dir};
@@ -250,7 +254,7 @@ sub input_files {
 
     $fh->print($input_files);
    
-    return $tempfile;
+    $c->stash->{input_files} = $tempfile;
   
 }
 
@@ -278,7 +282,7 @@ sub output_files {
 
     $fh->print($file_list);
     
-    return $tempfile;
+    $c->stash->{output_files} = $tempfile;
 
 }
 
@@ -419,7 +423,7 @@ sub validation_file {
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
     
-    my $cache_data = {key       => 'cross_validation_' . $pop_id . '_'.  $trait, 
+    my $cache_data = {key       => 'cross_validation_' . $pop_id . '_' . $trait, 
                       file      => 'cross_validation_' . $trait . '_' . $pop_id,
                       stash_key => 'validation_file'
     };
@@ -491,15 +495,21 @@ sub traits_to_analyze {
     #add all selected traits to analyze in tab-delimited format
     my $pop_id  = $c->stash->{pop_id};
     my $traits  = $c->stash->{trait_abbr};
+    my $traits  = "FHB" . "\t" . "DON";
     my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
  
-    my ($fh, $file) = tempfile("traits_pop_${pop_id}-XXXXX", 
+    my ($fh, $file) = tempfile("traits_all_pop_${pop_id}-XXXXX", 
                                DIR => $tmp_dir
         );
 
     $fh->print($traits);
-   
+    
+    my ($fh2, $file2) = tempfile("trait_pop_${pop_id}-XXXXX", 
+                               DIR => $tmp_dir
+        );
+  
     $c->stash->{traits_file} = $file;
+    $c->stash->{trait_file} = $file2;
 
 }
 
@@ -619,16 +629,49 @@ sub genotype_file :Private {
 sub get_rrblup_output {
     my ($self, $c) = @_;
 
-    $self->gebv_kinship_file($c);
-    $self->gebv_marker_file($c);
-    $self->validation_file($c); 
-    
+
     if (-s $c->stash->{gebv_kinship_file} == 0 ||
         -s $c->stash->{gebv_marker_file}  == 0 ||
         -s $c->stash->{validation_file}   == 0)
-     {
-        $self->run_rrblup($c);
-     }
+    {                   
+        my $pop_id = $c->stash->{pop_id};
+        $self->input_files($c);
+        my $input_files = $c->stash->{input_files};
+
+        my $traits_file = $c->stash->{traits_file};
+        my @traits = split(/\t/, read_file($traits_file));
+    
+        foreach (@traits) 
+        {            
+            # for test purpose
+            if ($_ eq 'FHB') 
+            {  
+                $c->stash->{trait_id} = 76438; 
+                $c->stash->{trait_abbr} = 'FHB';                          
+            } 
+       
+            if ($_ eq 'DON') 
+            {  
+                $c->stash->{trait_id} = 76439; 
+                $c->stash->{trait_abbr} = 'DON'; 
+            }
+        
+            my $trait = $c->stash->{trait_abbr}; 
+            my $trait_file = $c->stash->{trait_file}; 
+        
+            write_file($trait_file, $trait);
+
+            #$c->stash->{traits_file} = $file;
+    
+            # write_file($file, $trait);
+            $self->output_files($c);
+            $self->run_rrblup($c);
+
+            # $self->gebv_kinship_file($c);
+            # $self->gebv_marker_file($c);
+            # $self->validation_file($c);       
+        }
+    }
 
 }
 
@@ -639,8 +682,9 @@ sub run_rrblup  {
     #run rrblup and save output in solgs user dir
     my $pop_id       = $c->stash->{pop_id};
     my $trait_id     = $c->stash->{trait_id};
-    my $input_files  = $self->input_files($c);
-    my $output_files = $self->output_files($c);
+    my $input_files  = $c->stash->{input_files};
+    my $output_files = $c->stash->{output_files};
+   
    
     CXGN::Tools::Run->temp_base($c->stash->{solgs_tempfiles_dir});
     my ( $r_in_temp, $r_out_temp ) =
