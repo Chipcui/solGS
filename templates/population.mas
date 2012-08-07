@@ -8,6 +8,7 @@ $blups_download_url
 $marker_effects_download_url
 $top_marker_effects
 $validation_download_url
+$trait_abbr
 
 </%args>
 
@@ -18,7 +19,7 @@ my $submit_new = qq | <a href="/submit/intro">Submit QTL population</a> |;
 </%perl>
 
 <& /page/page_title.mas, 
-   title => 'Population something'
+   title => "Genomic Selection Model for $trait_abbr"
 &>
 
 <&| /page/info_section.mas, 
