@@ -202,7 +202,7 @@ sub population :Path('/population') Args(3) {
     {   
         $self->get_trait_name($c, $trait_id);
         $c->stash->{pop_id} = $pop_id;
-               
+                      
         $self->get_rrblup_output($c);
         $self->population_files($c);
 
@@ -220,6 +220,7 @@ sub population_files {
     my ($self, $c) = @_;
     
     #$self->genotype_file($c);
+    $self->output_files($c);
     $self->model_accuracy($c);
     $self->blups_file($c);
     $self->download_urls($c);
@@ -232,8 +233,7 @@ sub input_files {
     #$self->genotype_file($c);
     $self->phenotype_file($c);
     $self->traits_to_analyze($c);
-
-   
+  
     my $pheno_file = $c->stash->{phenotype_file};
     #  my $geno_file  = $c->stash->{genotype_file};
    # my $trait       = $c->stash->{trait_abbr}; 
@@ -629,6 +629,7 @@ sub genotype_file :Private {
 sub get_rrblup_output {
     my ($self, $c) = @_;
 
+    $self->output_files($c);
 
     if (-s $c->stash->{gebv_kinship_file} == 0 ||
         -s $c->stash->{gebv_marker_file}  == 0 ||
@@ -661,15 +662,8 @@ sub get_rrblup_output {
         
             write_file($trait_file, $trait);
 
-            #$c->stash->{traits_file} = $file;
-    
-            # write_file($file, $trait);
             $self->output_files($c);
-            $self->run_rrblup($c);
-
-            # $self->gebv_kinship_file($c);
-            # $self->gebv_marker_file($c);
-            # $self->validation_file($c);       
+            $self->run_rrblup($c);     
         }
     }
 
