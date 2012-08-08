@@ -5,6 +5,8 @@ options(echo = FALSE)
 
 library(rrBLUP)
 library(plyr)
+#library(sendmailR)
+library(mail)
 
 allArgs <- commandArgs()
 
@@ -55,40 +57,33 @@ trait <- scan(traitFile,
 #traitList<-strsplit(traits, "\t");
 #traitsTotal<-length(traitList)
 #trait<-traitList[[1]]
-print("trait")
-#print(traitsTotal)
-print(trait)
 
 validationTrait <- paste("validation", trait, sep = "_")
 
-print(validationTrait)
 validationFile  <- grep(validationTrait,
                         outFiles,
                         ignore.case=TRUE,
                         fixed = FALSE,
                         value=TRUE
                         )
-print(validationFile)
+
 kinshipTrait <- paste("kinship", trait, sep = "_")
 
-print(kinshipTrait)
 blupFile <- grep(kinshipTrait,
                  outFiles,
                  ignore.case = TRUE,
                  fixed = FALSE,
                  value = TRUE
                  )
-print(blupFile)
 
 markerTrait <- paste("marker", trait, sep = "_")
-print(markerTrait)
+
 markerFile  <- grep(markerTrait,
                    outFiles,
                    ignore.case = TRUE,
                    fixed = FALSE,
                    value = TRUE
                    )
-print(markerFile)
 
 phenoFile <- grep("pheno",
                   inFiles,
@@ -179,7 +174,7 @@ iGEBV <- mixed.solve(y = phenoTrait,
 #correlation between breeding values based on
 #marker effects and relationship matrix
 corGEBVs <- cor(genoDataMatrix %*% markerGEBV$u, iGEBV$u)
-print(corGEBVs)
+#print(corGEBVs)
 
 iGEBVu <- iGEBV$u
 #iGEBVu<-iGEBVu[order(-ans$u), ]
@@ -308,5 +303,16 @@ if(is.null(ordered.markerGEBV2) == FALSE)
                   )
       print("marker file end")
     }
+#should also send notification to analysis owner
+to      <- c("<sgn-db-curation@sgn.cornell.edu>")
+subject <- paste(trait, ' GS analysis done', sep = ':')
+body    <- c("Dear User,\n\n")
+body    <- paste(body, 'The genomic selection analysis for', sep = "")
+body    <- paste(body, trait, sep = " ")
+body    <- paste(body, "is done.\n\nRegards and Thanks.\nSGN", sep = " ")
+
+#should use SGN's smtp server eventually
+sendmail(to,  subject, body, password = "rmail")
+
 
 q(save = "no", runLast = FALSE)
