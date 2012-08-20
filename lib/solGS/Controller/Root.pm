@@ -495,7 +495,7 @@ sub traits_to_analyze {
     #add all selected traits to analyze in tab-delimited format
     my $pop_id  = $c->stash->{pop_id};
     my $traits  = $c->stash->{trait_abbr};
-    my $traits  = "FHB" . "\t" . "DON";
+   # my $traits  = "FHB" . "\t" . "DON";
     my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
  
     my ($fh, $file) = tempfile("traits_all_pop_${pop_id}-XXXXX", 
@@ -548,7 +548,9 @@ sub abbreviate_term {
 sub phenotype_file {
     my ($self, $c) = @_;
     my $pop_id     = $c->stash->{pop_id};
- 
+    
+    die "Population id must be provided to get the phenotype data set." if !$pop_id;
+  
     my $file_cache  = Cache::File->new(cache_root => $c->stash->{solgs_cache_dir});
     $file_cache->purge();
    
@@ -560,7 +562,7 @@ sub phenotype_file {
         $pheno_file = catfile($c->stash->{solgs_cache_dir}, "phenotype_data_" . $pop_id . ".txt");
         $c->model('solGS')->phenotype_data($c, $pop_id);
         my $data = $c->stash->{phenotype_data};
-               
+  
         $data = $self->format_phenotype_dataset($data);
         write_file($pheno_file, $data);
 
@@ -679,7 +681,11 @@ sub run_rrblup  {
     my $input_files  = $c->stash->{input_files};
     my $output_files = $c->stash->{output_files};
    
-   
+    die "\nCan't run rrblup without a trait id." if !$trait_id;
+    die "\nCan't run rrblup without a population id." if !$pop_id;
+    die "\nCan't run rrblup without input files." if !$input_files;
+    die "\nCan't run rrblup without output files." if !$output_files;    
+
     CXGN::Tools::Run->temp_base($c->stash->{solgs_tempfiles_dir});
     my ( $r_in_temp, $r_out_temp ) =
         map 
