@@ -491,7 +491,7 @@ sub get_trait_name {
 
 sub traits_to_analyze {
     my ($self, $c) = @_;
-    
+    $self->get_all_traits($c);
     #add all selected traits to analyze in tab-delimited format
     my $pop_id  = $c->stash->{pop_id};
     my $traits  = $c->stash->{trait_abbr};
@@ -510,6 +510,37 @@ sub traits_to_analyze {
   
     $c->stash->{traits_file} = $file;
     $c->stash->{trait_file} = $file2;
+
+}
+
+sub get_all_traits {
+    my ($self, $c) = @_;
+    
+    my $pheno_file = $c->stash->{phenotype_file};
+    
+    open my $ph, "<", $pheno_file or die "$pheno_file:$!\n";
+    my $headers = <$ph>;
+    $headers =~ s/uniquename\t|stock_id\t|stock_name\t//g;
+    $ph->close;
+
+    $self->all_traits_file($c);
+    my $traits_file =  $c->stash->{all_traits_file};
+    
+    write_file($traits_file, $headers);
+
+}
+
+sub all_traits_file {
+    my ($self, $c) = @_;
+
+    my $pop_id = $c->stash->{pop_id};
+
+    my $cache_data = {key       => 'all_traits_pop' . $pop_id,
+                      file      => 'all_traits_pop_' . $pop_id,
+                      stash_key => 'all_traits_file'
+    };
+
+    $self->cache_file($c, $cache_data);
 
 }
 
