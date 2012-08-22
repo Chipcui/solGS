@@ -165,6 +165,18 @@ sub trait_name {
 
 }
 
+sub get_trait_id {
+    my ($self, $c, $trait) = @_;
+
+    my $trait_id = $self->schema($c)->resultset('Cv::Cvterm')
+        ->search( {name => $trait})
+        ->single
+        ->id;
+
+    return $trait_id;
+
+}
+
 sub check_stock_type {
     my ($self, $c, $stock_id) = @_;
 
