@@ -523,10 +523,27 @@ sub get_all_traits {
     $headers =~ s/uniquename\t|stock_id\t|stock_name\t//g;
     $ph->close;
 
+    $self->add_trait_ids($c, $headers);
+       
+}
+
+sub add_trait_ids {
+    my ($self, $c, $list) = @_;   
+    $list =~ s/\n//;
+    my @traits = split (/\t/, $list);
+
+    my $table = 'trait_name' . "\t" . 'trait_id' . "\n"; 
+    
+    foreach (@traits)
+    {
+        my $trait_id = $c->model('solGS')->get_trait_id($c, $_);
+        $table .= $_ . "\t" . $trait_id . "\n";
+    }
+
     $self->all_traits_file($c);
     my $traits_file =  $c->stash->{all_traits_file};
     
-    write_file($traits_file, $headers);
+    write_file($traits_file, $table);
 
 }
 
