@@ -141,7 +141,7 @@ sub show_search_result_pops : Path('/search/result/populations') Args(1) {
                 push @unique_ids, $pop_id;        
                 my $pop_rs   = $c->model('solGS')->get_population_details($c, $pop_id);
                 my $pop_name = $pop_rs->single->name;
-                push @result, [qq|<a href="/population/$pop_id/trait/$trait_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
+                push @result, [qq|<a href="/trait/$trait_id/population/$pop_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
             }
         }
         
@@ -193,10 +193,30 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
             );  
     }
 
-}   
- 
-sub population :Path('/population') Args(3) {
-    my ($self, $c, $pop_id, $key, $trait_id) = @_;
+} 
+  
+sub population :Path('/population') Args(1) {
+    my ($self, $c, $pop_id) = @_;
+   
+    if ($pop_id )
+    {   
+        $c->stash->{pop_id} = $pop_id;  
+        $self->phenotype_file($c);
+        #$self->genotype_file($c);
+        $self->all_traits_file($c);
+                                   
+        $c->stash->{template} = "/population.mas";
+    }
+    else 
+    {
+        $c->throw(public_message =>"Required population id is missing.", 
+                  is_client_error => 1, 
+            );
+    }
+} 
+
+sub trait :Path('/trait') Args(3) {
+    my ($self, $c, $trait_id, $key, $pop_id) = @_;
    
     if ($pop_id && $trait_id)
     {   
@@ -204,9 +224,9 @@ sub population :Path('/population') Args(3) {
         $c->stash->{pop_id} = $pop_id;
                       
         $self->get_rrblup_output($c);
-        $self->population_files($c);
+        $self->gs_files($c);
 
-        $c->stash->{template} = "/population.mas";
+        $c->stash->{template} = "/population/trait.mas";
     }
     else 
     {
@@ -216,10 +236,9 @@ sub population :Path('/population') Args(3) {
     }
 }
 
-sub population_files {
+sub gs_files {
     my ($self, $c) = @_;
     
-    #$self->genotype_file($c);
     $self->output_files($c);
     $self->model_accuracy($c);
     $self->blups_file($c);
@@ -235,7 +254,7 @@ sub input_files {
     $self->traits_to_analyze($c);
   
     my $pheno_file = $c->stash->{phenotype_file};
-    #  my $geno_file  = $c->stash->{genotype_file};
+    #my $geno_file  = $c->stash->{genotype_file};
    # my $trait       = $c->stash->{trait_abbr}; 
     my $traits_file = $c->stash->{traits_file};
     my $trait_file  = $c->stash->{trait_file};
