@@ -203,9 +203,10 @@ sub population :Path('/population') Args(1) {
         $c->stash->{pop_id} = $pop_id;  
         $self->phenotype_file($c);
         #$self->genotype_file($c);
-        $self->all_traits_file($c);
+        $self->get_all_traits($c);
                                    
         $c->stash->{template} = "/population.mas";
+        $self->select_traits($c);
     }
     else 
     {
@@ -214,6 +215,15 @@ sub population :Path('/population') Args(1) {
             );
     }
 } 
+
+sub select_traits   {
+    my ($self, $c) = @_;
+    my $traits_form = $self->form;
+    $traits_form->load_config_file('population/traits.yml');
+    
+    $c->stash->{traits_form} = $traits_form;
+ 
+}
 
 sub trait :Path('/trait') Args(3) {
     my ($self, $c, $trait_id, $key, $pop_id) = @_;
@@ -251,12 +261,10 @@ sub input_files {
     
     #$self->genotype_file($c);
     $self->phenotype_file($c);
-    $self->traits_to_analyze($c);
   
-    my $pheno_file = $c->stash->{phenotype_file};
-    #my $geno_file  = $c->stash->{genotype_file};
-   # my $trait       = $c->stash->{trait_abbr}; 
-    my $traits_file = $c->stash->{traits_file};
+    my $pheno_file  = $c->stash->{phenotype_file};
+   #my $geno_file   = $c->stash->{genotype_file};
+    my $traits_file = $c->stash->{selected_traits_file};
     my $trait_file  = $c->stash->{trait_file};
     my $pop_id      = $c->stash->{pop_id};
    
@@ -508,28 +516,35 @@ sub get_trait_name {
     $c->stash->{trait_abbr} = $abbr;
 }
 
-sub traits_to_analyze {
-    my ($self, $c) = @_;
-    $self->get_all_traits($c);
-    #add all selected traits to analyze in tab-delimited format
-    my $pop_id  = $c->stash->{pop_id};
-    my $traits  = $c->stash->{trait_abbr};
-   # my $traits  = "FHB" . "\t" . "DON";
-    my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
- 
-    my ($fh, $file) = tempfile("traits_all_pop_${pop_id}-XXXXX", 
+sub traits_to_analyze : Path('/analyze/traits/population') :Args(1) {
+    my ($self, $c, $pop_id) = @_;
+    
+    $c->stash->{pop_id} = $pop_id;
+    my @selected_traits = $c->req->param('trait');
+    
+    my $traits;    
+    for (my $i = 0; $i <= $#selected_traits; $i++)
+    {
+        $traits .= $selected_traits[$i];
+        $traits .= "\t" unless ($i == $#selected_traits);
+    } 
+   
+    my $tmp_dir     = $c->stash->{solgs_tempfiles_dir}; 
+    my ($fh, $file) = tempfile("selected_traits_pop_${pop_id}-XXXXX", 
                                DIR => $tmp_dir
         );
 
     $fh->print($traits);
-    
+    $fh->close;
+
     my ($fh2, $file2) = tempfile("trait_pop_${pop_id}-XXXXX", 
                                DIR => $tmp_dir
         );
+    $fh2->close;
   
-    $c->stash->{traits_file} = $file;
+    $c->stash->{selected_traits_file} = $file;
     $c->stash->{trait_file} = $file2;
-
+    $c->forward('get_rrblup_output');
 }
 
 sub get_all_traits {
@@ -695,45 +710,67 @@ sub genotype_file :Private {
 
 }
 
-sub get_rrblup_output {
+sub get_rrblup_output :Private{
     my ($self, $c) = @_;
-
-    $self->output_files($c);
-
-    if (-s $c->stash->{gebv_kinship_file} == 0 ||
-        -s $c->stash->{gebv_marker_file}  == 0 ||
-        -s $c->stash->{validation_file}   == 0)
-    {                   
-        my $pop_id = $c->stash->{pop_id};
-        $self->input_files($c);
-        my $input_files = $c->stash->{input_files};
-
-        my $traits_file = $c->stash->{traits_file};
-        my @traits = split(/\t/, read_file($traits_file));
     
-        foreach (@traits) 
-        {            
-            # for test purpose
-            if ($_ eq 'FHB') 
-            {  
-                $c->stash->{trait_id} = 76438; 
-                $c->stash->{trait_abbr} = 'FHB';                          
-            } 
-       
-            if ($_ eq 'DON') 
-            {  
-                $c->stash->{trait_id} = 76439; 
-                $c->stash->{trait_abbr} = 'DON'; 
-            }
-        
-            my $trait = $c->stash->{trait_abbr}; 
-            my $trait_file = $c->stash->{trait_file}; 
-        
-            write_file($trait_file, $trait);
+    my $pop_id = $c->stash->{pop_id};
 
-            $self->output_files($c);
-            $self->run_rrblup($c);     
+    my $trait = $c->stash->{trait_abbr};
+   
+    my ($traits_file, @traits);
+    unless ($trait)
+    {
+        $traits_file = $c->stash->{selected_traits_file};
+        my $content = read_file($traits_file);
+     
+        if ($content =~ /\t/)
+        {
+            @traits = split(/\t/, $content);
         }
+        else
+        {
+            push  @traits, $content;
+        }
+    
+    }
+   
+    my ($trait_id, @trait_pages);     
+    foreach (@traits) 
+    {                       
+        $trait_id = $c->model('solGS')->get_trait_id($c, $_);
+        $c->stash->{trait_id}   = $trait_id ; 
+        $c->stash->{trait_abbr} = $_;                          
+           
+        $trait = $c->stash->{trait_abbr}; 
+        my $trait_file = $c->stash->{trait_file};         
+        write_file($trait_file, $trait);
+
+        $self->output_files($c);
+
+        if (-s $c->stash->{gebv_kinship_file} == 0 ||
+            -s $c->stash->{gebv_marker_file}  == 0 ||
+            -s $c->stash->{validation_file}   == 0)
+        {  
+            print STDERR "\n\nlooks like one of the output files for $trait are empty or don't exist\n\n"; 
+            $self->input_files($c);            
+            $self->output_files($c);  
+            $self->run_rrblup($c);
+    
+        }
+            
+        push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id">$trait</a>| ];
+    }
+
+    if (scalar(@traits) == 1) 
+    {
+        $self->gs_files($c);
+        $c->stash->{template} = 'population/trait.mas';
+    }
+    
+    if (scalar(@traits) > 1)    
+    {
+        $c->stash->{template}    = '/population/multiple_traits_output.mas'; 
+        $c->stash->{trait_pages} = \@trait_pages; 
     }
 
 }
@@ -747,7 +784,7 @@ sub run_rrblup  {
     my $trait_id     = $c->stash->{trait_id};
     my $input_files  = $c->stash->{input_files};
     my $output_files = $c->stash->{output_files};
-   
+    print STDERR "\ntrying to run rrblup..\n";
     die "\nCan't run rrblup without a trait id." if !$trait_id;
     die "\nCan't run rrblup without a population id." if !$pop_id;
     die "\nCan't run rrblup without input files." if !$input_files;
