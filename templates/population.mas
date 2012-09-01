@@ -2,7 +2,8 @@
 
 $pop_id
 $show_data => 1;
-
+$traits_form
+$all_traits_file
 
 </%args>
 
@@ -46,6 +47,12 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
   &>
    
   select traits genomic selection to run on.
+    
+  <& population/select_traits.mas, 
+     pop_id          => $pop_id,
+     traits_form     => $traits_form,
+     all_traits_file => $all_traits_file
+  &>
 
  </&>
 
