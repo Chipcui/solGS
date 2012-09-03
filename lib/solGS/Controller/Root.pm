@@ -204,8 +204,9 @@ sub population :Path('/population') Args(1) {
         $self->phenotype_file($c);
         #$self->genotype_file($c);
         $self->get_all_traits($c);
-                                   
-        $c->stash->{template} = "/population.mas";
+       
+        $c->stash->{template} = '/population.mas';
+        $c->stash->{no_traits_selected} = 'choose' if ($c->stash->{referer} !~ /analyze\/traits\/population/);
         $self->select_traits($c);
     }
     else 
@@ -522,29 +523,38 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1) {
     $c->stash->{pop_id} = $pop_id;
     my @selected_traits = $c->req->param('trait');
     
-    my $traits;    
-    for (my $i = 0; $i <= $#selected_traits; $i++)
+    if (!@selected_traits)
     {
-        $traits .= $selected_traits[$i];
-        $traits .= "\t" unless ($i == $#selected_traits);
-    } 
+        $c->stash->{no_traits_selected} = 'none';
+        $c->stash->{referer} = $c->req->path;       
+        $c->forward('population');
+    }
+    else 
+    {
+        my $traits;    
+        for (my $i = 0; $i <= $#selected_traits; $i++)
+        {
+            $traits .= $selected_traits[$i];
+            $traits .= "\t" unless ($i == $#selected_traits);
+        } 
    
-    my $tmp_dir     = $c->stash->{solgs_tempfiles_dir}; 
-    my ($fh, $file) = tempfile("selected_traits_pop_${pop_id}-XXXXX", 
+        my $tmp_dir     = $c->stash->{solgs_tempfiles_dir}; 
+        my ($fh, $file) = tempfile("selected_traits_pop_${pop_id}-XXXXX", 
                                DIR => $tmp_dir
-        );
+            );
 
-    $fh->print($traits);
-    $fh->close;
+        $fh->print($traits);
+        $fh->close;
 
-    my ($fh2, $file2) = tempfile("trait_pop_${pop_id}-XXXXX", 
+        my ($fh2, $file2) = tempfile("trait_pop_${pop_id}-XXXXX", 
                                DIR => $tmp_dir
-        );
-    $fh2->close;
+            );
+        $fh2->close;
   
-    $c->stash->{selected_traits_file} = $file;
-    $c->stash->{trait_file} = $file2;
-    $c->forward('get_rrblup_output');
+        $c->stash->{selected_traits_file} = $file;
+        $c->stash->{trait_file} = $file2;
+        $c->forward('get_rrblup_output');
+    }
 }
 
 sub get_all_traits {
@@ -784,7 +794,7 @@ sub run_rrblup  {
     my $trait_id     = $c->stash->{trait_id};
     my $input_files  = $c->stash->{input_files};
     my $output_files = $c->stash->{output_files};
-    print STDERR "\ntrying to run rrblup..\n";
+    
     die "\nCan't run rrblup without a trait id." if !$trait_id;
     die "\nCan't run rrblup without a population id." if !$pop_id;
     die "\nCan't run rrblup without input files." if !$input_files;
