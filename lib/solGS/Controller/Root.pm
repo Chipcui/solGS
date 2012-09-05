@@ -2,6 +2,8 @@ package solGS::Controller::Root;
 
 use Moose;
 use namespace::autoclean;
+
+use String::CRC;
 use URI::FromHash 'uri';
 use File::Path qw / mkpath  /;
 use File::Spec::Functions qw / catfile catdir/;
@@ -299,7 +301,8 @@ sub output_files {
     my $file_list = join ("\t",
                           $c->stash->{gebv_kinship_file},
                           $c->stash->{gebv_marker_file},
-                          $c->stash->{validation_file}
+                          $c->stash->{validation_file},
+                          $c->stash->{selected_traits_gebv_file}
         );
                           
     my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
@@ -460,6 +463,20 @@ sub validation_file {
 
 }
 
+sub combined_gebvs_file {
+    my ($self, $c, $identifier) = @_;
+
+    my $pop_id = $c->stash->{pop_id};
+     
+    my $cache_data = {key       => 'selected_traits_gebv_' . $pop_id . '_' . $identifier, 
+                      file      => 'selected_traits_gebv_' . $pop_id . '_' . $identifier,
+                      stash_key => 'selected_traits_gebv_file'
+    };
+
+    $self->cache_file($c, $cache_data);
+
+}
+
 sub download_validation :Path('/download/validation/pop') Args(3) {
     my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
  
@@ -522,7 +539,7 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1) {
     
     $c->stash->{pop_id} = $pop_id;
     my @selected_traits = $c->req->param('trait');
-    
+       
     if (!@selected_traits)
     {
         $c->stash->{no_traits_selected} = 'none';
@@ -535,9 +552,19 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1) {
         for (my $i = 0; $i <= $#selected_traits; $i++)
         {
             $traits .= $selected_traits[$i];
-            $traits .= "\t" unless ($i == $#selected_traits);
+            $traits .= "\t" unless ($i == $#selected_traits);           
         } 
-   
+        
+        my $identifier;
+        foreach (@selected_traits)
+        {
+            $identifier .= $c->model('solGS')->get_trait_id($c, $_);
+        } 
+        
+        $identifier = crc($identifier);
+
+        $self->combined_gebvs_file($c, $identifier);
+        
         my $tmp_dir     = $c->stash->{solgs_tempfiles_dir}; 
         my ($fh, $file) = tempfile("selected_traits_pop_${pop_id}-XXXXX", 
                                DIR => $tmp_dir
@@ -755,17 +782,13 @@ sub get_rrblup_output :Private{
         my $trait_file = $c->stash->{trait_file};         
         write_file($trait_file, $trait);
 
-        $self->output_files($c);
-
         if (-s $c->stash->{gebv_kinship_file} == 0 ||
             -s $c->stash->{gebv_marker_file}  == 0 ||
             -s $c->stash->{validation_file}   == 0)
         {  
-            print STDERR "\n\nlooks like one of the output files for $trait are empty or don't exist\n\n"; 
             $self->input_files($c);            
             $self->output_files($c);  
-            $self->run_rrblup($c);
-    
+            $self->run_rrblup($c);    
         }
             
         push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id">$trait</a>| ];
