@@ -186,8 +186,38 @@ ordered.iGEBV <- round(data.matrix(ordered.iGEBV),
                        digits = 2
                        )
 
-colnames(ordered.iGEBV) <- c("blup")
 
+combinedGebvsFile <- grep('selected_traits_gebv',
+                          outFiles,
+                          ignore.case = TRUE,
+                          fixed = FALSE,
+                          value = TRUE
+                          )
+
+fileSize <- file.info(combinedGebvsFile)$size
+
+if (fileSize != 0 )
+    {
+      combinedGebvs<-read.table(combinedGebvsFile,
+                                header = TRUE,
+                                row.names = 1,
+                                dec = ".",
+                                sep = "\t"
+                                )
+
+      colnames(ordered.iGEBV) <- c(trait)
+      
+      traitGEBV <- as.data.frame(ordered.iGEBV)
+      allGebvs <- merge(combinedGebvs, traitGEBV,
+                        by = 0,
+                        all = TRUE                     
+                        )
+      rownames(allGebvs) <- allGebvs[,1]
+      allGebvs[,1] <- NULL
+    }
+   
+colnames(ordered.iGEBV) <- c(trait)
+            
 #account for minor allele frequency
 #imputation of missing genotypes                     
                      
@@ -265,46 +295,58 @@ if (is.null(validationAll) == FALSE)
   }
 
 if(is.null(validationAll) == FALSE)
-    {
-      print("val file start")
-      write.table(validationAll,
-                  file = validationFile,
-                  sep = "\t",
-                  col.names = NA,
-                  quote = FALSE,
-                  append = FALSE
-                  )
-      print("val file end")
-    }
+  {
+    write.table(validationAll,
+                file = validationFile,
+                sep = "\t",
+                col.names = NA,
+                quote = FALSE,
+                append = FALSE
+                )
+  }
 
 if(is.null(ordered.iGEBV) == FALSE)
-    {
-      print("kinship start")
-      print(ordered.iGEBV)
-      write.table(ordered.iGEBV,
-                  file = blupFile,
-                  sep = "\t",
-                  col.names = NA,
-                  quote = FALSE,
-                  append = FALSE
-                  )
-      print("kinship end")
-    }
+  {
+    write.table(ordered.iGEBV,
+                file = blupFile,
+                sep = "\t",
+                col.names = NA,
+                quote = FALSE,
+                append = FALSE
+                )
+  }
 
-if(is.null(ordered.markerGEBV2) == FALSE)
-    {
-      print("marker file start")
-      write.table(ordered.markerGEBV2,
-                  file = markerFile,
-                  sep = "\t",
-                  col.names = NA,
-                  quote = FALSE,
-                  append = FALSE
-                  )
-      print("marker file end")
-    }
+if(is.null(ordered.iGEBV) == FALSE)
+  {
+    write.table(ordered.iGEBV,
+                file = blupFile,
+                sep = "\t",
+                col.names = NA,
+                quote = FALSE,
+                append = FALSE
+                )
+  }
+
+if(file.info(combinedGebvsFile)$size == 0)
+  {
+    write.table(ordered.iGEBV,
+                file = combinedGebvsFile,
+                sep = "\t",
+                col.names = NA,
+                quote = FALSE,
+                )
+  }else
+{
+  write.table(allGebvs,
+              file = combinedGebvsFile,
+              sep = "\t",
+              quote = FALSE,
+              col.names = NA,
+              )
+}
+
 #should also send notification to analysis owner
-to      <- c("<sgn-db-curation@sgn.cornell.edu>")
+to      <- c("<iyt2@cornell.edu>")
 subject <- paste(trait, ' GS analysis done', sep = ':')
 body    <- c("Dear User,\n\n")
 body    <- paste(body, 'The genomic selection analysis for', sep = "")
