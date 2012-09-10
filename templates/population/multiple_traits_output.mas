@@ -2,7 +2,7 @@
 
 =head1 NAME
  
-population/multiple_traits_output.mas - displays to links to traits' GS output pages
+population/multiple_traits_output.mas - displays multiple traits GS analysis output and links to traits' GS detailed output pages
 
 =AUTHOR
 
@@ -33,5 +33,5 @@ $trait_pages
  
 </&>
 
-
+<& rank_genotypes.mas &>
 
