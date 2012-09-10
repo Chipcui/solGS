@@ -1,0 +1,29 @@
+<%doc>
+
+=head1 NAME
+ 
+population/rank_genotypes.mas - displays a form for ranking genotypes based on weighted GEBVs of multiple traits
+
+=AUTHOR
+
+Isaak Y Tecle (iyt2@cornell.edu)
+
+=cut
+
+</%doc>
+
+<%args>
+
+
+</%args>
+
+ <&| /page/info_section.mas, 
+     collapsible => 1, 
+     collapsed   => 0, 
+     title       => "Select Genotypes"
+  &> 
+  
+  select genotypes based on weighted combination of multiple trait performance.
+
+ </&>
+
