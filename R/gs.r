@@ -305,10 +305,10 @@ if(is.null(validationAll) == FALSE)
                 )
   }
 
-if(is.null(ordered.iGEBV) == FALSE)
+if(is.null(ordered.markerGEBV2) == FALSE)
   {
-    write.table(ordered.iGEBV,
-                file = blupFile,
+    write.table(ordered.markerGEBV2,
+                file = markerFile,
                 sep = "\t",
                 col.names = NA,
                 quote = FALSE,
