@@ -6,6 +6,7 @@ $traits_form
 $all_traits_file
 $no_traits_selected
 
+
 </%args>
 
 <%perl>
@@ -56,15 +57,7 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 
  </&>
 
- <&| /page/info_section.mas, 
-     collapsible => 1, 
-     collapsed   => 0, 
-     title       => "Select Genotypes"
-  &> 
-  
-  select genotypes based on weighted combination of multiple trait performance.
-
- </&>
+ <& /population/rank_genotypes.mas &>
 
 %}
 % else
