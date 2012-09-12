@@ -539,7 +539,7 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1) {
     
     $c->stash->{pop_id} = $pop_id;
     my @selected_traits = $c->req->param('trait');
-       
+    
     if (!@selected_traits)
     {
         $c->stash->{no_traits_selected} = 'none';
@@ -630,6 +630,22 @@ sub all_traits_file {
 
     $self->cache_file($c, $cache_data);
 
+}
+
+sub analysed_traits {
+    my ($self, $c) = @_;
+    my $pop_id = $c->stash->{pop_id};
+
+    my $dir = $c->stash->{solgs_cache_dir};
+    opendir my $dh, $dir or die "can't open $dir: $!\n";
+    
+    my @files  = map { $_ =~ /($pop_id)/ ? $_ : 0 } 
+                 grep { /gebv_kinship_[a-zA-Z0-9]/ && -f "$dir/$_" } 
+                 readdir($dh);   
+    closedir $dh;
+    
+    my @traits = map { s/gebv|kinship|_|($pop_id)//g ? $_ : 0} @files;
+    $c->stash->{analysed_traits} = \@traits;
 }
 
 sub abbreviate_term {
@@ -782,6 +798,7 @@ sub get_rrblup_output :Private{
         my $trait_file = $c->stash->{trait_file};         
         write_file($trait_file, $trait);
 
+        $self->output_files($c);
         if (-s $c->stash->{gebv_kinship_file} == 0 ||
             -s $c->stash->{gebv_marker_file}  == 0 ||
             -s $c->stash->{validation_file}   == 0)
@@ -802,8 +819,9 @@ sub get_rrblup_output :Private{
     
     if (scalar(@traits) > 1)    
     {
+        $self->analysed_traits($c);
         $c->stash->{template}    = '/population/multiple_traits_output.mas'; 
-        $c->stash->{trait_pages} = \@trait_pages; 
+        $c->stash->{trait_pages} = \@trait_pages;
     }
 
 }
