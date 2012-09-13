@@ -6,7 +6,6 @@ $traits_form
 $all_traits_file
 $no_traits_selected
 
-
 </%args>
 
 <%perl>
@@ -57,7 +56,7 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 
  </&>
 
- <& /population/rank_genotypes.mas &>
+
 
 %}
 % else
