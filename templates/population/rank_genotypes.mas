@@ -14,16 +14,57 @@ Isaak Y Tecle (iyt2@cornell.edu)
 
 <%args>
 
+$pop_id
+$analysed_traits
 
 </%args>
+
+<%perl>
+
+my $trait_rows;
+my $cnt = 1;
+
+foreach (@$analysed_traits)
+{    
+  my $rw_b = qq | <tr> | if $cnt == 1;
+  my $rw_e = qq | </tr> | if $cnt == 3;
+  my $row  = <<ROW;    
+                 $rw_b                     
+                   <td>
+                     $_: <input type  = "text" 
+                                name  = $_
+                                size  = 5px
+                   </td>      
+                 $rw_e
+ROW
+  
+  $cnt++;   
+  $cnt = 0 if $cnt == 3; 
+  $trait_rows .=  $row;
+}
+
+</%perl>
 
  <&| /page/info_section.mas, 
      collapsible => 1, 
      collapsed   => 0, 
-     title       => "Select Genotypes"
+     title       => "Rank Genotypes based on GEBV of multiple traits"
   &> 
   
-  select genotypes based on weighted combination of multiple trait performance.
+ <p>Fill in the relative weight you want to apply to each trait.</p>
+
+ <form action="/rank/genotypes/population/$pop_id" id = "genotype_ranks" method="POST">
+   <table>
+     <% $trait_rows %>
+     <tr>      
+       <td>
+         <input type  = "submit" 
+                value = "rank"
+                >
+       </td>     
+     </tr>
+   </table>
+ </form>
 
  </&>
 
