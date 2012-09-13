@@ -15,6 +15,8 @@ Isaak Y Tecle (iyt2@cornell.edu)
 <%args>
 
 $trait_pages
+$analysed_traits
+$pop_id
 
 </%args>
 
@@ -33,5 +35,8 @@ $trait_pages
  
 </&>
 
-<& rank_genotypes.mas &>
+<& rank_genotypes.mas, 
+   analysed_traits => $analysed_traits,
+   pop_id          => $pop_id
+&>
 
