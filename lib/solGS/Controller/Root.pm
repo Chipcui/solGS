@@ -534,6 +534,13 @@ sub get_trait_name {
     $c->stash->{trait_abbr} = $abbr;
 }
 
+sub rank_genotypes : Path('/rank/genotypes/population') :Args(1) {
+    my ($self, $c, $pop_id) = @_;
+    
+    $c->stash->{pop_id} = $pop_id;
+    
+}
+
 sub traits_to_analyze : Path('/analyze/traits/population') :Args(1) {
     my ($self, $c, $pop_id) = @_;
     
@@ -645,6 +652,7 @@ sub analysed_traits {
     closedir $dh;
     
     my @traits = map { s/gebv|kinship|_|($pop_id)//g ? $_ : 0} @files;
+   #my @traits = ('tr1', 'tr2', 'tr3', 'tr4', 'tr5', 'tr6', 'tr7');
     $c->stash->{analysed_traits} = \@traits;
 }
 
@@ -767,14 +775,13 @@ sub get_rrblup_output :Private{
     my ($self, $c) = @_;
     
     my $pop_id = $c->stash->{pop_id};
-
-    my $trait = $c->stash->{trait_abbr};
+    my $trait  = $c->stash->{trait_abbr};
    
     my ($traits_file, @traits);
     unless ($trait)
     {
         $traits_file = $c->stash->{selected_traits_file};
-        my $content = read_file($traits_file);
+        my $content  = read_file($traits_file);
      
         if ($content =~ /\t/)
         {
@@ -822,6 +829,7 @@ sub get_rrblup_output :Private{
         $self->analysed_traits($c);
         $c->stash->{template}    = '/population/multiple_traits_output.mas'; 
         $c->stash->{trait_pages} = \@trait_pages;
+       # $c->stash->{pop_id} = $pop_id;
     }
 
 }
@@ -840,7 +848,20 @@ sub run_rrblup  {
     die "\nCan't run rrblup without a population id." if !$pop_id;
     die "\nCan't run rrblup without input files." if !$input_files;
     die "\nCan't run rrblup without output files." if !$output_files;    
+    
+    $c->stash->{r_temp_file} = "gs-rrblup-${trait_id}-${pop_id}";
+    $c->stash->{r_script}    = 'R/gs.r';
+    $self->run_r_script($c);
+}
 
+sub run_r_script {
+    my ($self, $c) = @_;
+    
+    my $r_script     = $c->stash->{r_script};
+    my $input_files  = $c->stash->{input_files};
+    my $output_files = $c->stash->{output_files};
+    my $r_temp_file  = $c->stash->{r_temp_file};
+  
     CXGN::Tools::Run->temp_base($c->stash->{solgs_tempfiles_dir});
     my ( $r_in_temp, $r_out_temp ) =
         map 
@@ -849,14 +870,14 @@ sub run_rrblup  {
             tempfile(
                 catfile(
                     CXGN::Tools::Run->temp_base(),
-                    "gs-rrblup-${trait_id}-${pop_id}-$_-XXXXXX",
+                    "${r_temp_file}-$_-XXXXXX",
                 ),
             );
         $filename
     } 
     qw / in out /;
     {
-        my $r_cmd_file = $c->path_to('R/gs.r');
+        my $r_cmd_file = $c->path_to($r_script);
         copy($r_cmd_file, $r_in_temp)
             or die "could not copy '$r_cmd_file' to '$r_in_temp'";
     }
@@ -889,8 +910,10 @@ sub run_rrblup  {
         $c->throw($err);
     };
 
+
 }
-   
+
+  
 sub get_solgs_dirs {
     my ($self, $c) = @_;
    
