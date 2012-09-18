@@ -194,30 +194,32 @@ combinedGebvsFile <- grep('selected_traits_gebv',
                           value = TRUE
                           )
 
-fileSize <- file.info(combinedGebvsFile)$size
+allGebvs<-c()
+if (length(combinedGebvsFile) != 0)
+  {
+    fileSize <- file.info(combinedGebvsFile)$size
+    if (fileSize != 0 )
+      {
+        combinedGebvs<-read.table(combinedGebvsFile,
+                                  header = TRUE,
+                                  row.names = 1,
+                                  dec = ".",
+                                  sep = "\t"
+                                  )
 
-if (fileSize != 0 )
-    {
-      combinedGebvs<-read.table(combinedGebvsFile,
-                                header = TRUE,
-                                row.names = 1,
-                                dec = ".",
-                                sep = "\t"
-                                )
-
-      colnames(ordered.iGEBV) <- c(trait)
+        colnames(ordered.iGEBV) <- c(trait)
       
-      traitGEBV <- as.data.frame(ordered.iGEBV)
-      allGebvs <- merge(combinedGebvs, traitGEBV,
-                        by = 0,
-                        all = TRUE                     
-                        )
-      rownames(allGebvs) <- allGebvs[,1]
-      allGebvs[,1] <- NULL
-    }
-   
+        traitGEBV <- as.data.frame(ordered.iGEBV)
+        allGebvs <- merge(combinedGebvs, traitGEBV,
+                          by = 0,
+                          all = TRUE                     
+                          )
+        rownames(allGebvs) <- allGebvs[,1]
+        allGebvs[,1] <- NULL
+     }
+  }   
 colnames(ordered.iGEBV) <- c(trait)
-            
+          
 #account for minor allele frequency
 #imputation of missing genotypes                     
                      
@@ -327,24 +329,27 @@ if(is.null(ordered.iGEBV) == FALSE)
                 )
   }
 
-if(file.info(combinedGebvsFile)$size == 0)
+if(length(combinedGebvsFile) != 0 )
   {
-    write.table(ordered.iGEBV,
-                file = combinedGebvsFile,
-                sep = "\t",
-                col.names = NA,
-                quote = FALSE,
-                )
-  }else
-{
-  write.table(allGebvs,
-              file = combinedGebvsFile,
-              sep = "\t",
-              quote = FALSE,
-              col.names = NA,
-              )
-}
-
+    if(file.info(combinedGebvsFile)$size == 0)
+      {
+        write.table(ordered.iGEBV,
+                    file = combinedGebvsFile,
+                    sep = "\t",
+                    col.names = NA,
+                    quote = FALSE,
+                    )
+      }else
+    {
+      write.table(allGebvs,
+                  file = combinedGebvsFile,
+                  sep = "\t",
+                  quote = FALSE,
+                  col.names = NA,
+                  )
+    }
+  }
+  
 #should also send notification to analysis owner
 to      <- c("<iyt2@cornell.edu>")
 subject <- paste(trait, ' GS analysis done', sep = ':')
