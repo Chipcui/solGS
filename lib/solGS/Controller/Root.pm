@@ -778,8 +778,34 @@ sub get_rrblup_output :Private{
     my $trait  = $c->stash->{trait_abbr};
    
     my ($traits_file, @traits);
-    unless ($trait)
+
+    if ($trait)     
     {
+        my $trait_id = $c->model('solGS')->get_trait_id($c, $trait);
+        $c->stash->{trait_id}   = $trait_id ; 
+    
+        my ($fh, $file) = tempfile("trait_${trait_id}_pop_${pop_id}-XXXXX", 
+                               DIR => $c->stash->{solgs_tempfiles_dir}
+            );
+        
+        $fh->close;
+         
+        $c->stash->{trait_file} = $file;                   
+        my $trait_file = $c->stash->{trait_file};         
+        write_file($trait_file, $trait);
+
+        $self->output_files($c);
+        if (-s $c->stash->{gebv_kinship_file} == 0 ||
+            -s $c->stash->{gebv_marker_file}  == 0 ||
+            -s $c->stash->{validation_file}   == 0)
+        {  
+            $self->input_files($c);            
+            $self->output_files($c);  
+            $self->run_rrblup($c);    
+        }
+    }
+    else 
+    {    
         $traits_file = $c->stash->{selected_traits_file};
         my $content  = read_file($traits_file);
      
@@ -829,7 +855,6 @@ sub get_rrblup_output :Private{
         $self->analysed_traits($c);
         $c->stash->{template}    = '/population/multiple_traits_output.mas'; 
         $c->stash->{trait_pages} = \@trait_pages;
-       # $c->stash->{pop_id} = $pop_id;
     }
 
 }
