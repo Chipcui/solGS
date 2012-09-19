@@ -639,7 +639,7 @@ sub all_traits_file {
 
 }
 
-sub analysed_traits {
+sub analyzed_traits {
     my ($self, $c) = @_;
     my $pop_id = $c->stash->{pop_id};
 
@@ -653,7 +653,7 @@ sub analysed_traits {
     
     my @traits = map { s/gebv|kinship|_|($pop_id)//g ? $_ : 0} @files;
    #my @traits = ('tr1', 'tr2', 'tr3', 'tr4', 'tr5', 'tr6', 'tr7');
-    $c->stash->{analysed_traits} = \@traits;
+    $c->stash->{analyzed_traits} = \@traits;
 }
 
 sub abbreviate_term {
@@ -813,7 +813,7 @@ sub get_rrblup_output :Private{
     
     if (scalar(@traits) > 1)    
     {
-        $self->analysed_traits($c);
+        $self->analyzed_traits($c);
         $c->stash->{template}    = '/population/multiple_traits_output.mas'; 
         $c->stash->{trait_pages} = \@trait_pages;
     }
