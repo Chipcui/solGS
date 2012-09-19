@@ -15,7 +15,7 @@ Isaak Y Tecle (iyt2@cornell.edu)
 <%args>
 
 $pop_id
-$analysed_traits
+$analyzed_traits
 
 </%args>
 
