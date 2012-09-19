@@ -562,13 +562,13 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1) {
             $traits .= "\t" unless ($i == $#selected_traits);           
         } 
         
-        my $identifier;
+        my $trait_id;
         foreach (@selected_traits)
         {
-            $identifier .= $c->model('solGS')->get_trait_id($c, $_);
+            $trait_id .= $c->model('solGS')->get_trait_id($c, $_);
         } 
         
-        $identifier = crc($identifier);
+        my $identifier = crc($trait_id);
 
         $self->combined_gebvs_file($c, $identifier);
         
@@ -580,8 +580,8 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1) {
         $fh->print($traits);
         $fh->close;
 
-        my ($fh2, $file2) = tempfile("trait_pop_${pop_id}-XXXXX", 
-                               DIR => $tmp_dir
+        my ($fh2, $file2) = tempfile("trait_${trait_id}_pop_${pop_id}-XXXXX", 
+                                     DIR => $tmp_dir
             );
         $fh2->close;
   
@@ -777,32 +777,11 @@ sub get_rrblup_output :Private{
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
    
-    my ($traits_file, @traits);
-
+    my ($traits_file, @traits, @trait_pages);
+   
     if ($trait)     
     {
-        my $trait_id = $c->model('solGS')->get_trait_id($c, $trait);
-        $c->stash->{trait_id}   = $trait_id ; 
-    
-        my ($fh, $file) = tempfile("trait_${trait_id}_pop_${pop_id}-XXXXX", 
-                               DIR => $c->stash->{solgs_tempfiles_dir}
-            );
-        
-        $fh->close;
-         
-        $c->stash->{trait_file} = $file;                   
-        my $trait_file = $c->stash->{trait_file};         
-        write_file($trait_file, $trait);
-
-        $self->output_files($c);
-        if (-s $c->stash->{gebv_kinship_file} == 0 ||
-            -s $c->stash->{gebv_marker_file}  == 0 ||
-            -s $c->stash->{validation_file}   == 0)
-        {  
-            $self->input_files($c);            
-            $self->output_files($c);  
-            $self->run_rrblup($c);    
-        }
+        $self->run_rrblup_trait($c, $trait);  
     }
     else 
     {    
@@ -817,31 +796,13 @@ sub get_rrblup_output :Private{
         {
             push  @traits, $content;
         }
-    
-    }
-   
-    my ($trait_id, @trait_pages);     
-    foreach (@traits) 
-    {                       
-        $trait_id = $c->model('solGS')->get_trait_id($c, $_);
-        $c->stash->{trait_id}   = $trait_id ; 
-        $c->stash->{trait_abbr} = $_;                          
-           
-        $trait = $c->stash->{trait_abbr}; 
-        my $trait_file = $c->stash->{trait_file};         
-        write_file($trait_file, $trait);
-
-        $self->output_files($c);
-        if (-s $c->stash->{gebv_kinship_file} == 0 ||
-            -s $c->stash->{gebv_marker_file}  == 0 ||
-            -s $c->stash->{validation_file}   == 0)
-        {  
-            $self->input_files($c);            
-            $self->output_files($c);  
-            $self->run_rrblup($c);    
-        }
             
-        push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id">$trait</a>| ];
+       foreach (@traits) 
+       {                       
+           $self->run_rrblup_trait($c, $_);
+           my $trait_id = $c->stash->{trait_id};
+           push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id">$_</a>| ];
+       }    
     }
 
     if (scalar(@traits) == 1) 
@@ -857,6 +818,34 @@ sub get_rrblup_output :Private{
         $c->stash->{trait_pages} = \@trait_pages;
     }
 
+}
+sub run_rrblup_trait {
+    my ($self, $c, $trait) = @_;
+    my $pop_id = $c->stash->{pop_id};
+
+    my $trait_id = $c->model('solGS')->get_trait_id($c, $trait);
+    $c->stash->{trait_id}   = $trait_id ; 
+    $c->stash->{trait_abbr} = $trait;                          
+        
+    my ($fh, $file) = tempfile("trait_${trait_id}_pop_${pop_id}-XXXXX", 
+                               DIR => $c->stash->{solgs_tempfiles_dir}
+        );
+        
+    $fh->close;   
+
+    $c->stash->{trait_file} = $file;       
+    write_file($file, $trait);
+
+    $self->output_files($c);
+    if (-s $c->stash->{gebv_kinship_file} == 0 ||
+        -s $c->stash->{gebv_marker_file}  == 0 ||
+        -s $c->stash->{validation_file}   == 0
+        )
+    {  
+        $self->input_files($c);            
+        $self->output_files($c);  
+        $self->run_rrblup($c);    
+    }
 }
 
 sub run_rrblup  {
