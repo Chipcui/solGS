@@ -652,8 +652,9 @@ sub analyzed_traits {
     closedir $dh;
     
     my @traits = map { s/gebv|kinship|_|($pop_id)//g ? $_ : 0} @files;
-   #my @traits = ('tr1', 'tr2', 'tr3', 'tr4', 'tr5', 'tr6', 'tr7');
+  
     $c->stash->{analyzed_traits} = \@traits;
+    $c->stash->{analyzed_traits_files} = \@files;
 }
 
 sub abbreviate_term {
