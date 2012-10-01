@@ -36,7 +36,7 @@ $pop_id
 </&>
 
 <& rank_genotypes.mas, 
-   analysed_traits => $analyzed_traits,
+   analyzed_traits => $analyzed_traits,
    pop_id          => $pop_id
 &>
 
