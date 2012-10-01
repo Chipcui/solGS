@@ -196,10 +196,12 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
     }
 
 } 
-  
-sub population :Path('/population') Args(1) {
-    my ($self, $c, $pop_id) = @_;
+
+sub population : Regex('^population/([\d]+)(?:/([\w+]+))?'){
+    my ($self, $c) = @_;
    
+    my ($pop_id, $action) = @{$c->req->captures};
+
     if ($pop_id )
     {   
         $c->stash->{pop_id} = $pop_id;  
@@ -208,7 +210,14 @@ sub population :Path('/population') Args(1) {
         $self->get_all_traits($c);
        
         $c->stash->{template} = '/population.mas';
-        $c->stash->{no_traits_selected} = 'choose' if ($c->stash->{referer} !~ /analyze\/traits\/population/);
+      
+        if ($action && $action =~ /selecttraits/ ) {
+            $c->stash->{no_traits_selected} = 'none';
+        }
+        else {
+            $c->stash->{no_traits_selected} = 'some';
+        }
+
         $self->select_traits($c);
     }
     else 
@@ -534,10 +543,15 @@ sub get_trait_name {
     $c->stash->{trait_abbr} = $abbr;
 }
 
-sub rank_genotypes : Path('/rank/genotypes/population') :Args(1) {
-    my ($self, $c, $pop_id) = @_;
+sub rank_genotypes : Path('/rank/genotypes/population') :Args(0) {
+    my ($self, $c) = @_;
     
-    $c->stash->{pop_id} = $pop_id;
+    my $pop_id = $c->req->param('pop_id');
+     print STDERR "\ntest: $pop_id\n";
+    my %wts = $c->req->param('gebv_weights');
+    my $test = $wts{'DON'};
+    print STDERR "\ntest: $test\n";
+   # $c->stash->{pop_id} = $pop_id;
     
 }
 
@@ -546,14 +560,17 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1) {
     
     $c->stash->{pop_id} = $pop_id;
     my @selected_traits = $c->req->param('trait');
-    
+
     if (!@selected_traits)
     {
-        $c->stash->{no_traits_selected} = 'none';
-        $c->stash->{referer} = $c->req->path;       
-        $c->forward('population');
+        $c->res->redirect("/population/$pop_id/selecttraits");
     }
-    else 
+    elsif (scalar(@selected_traits) == 1)
+    {
+        my $trait_id = $c->model('solGS')->get_trait_id($c, $selected_traits[$0]);
+        $c->res->redirect("/trait/$trait_id/population/$pop_id");
+    }
+    elsif(scalar(@selected_traits) > 1)
     {
         my $traits;    
         for (my $i = 0; $i <= $#selected_traits; $i++)
@@ -574,7 +591,7 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1) {
         
         my $tmp_dir     = $c->stash->{solgs_tempfiles_dir}; 
         my ($fh, $file) = tempfile("selected_traits_pop_${pop_id}-XXXXX", 
-                               DIR => $tmp_dir
+                                   DIR => $tmp_dir
             );
 
         $fh->print($traits);
@@ -591,6 +608,52 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1) {
     }
 }
 
+sub traits_output :Path('/traits/output/population/') Arg(1) {
+    my ($self, $c, $pop_id) = @_;
+    
+    print STDERR "\n\ntesting new url\n\n";;
+   # $self->analyzed_traits($c);
+   # my @selected_traits = @$selected_traits;
+  #  my $traits;    
+#         for (my $i = 0; $i <= $#selected_traits; $i++)
+#         {
+#             $traits .= $selected_traits[$i];
+#             $traits .= "\t" unless ($i == $#selected_traits);           
+#         } 
+        
+#         my $trait_id;
+#         foreach (@selected_traits)
+#         {
+#             $trait_id .= $c->model('solGS')->get_trait_id($c, $_);
+#         } 
+        
+#         my $identifier = crc($trait_id);
+
+#         $self->combined_gebvs_file($c, $identifier);
+        
+#         my $tmp_dir     = $c->stash->{solgs_tempfiles_dir}; 
+#         my ($fh, $file) = tempfile("selected_traits_pop_${pop_id}-XXXXX", 
+#                                    DIR => $tmp_dir
+#             );
+
+#         $fh->print($traits);
+#         $fh->close;
+
+#         my ($fh2, $file2) = tempfile("trait_${trait_id}_pop_${pop_id}-XXXXX", 
+#                                      DIR => $tmp_dir
+#             );
+#         $fh2->close;
+  
+#         $c->stash->{selected_traits_file} = $file;
+#         $c->stash->{trait_file} = $file2;
+#         $c->forward('get_rrblup_output');
+    $c->stash->{template} = '/population/multiple_traits_output.mas'; 
+    #$c->stash->{trait_pages} = \@trait_pages;
+    $c->stash->{pop_id} = $pop_id;
+     print STDERR "\n\ntesting new url again\n\n";;
+}
+
+
 sub get_all_traits {
     my ($self, $c) = @_;
     
@@ -604,6 +667,8 @@ sub get_all_traits {
     $self->add_trait_ids($c, $headers);
        
 }
+
+
 
 sub add_trait_ids {
     my ($self, $c, $list) = @_;   
@@ -782,7 +847,7 @@ sub get_rrblup_output :Private{
    
     if ($trait)     
     {
-        $self->run_rrblup_trait($c, $trait);  
+        $self->run_rrblup_trait($c, $trait);
     }
     else 
     {    
@@ -814,12 +879,15 @@ sub get_rrblup_output :Private{
     
     if (scalar(@traits) > 1)    
     {
+       
         $self->analyzed_traits($c);
         $c->stash->{template}    = '/population/multiple_traits_output.mas'; 
         $c->stash->{trait_pages} = \@trait_pages;
+      #  $self->traits_output($c, $pop_id);
     }
 
 }
+
 sub run_rrblup_trait {
     my ($self, $c, $trait) = @_;
     my $pop_id = $c->stash->{pop_id};
