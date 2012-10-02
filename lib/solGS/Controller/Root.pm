@@ -555,7 +555,7 @@ sub rank_genotypes : Path('/rank/genotypes/population') :Args(0) {
     
 }
 
-sub traits_to_analyze : Path('/analyze/traits/population') :Args(1) {
+sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
     my ($self, $c, $pop_id) = @_;
     
     $c->stash->{pop_id} = $pop_id;
@@ -608,51 +608,29 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1) {
     }
 }
 
-sub traits_output :Path('/traits/output/population/') Arg(1) {
-    my ($self, $c, $pop_id) = @_;
+sub all_traits_output :Path('/traits/all/population') Arg(1) {
+     my ($self, $c, $pop_id) = @_;
+      
+     $c->stash->{pop_id} = $pop_id;
+     $self->analyzed_traits($c);
+     my @analyzed_traits = @{$c->stash->{analyzed_traits}};
+     
+     if (!@analyzed_traits) 
+     {
+         $c->res->redirect("/population/$pop_id/selecttraits/");
+     }
+
+     my @trait_pages;
+     foreach (@analyzed_traits)
+     {
+         my $trait_id = $c->model('solGS')->get_trait_id($c, $_);
+         push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id">$_</a>| ];
+     } 
+
+     $c->stash->{template} = '/population/multiple_traits_output.mas';
+     $c->stash->{trait_pages} = \@trait_pages;
     
-    print STDERR "\n\ntesting new url\n\n";;
-   # $self->analyzed_traits($c);
-   # my @selected_traits = @$selected_traits;
-  #  my $traits;    
-#         for (my $i = 0; $i <= $#selected_traits; $i++)
-#         {
-#             $traits .= $selected_traits[$i];
-#             $traits .= "\t" unless ($i == $#selected_traits);           
-#         } 
-        
-#         my $trait_id;
-#         foreach (@selected_traits)
-#         {
-#             $trait_id .= $c->model('solGS')->get_trait_id($c, $_);
-#         } 
-        
-#         my $identifier = crc($trait_id);
-
-#         $self->combined_gebvs_file($c, $identifier);
-        
-#         my $tmp_dir     = $c->stash->{solgs_tempfiles_dir}; 
-#         my ($fh, $file) = tempfile("selected_traits_pop_${pop_id}-XXXXX", 
-#                                    DIR => $tmp_dir
-#             );
-
-#         $fh->print($traits);
-#         $fh->close;
-
-#         my ($fh2, $file2) = tempfile("trait_${trait_id}_pop_${pop_id}-XXXXX", 
-#                                      DIR => $tmp_dir
-#             );
-#         $fh2->close;
-  
-#         $c->stash->{selected_traits_file} = $file;
-#         $c->stash->{trait_file} = $file2;
-#         $c->forward('get_rrblup_output');
-    $c->stash->{template} = '/population/multiple_traits_output.mas'; 
-    #$c->stash->{trait_pages} = \@trait_pages;
-    $c->stash->{pop_id} = $pop_id;
-     print STDERR "\n\ntesting new url again\n\n";;
 }
-
 
 sub get_all_traits {
     my ($self, $c) = @_;
@@ -883,7 +861,6 @@ sub get_rrblup_output :Private{
         $self->analyzed_traits($c);
         $c->stash->{template}    = '/population/multiple_traits_output.mas'; 
         $c->stash->{trait_pages} = \@trait_pages;
-      #  $self->traits_output($c, $pop_id);
     }
 
 }
