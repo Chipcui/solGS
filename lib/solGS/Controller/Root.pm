@@ -543,15 +543,34 @@ sub get_trait_name {
     $c->stash->{trait_abbr} = $abbr;
 }
 
-sub rank_genotypes : Path('/rank/genotypes/population') :Args(0) {
-    my ($self, $c) = @_;
+#creates and writes a list of GEBV files of 
+#traits selected for ranking genotypes.
+
+sub gebv_files_weighted {
+    my ($self, $c, $traits) = @_;
+      
+    my $pop_id = $c->stash->{pop_id};  
     
-    my $pop_id = $c->req->param('pop_id');
-     print STDERR "\ntest: $pop_id\n";
-    my %wts = $c->req->param('gebv_weights');
-    my $test = $wts{'DON'};
-    print STDERR "\ntest: $test\n";
-   # $c->stash->{pop_id} = $pop_id;
+    my $dir = $c->stash->{solgs_cache_dir};
+    my $gebv_files; 
+  
+    foreach my $tr (@$traits) 
+    {         
+        opendir my $dh, $dir 
+            or die "can't open $dir: $!\n";
+
+        my ($file)   =  grep(/gebv_kinship_${tr}_${pop_id}/, readdir($dh));
+        $gebv_files .= $file;
+        $gebv_files .= "\t" unless (@$traits[-1] eq $tr);
+    
+        closedir $dh;  
+    }
+   
+    my ($fh, $file) =  tempfile("rank_traits_file_${pop_id}-XXXXX",
+                                DIR => $c->stash->{solgs_tempfiles_dir}
+        );
+
+    write_file($file, $gebv_files);
     
 }
 
@@ -610,8 +629,12 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
 
 sub all_traits_output :Path('/traits/all/population') Arg(1) {
      my ($self, $c, $pop_id) = @_;
-      
+     
+     my @traits = $c->req->param;    
+     @traits = grep {$_ ne 'rank'} @traits;
+
      $c->stash->{pop_id} = $pop_id;
+     
      $self->analyzed_traits($c);
      my @analyzed_traits = @{$c->stash->{analyzed_traits}};
      
@@ -619,7 +642,7 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
      {
          $c->res->redirect("/population/$pop_id/selecttraits/");
      }
-
+   
      my @trait_pages;
      foreach (@analyzed_traits)
      {
@@ -629,7 +652,7 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
 
      $c->stash->{template} = '/population/multiple_traits_output.mas';
      $c->stash->{trait_pages} = \@trait_pages;
-    
+     $self->gebv_files_weighted($c, \@traits);
 }
 
 sub get_all_traits {
