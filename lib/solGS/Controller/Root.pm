@@ -574,6 +574,30 @@ sub gebv_files_weighted {
     
 }
 
+sub gebv_rel_weights {
+    my ($self, $c, $params) = @_;
+    
+    my $pop_id = $c->stash->{pop_id};
+  
+    my $rel_wts;
+    foreach my $tr (keys %$params)
+    {      
+        my $wt = $params->{$tr};
+        unless ($tr eq 'rank')
+        {
+            $rel_wts .= $tr . "\t" . $wt;
+            $rel_wts .= "\n" unless( (keys %$params)[-1] eq $_);
+        }
+    }
+    
+    my ($fh, $file) =  tempfile("rel_gebvs_${pop_id}-XXXXX",
+                                DIR => $c->stash->{solgs_tempfiles_dir}
+        );
+
+    write_file($file, $rel_wts);
+    
+}
+
 sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
     my ($self, $c, $pop_id) = @_;
     
@@ -652,7 +676,19 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
 
      $c->stash->{template} = '/population/multiple_traits_output.mas';
      $c->stash->{trait_pages} = \@trait_pages;
-     $self->gebv_files_weighted($c, \@traits);
+   
+     my @values;
+     foreach (@traits)
+     {
+         push @values, $c->req->param($_);
+     }
+ 
+     if (@values) 
+     {
+         $self->gebv_files_weighted($c, \@traits);
+         my $params = $c->req->params;
+         $self->gebv_rel_weights($c, $params);
+     }
 }
 
 sub get_all_traits {
@@ -668,8 +704,6 @@ sub get_all_traits {
     $self->add_trait_ids($c, $headers);
        
 }
-
-
 
 sub add_trait_ids {
     my ($self, $c, $list) = @_;   
