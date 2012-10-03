@@ -586,7 +586,7 @@ sub gebv_rel_weights {
         unless ($tr eq 'rank')
         {
             $rel_wts .= $tr . "\t" . $wt;
-            $rel_wts .= "\n" unless( (keys %$params)[-1] eq $_);
+            $rel_wts .= "\n" unless( (keys %$params)[-1] eq $tr);
         }
     }
     
