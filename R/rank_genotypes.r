@@ -14,46 +14,59 @@ inFile <- grep("input_rank_genotypes",
                perl = TRUE,
                value = TRUE
                )
-
-relWeightsFile <- grep("relative_weights",
-                       inFile,
-                       ignore.case = TRUE,
-                       perl = TRUE,
-                       value = TRUE
+print('input file')
+print(inFile)
+inputFiles <- scan(inFile,
+                      what = "character"
+               )
+relWeightsFile<- grep("rel_weights",
+               inputFiles,
+               ignore.case = TRUE,
+               perl = TRUE,
+               value = TRUE
                )
 
+print('rel weights file')
+print(relWeightsFile)
 outFile <- grep("output_rank_genotypes",
                 allArgs,
                 ignore.case = TRUE,
                 perl = TRUE,
                 value = TRUE
                 )
-
+print('out file')
+print(outFile)
+outputFiles <- scan(outFile,
+                    what = "character"
+                    )
 traitsFiles <- grep("rank_traits_file",
-                inFile,
-                ignore.case = TRUE,
-                perl = TRUE,
-                value = TRUE
-                )
-
-outFiles <- scan(outFile,
-                 what = "character"
-                 )
-
-relGebvsFile <- grep("rel_gebvs_",
-                     outFiles,
+                    inputFiles,
+                    ignore.case = TRUE,
+                    perl = TRUE,
+                    value = TRUE
+                    )
+print('gebv trait files')
+print(traitsFiles)
+#outFiles <- scan(outFile,
+#                 what = "character"
+#                 )
+print('out files scanned')
+print(outFile)
+rankedGenotypesFile <- grep("ranked_genotypes",
+                     outputFiles,
                      ignore.case = TRUE,
                      perl = TRUE,
                      value = TRUE
                      )
+print(rankedGenotypesFile)
 
 inTraitFiles <- scan(traitsFiles,
                 what = "character"
                 )
 
-
+print(inTraitFiles)
 traitFilesList <- strsplit(inTraitFiles, "\t");
-traitsTotal    <- length(traitList)
+traitsTotal    <- length(traitFilesList)
 
 if (traitsTotal == 0)
   stop("There are no traits with GEBV data.")
@@ -79,36 +92,48 @@ for (i in 1:traitsTotal)
                             sep = "\t",
                             dec = "."
                             )
-    
+    print('trait GEBV')
+    print(traitGEBV)
     trait <- colnames(traitGEBV)
+    print('trait col names')
+    print(trait)
     relWeight <- relWeights[trait, ]
-   
+
+    print('trait rel weight')
+    print(relWeight)
     weightedTraitGEBV <- apply(traitGEBV, 1, function(x) x*relWeight)
-    
+    print('weighted trait gebv')
+    print(weightedTraitGEBV)
     combinedRelGebvs <- merge(combinedRelGebvs, weightedTraitGEBV,
                               by = 0,
                               all = TRUE                     
                               )
 
-    rownames(combinedRelGebvs) <- combinRelGebvs[, 1]
+    rownames(combinedRelGebvs) <- combinedRelGebvs[, 1]
     combinedRelGebvs[, 1] <- NULL
 
   }
-
+print('combined Rel Gebvs')
 print(combinedRelGebvs)
 
 combinedRelGebvs$mean <- apply(combinedRelGebvs, 1, mean)
-combinedRelGebvs <- combinedRelGebvs[ with(combinedRelGebvs, order(-combinedRelGebvs$mean)), ]
+combinedRelGebvs <- combinedRelGebvs[ with(combinedRelGebvs,
+                                           order(-combinedRelGebvs$mean)
+                                           ),
+                                     ]
+
 combinedRelGebvs <- round(combinedRelGebvs,
                           digits = 2
                           )
+print('combined Rel Gebvs formatted')
+print(combinedRelGebvs)
 
-if (length(relGebvsFile) != 0)
+if (length(rankedGenotypesFile) != 0)
   {
     if(is.null(combinedRelGebvs) == FALSE)
       {
         write.table(combinedRelGebvs,
-                    file = relGebvsFile,
+                    file = rankedGenotypesFile,
                     sep = "\t",
                     col.names = NA,
                     quote = FALSE,
