@@ -545,7 +545,6 @@ sub get_trait_name {
 
 #creates and writes a list of GEBV files of 
 #traits selected for ranking genotypes.
-
 sub gebv_files_weighted {
     my ($self, $c, $traits) = @_;
       
@@ -560,17 +559,20 @@ sub gebv_files_weighted {
             or die "can't open $dir: $!\n";
 
         my ($file)   =  grep(/gebv_kinship_${tr}_${pop_id}/, readdir($dh));
-        $gebv_files .= $file;
+        $gebv_files .= catfile($dir, $file);
         $gebv_files .= "\t" unless (@$traits[-1] eq $tr);
     
         closedir $dh;  
     }
    
-    my ($fh, $file) =  tempfile("rank_traits_file_${pop_id}-XXXXX",
-                                DIR => $c->stash->{solgs_tempfiles_dir}
+    my ($fh, $file) = tempfile("rank_traits_file_${pop_id}-XXXXX",
+                               DIR => $c->stash->{solgs_tempfiles_dir}
         );
+    $fh->close;
 
     write_file($file, $gebv_files);
+   
+    $c->stash->{rank_gebv_files} = $file;
     
 }
 
@@ -579,7 +581,7 @@ sub gebv_rel_weights {
     
     my $pop_id = $c->stash->{pop_id};
   
-    my $rel_wts;
+    my $rel_wts = "\t" . 'relative_weight' . "\n";
     foreach my $tr (keys %$params)
     {      
         my $wt = $params->{$tr};
@@ -590,12 +592,63 @@ sub gebv_rel_weights {
         }
     }
     
-    my ($fh, $file) =  tempfile("rel_gebvs_${pop_id}-XXXXX",
+    my ($fh, $file) =  tempfile("rel_weights_${pop_id}-XXXXX",
                                 DIR => $c->stash->{solgs_tempfiles_dir}
         );
 
     write_file($file, $rel_wts);
     
+    $c->stash->{rel_weights_file} = $file;
+    
+}
+
+sub ranked_genotypes_file {
+    my ($self, $c) = @_;
+
+    my $pop_id = $c->stash->{pop_id};
+
+    my ($fh, $file) =  tempfile("ranked_genotypes_${pop_id}-XXXXX",
+                                DIR => $c->stash->{solgs_tempfiles_dir}
+        );
+
+    $c->stash->{ranked_genotypes_file} = $file;
+   
+}
+
+sub rank_genotypes : Private {
+    my ($self, $c) = @_;
+
+    my $pop_id = $c->stash->{pop_id};
+
+    my $input_files = join("\t", 
+                           $c->stash->{rel_weights_file},
+                           $c->stash->{rank_gebv_files}
+        );
+
+    $self->ranked_genotypes_file($c);
+
+    my $output_files = $c->stash->{ranked_genotypes_file};
+ 
+    my ($fh_o, $output_file) = tempfile("output_rank_genotypes_${pop_id}-XXXXX",
+                                        DIR => $c->stash->{solgs_tempfiles_dir}
+        );
+    $fh_o->close;
+
+    write_file($output_file, $output_files);
+    $c->stash->{output_files} = $output_file;
+    
+    my ($fh_i, $input_file) = tempfile("input_rank_genotypes_${pop_id}-XXXXX",
+                                       DIR => $c->stash->{solgs_tempfiles_dir}
+        );
+    $fh_i->close;
+
+    write_file($input_file, $input_files);
+    $c->stash->{input_files} = $input_file;
+
+    $c->stash->{r_temp_file} = "rank-gebv-genotypes-${pop_id}";
+    $c->stash->{r_script}    = 'R/rank_genotypes.r';
+    $self->run_r_script($c);
+
 }
 
 sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
@@ -688,6 +741,8 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
          $self->gebv_files_weighted($c, \@traits);
          my $params = $c->req->params;
          $self->gebv_rel_weights($c, $params);
+         
+         $c->forward('rank_genotypes');
      }
 }
 
