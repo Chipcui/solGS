@@ -58,6 +58,14 @@ rankedGenotypesFile <- grep("ranked_genotypes",
                      perl = TRUE,
                      value = TRUE
                      )
+
+genotypesMeanGebvFile <- grep("genotypes_mean_gebv",
+                              outputFiles,
+                              ignore.case = TRUE,
+                              perl = TRUE,
+                              value = TRUE
+                              )
+
 print(rankedGenotypesFile)
 
 inTraitFiles <- scan(traitsFiles,
@@ -116,6 +124,7 @@ for (i in 1:traitsTotal)
 print('combined Rel Gebvs')
 print(combinedRelGebvs)
 
+
 combinedRelGebvs$mean <- apply(combinedRelGebvs, 1, mean)
 combinedRelGebvs <- combinedRelGebvs[ with(combinedRelGebvs,
                                            order(-combinedRelGebvs$mean)
@@ -128,12 +137,35 @@ combinedRelGebvs <- round(combinedRelGebvs,
 print('combined Rel Gebvs formatted')
 print(combinedRelGebvs)
 
+genotypesMeanGebv <-c()
+if (is.null(combinedRelGebvs) == FALSE)
+  {
+    genotypesMeanGebv <- subset(combinedRelGebvs,
+                                select = 'mean'
+                                )
+  }
+print('mean gebv')
+print(genotypesMeanGebv)
 if (length(rankedGenotypesFile) != 0)
   {
     if(is.null(combinedRelGebvs) == FALSE)
       {
         write.table(combinedRelGebvs,
                     file = rankedGenotypesFile,
+                    sep = "\t",
+                    col.names = NA,
+                    quote = FALSE,
+                    append = FALSE
+                    )
+      }
+  }
+
+if (length(genotypesMeanGebvFile) != 0)
+  {
+    if(is.null(genotypesMeanGebv) == FALSE)
+      {
+        write.table(genotypesMeanGebv,
+                    file = genotypesMeanGebvFile,
                     sep = "\t",
                     col.names = NA,
                     quote = FALSE,
