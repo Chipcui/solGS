@@ -410,10 +410,12 @@ sub download_urls {
     my $blups_url      = qq | <a href="/download/blups/pop/$pop_id/trait/$trait_id">Download all GEBVs</a> |;
     my $marker_url     = qq | <a href="/download/marker/pop/$pop_id/trait/$trait_id">Download all marker effects</a> |;
     my $validation_url = qq | <a href="/download/validation/pop/$pop_id/trait/$trait_id">Download</a> |;
-    
-    $c->stash(blups_download_url          => $blups_url,
-              marker_effects_download_url => $marker_url,
-              validation_download_url     => $validation_url
+    my $ranked_genotypes_url = qq | <a href="/download/ranked/genotypes/pop/$pop_id>Download ranked genotypes</a> |;
+   
+    $c->stash(blups_download_url            => $blups_url,
+              marker_effects_download_url   => $marker_url,
+              validation_download_url       => $validation_url,
+              ranked_genotypes_download_url => $ranked_genotypes_url,
         );
 }
 
@@ -615,6 +617,38 @@ sub ranked_genotypes_file {
    
 }
 
+sub mean_gebvs_file {
+    my ($self, $c) = @_;
+
+    my $pop_id = $c->stash->{pop_id};
+
+    my ($fh, $file) =  tempfile("genotypes_mean_gebv_${pop_id}-XXXXX",
+                                DIR => $c->stash->{solgs_tempfiles_dir}
+        );
+
+    $c->stash->{genotypes_mean_gebv_file} = $file;
+   
+}
+
+sub download_ranked_genotypes :Path('/download/ranked/genotypes/pop') Args(1) {
+    my ($self, $c, $pop_id) = @_;   
+ 
+    $c->stash->{pop_id} = $pop_id;
+
+    $self->mean_gebv_file($c);
+    my $genotypes_file = $c->stash->{genotypes_mean_gebv_file};
+
+    unless (!-e $genotypes_file || -s $genotypes_file == 0) 
+    {
+        my @ranks =  map { [ split(/\t/) ] }  read_file($genotypes_file);
+    
+        $c->stash->{'csv'}={ data => \@ranks };
+        $c->forward("solGS::View::Download::CSV");
+    } 
+
+}
+
+
 sub rank_genotypes : Private {
     my ($self, $c) = @_;
 
@@ -626,8 +660,12 @@ sub rank_genotypes : Private {
         );
 
     $self->ranked_genotypes_file($c);
+    $self->mean_gebv_file($c);
 
-    my $output_files = $c->stash->{ranked_genotypes_file};
+    my $output_files = join("\t",
+                            $c->stash->{ranked_genotypes_file},
+                            $c->stash->{genotypes_mean_gebv_file}
+        );
  
     my ($fh_o, $output_file) = tempfile("output_rank_genotypes_${pop_id}-XXXXX",
                                         DIR => $c->stash->{solgs_tempfiles_dir}
@@ -647,8 +685,31 @@ sub rank_genotypes : Private {
 
     $c->stash->{r_temp_file} = "rank-gebv-genotypes-${pop_id}";
     $c->stash->{r_script}    = 'R/rank_genotypes.r';
+    
     $self->run_r_script($c);
+    $self->download_urls($c);
 
+}
+
+#based on multiple traits performance
+sub top_ranked_genotypes {
+    my ($self, $c) = @_;
+    
+    my $genotypes_file = $c->stash->{genotypes_mean_gebv_file};
+
+    open my $fh, $genotypes_file or die "couldnot open $genotypes_file: $!";
+    
+    my @top_genotypes;
+    
+    while (<$fh>)
+    {
+        push @top_genotypes,  map { [ split(/\t/) ] } $_;
+        last if $. == 11;
+    }
+
+    shift(@top_genotypes); #add condition
+
+    $c->stash->{top_ranked_genotypes} = \@top_genotypes;
 }
 
 sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
