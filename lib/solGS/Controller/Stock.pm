@@ -76,11 +76,35 @@ sub _filter_stock_rs {
         } );
 
     # optional - filter by project name , project year, location
-    if( my $project_name = $c->req->param('project_name') ) {
-        # filter by multiple project names
+    if( my $project_ids = $c->req->param('projects') ) {
+        # filter by multiple project names select box should allow selecting of multiple
+        # project names. Value is a listref of project_ids
+        $rs = $rs->search(
+            { 'project.project_id' => { -in =>  $project_ids },
+            },
+            { join => { nd_experiment_stocks => { nd_experiment => { 'nd_experiment_project' => 'project'  }}},
+              distinct => 1
+            } );
     }
-
-
+    if (my $years = $c->req->param('years') ) {
+        # filter by multiple years. param is a listref of values
+        $rs = $rs->search(
+            { 'projectprop.value' => { -in =>  $years },
+              'lower(type.name)' => { like => '%year%' }
+            },
+            { join => { nd_experiment_stocks => { nd_experiment => { 'nd_experiment_project' =>  { 'project' =>  { 'projectprops' => 'type' }}}}},
+              distinct => 1
+            });
+    }
+    if( my $location_ids = $c->req->param('locations') ) {
+        # filter by multiple locations. param is listref of nd_geolocation_ids
+        $rs = $rs->search(
+            { 'nd_experiment.nd_geolocation_id' => { -in =>  $location_ids },
+            },
+            { join => { nd_experiment_stocks => ' nd_experiment' },
+              distinct => 1
+            });
+    }
     return $rs;
 }
 
