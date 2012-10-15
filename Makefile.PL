@@ -33,6 +33,7 @@ requires 'Try::Tiny';
 requires 'File::Spec::Functions';
 requires 'File::Slurp';
 requires 'JSON::Any';
+requires 'JSON';
 requires 'String::CRC';
 
 requires 'Config::General'; # This should reflect the config file format you've chosen
