@@ -108,7 +108,29 @@ sub _filter_stock_rs {
     return $rs;
 }
 
+sub project_years {
+    my ($self, $c) = shift;
+    my @years = $self->schema->resultset("Project::Projectprop")->search(
+        {
+            'lower(type.name)' => { like => '%year%' }
+        },
+        { join => 'type',
+          distinct => 1
+        } )->get_column('value');
+}
 
+sub project_names {
+    my ($self, $c) = shift;
+    my @projects = $self->schema->resultset("Project::Project")->search(
+        {} )->get_column('name');
+}
+
+sub locations {
+    my ($self, $c) = shift;
+    my @locations = $self->schema->resultset("NaturalDiversity::NdGeolocation")->search(
+        {} )->get_column('name');
+
+}
 =head1 PRIVATE ACTIONS
 
 =head2 solgs_download_phenotypes
@@ -118,21 +140,17 @@ sub _filter_stock_rs {
 
 sub solgs_download_phenotypes : Path('/solgs/phenotypes') Args(1) {
     my ($self, $c, $stock_id ) = @_; # stock should be population type only?
-    
+
     if ($stock_id) {
-        
         $c->stash->{pop_id} = $stock_id;
         $c->controller('Root')->phenotype_file($c);
-        
         my $d = read_file($c->stash->{phenotype_file});
-              
         my @info  = split(/\n/ , $d);
         my @data;
-       
         foreach (@info) {
             push @data, [ split(/\t/) ] ;
         }
-        
+
         $c->stash->{'csv'}={ data => \@data};
         $c->forward("View::Download::CSV");
     }
