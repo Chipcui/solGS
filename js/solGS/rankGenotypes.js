@@ -97,11 +97,11 @@ var rankGenotypes = {
                         dataType: "json",
                         url: action,
                         data: params,                       
-                        success: function(res) {
+                        success: function(res){
                         var suc = res.status;
                         var genos = new Hash();
                         genos = res.genotypes;
-                        var download = res.link;
+                        var download_link = res.link;
                         var kys = [];
                         kys = Object.keys(genos);
                        
@@ -111,16 +111,17 @@ var rankGenotypes = {
                         for (var i=0; i<kys.length; i++) {
                             var ky = kys[i];
                             var val = genos[kys[i]];
-                            table += '<tr>';
-                            table += '<td  class="columnar_table bgcoloralt1">' 
-                                + ky + '</td>' + '<td class="columnar_table bgcoloralt1">' 
+                            table += '<tr class="columnar_table bgcoloralt1">';
+                            table += '<td>' 
+                                + ky + '</td>' + '<td>' 
                                 + val + '</td>';
                             table += '</tr>';                          
                         }
-                        var str = 'test';
-                    table += '</table>';
-                    table += '<br>' + download;
-                    jQuery('#top_genotypes').append(table).show();
+                        
+                        table += '</table>';                    
+                        table += '<br>' + download_link;
+
+                        jQuery('#top_genotypes').append(table).show();
                                                
                     }
                 });
