@@ -9,14 +9,12 @@
 JSAN.use('jquery');
 JSAN.use('Prototype');
 
-
-var rankgenotypes = {
+var rankGenotypes = {
  gebvWeights: function( pop_id )
  {
       
         var rel_form = document.getElementById('rel_gebv_form');
         var all = rel_form.getElementsByTagName('input');
-        var args = new Hash();
         var params, validate;
         var allValues = [];
         
@@ -91,12 +89,40 @@ var rankgenotypes = {
     },
 
  sendArguments: function(params, pop_id) {
+     
         if(params) {
             var action = '/traits/all/population/' + pop_id;
             jQuery.ajax({
                     type: 'POST',
+                        dataType: "json",
                         url: action,
-                        data: params,
+                        data: params,                       
+                        success: function(res) {
+                        var suc = res.status;
+                        var genos = new Hash();
+                        genos = res.genotypes;
+                        var download = res.link;
+                        var kys = [];
+                        kys = Object.keys(genos);
+                       
+                        var table = '<table  style="padding: 1px; width:75%;">';
+                        table += '<tr><th>Genotypes</th><th>Weighted Mean</th></tr>';
+                       
+                        for (var i=0; i<kys.length; i++) {
+                            var ky = kys[i];
+                            var val = genos[kys[i]];
+                            table += '<tr>';
+                            table += '<td  class="columnar_table bgcoloralt1">' 
+                                + ky + '</td>' + '<td class="columnar_table bgcoloralt1">' 
+                                + val + '</td>';
+                            table += '</tr>';                          
+                        }
+                        var str = 'test';
+                    table += '</table>';
+                    table += '<br>' + download;
+                    jQuery('#top_genotypes').append(table).show();
+                                               
+                    }
                 });
         }           
     },
