@@ -107,19 +107,21 @@ for (i in 1:traitsTotal)
     print(trait)
     relWeight <- relWeights[trait, ]
 
-    print('trait rel weight')
-    print(relWeight)
-    weightedTraitGEBV <- apply(traitGEBV, 1, function(x) x*relWeight)
-    print('weighted trait gebv')
-    print(weightedTraitGEBV)
-    combinedRelGebvs <- merge(combinedRelGebvs, weightedTraitGEBV,
-                              by = 0,
-                              all = TRUE                     
-                              )
+    if(relWeight != 0)
+      {
+        print('trait rel weight')
+        print(relWeight)
+        weightedTraitGEBV <- apply(traitGEBV, 1, function(x) x*relWeight)
+        print('weighted trait gebv')
+        print(weightedTraitGEBV)
+        combinedRelGebvs <- merge(combinedRelGebvs, weightedTraitGEBV,
+                                  by = 0,
+                                  all = TRUE                     
+                                  )
 
-    rownames(combinedRelGebvs) <- combinedRelGebvs[, 1]
-    combinedRelGebvs[, 1] <- NULL
-
+        rownames(combinedRelGebvs) <- combinedRelGebvs[, 1]
+        combinedRelGebvs[, 1] <- NULL
+      }
   }
 print('combined Rel Gebvs')
 print(combinedRelGebvs)
