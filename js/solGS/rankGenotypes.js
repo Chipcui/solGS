@@ -8,6 +8,7 @@
 //JSAN.use('MochiKit.LoggingPane');
 JSAN.use('jquery');
 JSAN.use('Prototype');
+JSAN.use('jquery.blockUI');
 
 var rankGenotypes = {
  gebvWeights: function( pop_id )
@@ -89,22 +90,26 @@ var rankGenotypes = {
     },
 
  sendArguments: function(params, pop_id) {
-     
+       
         if(params) {
+           
+            jQuery.blockUI.defaults.applyPlatformOpacityRules = false;
+            jQuery.blockUI({message: 'Please wait..'});
+            
             var action = '/traits/all/population/' + pop_id;
             jQuery.ajax({
                     type: 'POST',
                         dataType: "json",
                         url: action,
-                        data: params,                       
-                        success: function(res){
+                        data: params,
+                        success: function(res){                       
                         var suc = res.status;
                         var genos = new Hash();
                         genos = res.genotypes;
                         var download_link = res.link;
                         var kys = [];
                         kys = Object.keys(genos);
-                       
+                         
                         var table = '<table  style="padding: 1px; width:75%;">';
                         table += '<tr><th>Genotypes</th><th>Weighted Mean</th></tr>';
                        
@@ -122,7 +127,7 @@ var rankGenotypes = {
                         table += '<br>' + download_link;
 
                         jQuery('#top_genotypes').append(table).show();
-                                               
+                        jQuery.unblockUI();                   
                     }
                 });
         }           
