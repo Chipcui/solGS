@@ -28,6 +28,7 @@ requires 'List::Compare';
 requires 'File::Temp';
 requires 'File::Path';
 requires 'File::Copy';
+requires 'File::Basename';
 requires 'Cache::File';
 requires 'Try::Tiny';
 requires 'File::Spec::Functions';
