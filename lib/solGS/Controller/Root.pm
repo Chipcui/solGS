@@ -10,6 +10,7 @@ use File::Spec::Functions qw / catfile catdir/;
 use File::Temp qw / tempfile tempdir /;
 use File::Slurp qw /write_file read_file :edit prepend_file/;
 use File::Copy;
+use File::Basename;
 use Cache::File;
 use Try::Tiny;
 use Scalar::Util 'weaken';
@@ -18,6 +19,7 @@ use CatalystX::GlobalContext ();
 use CXGN::Login;
 use CXGN::People::Person;
 use CXGN::Tools::Run;
+use JSON;
 
 BEGIN { extends 'Catalyst::Controller::HTML::FormFu' }
 
@@ -407,10 +409,13 @@ sub download_urls {
     
     my $pop_id         = $c->stash->{pop_id};
     my $trait_id       = $c->stash->{trait_id};
+    my $ranked_genos_file = $c->stash->{genotypes_mean_gebv_file};
+    ($ranked_genos_file) = fileparse($ranked_genos_file);
+    
     my $blups_url      = qq | <a href="/download/blups/pop/$pop_id/trait/$trait_id">Download all GEBVs</a> |;
     my $marker_url     = qq | <a href="/download/marker/pop/$pop_id/trait/$trait_id">Download all marker effects</a> |;
     my $validation_url = qq | <a href="/download/validation/pop/$pop_id/trait/$trait_id">Download</a> |;
-    my $ranked_genotypes_url = qq | <a href="/download/ranked/genotypes/pop/$pop_id>Download ranked genotypes</a> |;
+    my $ranked_genotypes_url = qq | <a href="/download/ranked/genotypes/pop/$pop_id/$ranked_genos_file>Download all ranked genotypes</a> |;
    
     $c->stash(blups_download_url            => $blups_url,
               marker_effects_download_url   => $marker_url,
@@ -471,7 +476,6 @@ sub validation_file {
     };
 
     $self->cache_file($c, $cache_data);
-
 }
 
 sub combined_gebvs_file {
@@ -503,8 +507,8 @@ sub download_validation :Path('/download/validation/pop') Args(3) {
     
         $c->stash->{'csv'}={ data => \@validation };
         $c->forward("solGS::View::Download::CSV");
-    } 
-
+    }
+ 
 }
 
 sub model_accuracy {
@@ -543,6 +547,7 @@ sub get_trait_name {
     $c->stash->{trait_id}   = $trait_id;
     $c->stash->{trait_name} = $trait_name;
     $c->stash->{trait_abbr} = $abbr;
+
 }
 
 #creates and writes a list of GEBV files of 
@@ -630,14 +635,13 @@ sub mean_gebvs_file {
    
 }
 
-sub download_ranked_genotypes :Path('/download/ranked/genotypes/pop') Args(1) {
-    my ($self, $c, $pop_id) = @_;   
+sub download_ranked_genotypes :Path('/download/ranked/genotypes/pop') Args(2) {
+    my ($self, $c, $pop_id, $genotypes_file) = @_;   
  
     $c->stash->{pop_id} = $pop_id;
-
-    $self->mean_gebv_file($c);
-    my $genotypes_file = $c->stash->{genotypes_mean_gebv_file};
-
+  
+    $genotypes_file = catfile($c->stash->{solgs_tempfiles_dir}, $genotypes_file);
+  
     unless (!-e $genotypes_file || -s $genotypes_file == 0) 
     {
         my @ranks =  map { [ split(/\t/) ] }  read_file($genotypes_file);
@@ -647,7 +651,6 @@ sub download_ranked_genotypes :Path('/download/ranked/genotypes/pop') Args(1) {
     } 
 
 }
-
 
 sub rank_genotypes : Private {
     my ($self, $c) = @_;
@@ -660,7 +663,7 @@ sub rank_genotypes : Private {
         );
 
     $self->ranked_genotypes_file($c);
-    $self->mean_gebv_file($c);
+    $self->mean_gebvs_file($c);
 
     my $output_files = join("\t",
                             $c->stash->{ranked_genotypes_file},
@@ -688,7 +691,8 @@ sub rank_genotypes : Private {
     
     $self->run_r_script($c);
     $self->download_urls($c);
-
+    $self->top_ranked_genotypes($c);
+  
 }
 
 #based on multiple traits performance
@@ -696,7 +700,6 @@ sub top_ranked_genotypes {
     my ($self, $c) = @_;
     
     my $genotypes_file = $c->stash->{genotypes_mean_gebv_file};
-
     open my $fh, $genotypes_file or die "couldnot open $genotypes_file: $!";
     
     my @top_genotypes;
@@ -716,6 +719,7 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
     my ($self, $c, $pop_id) = @_;
     
     $c->stash->{pop_id} = $pop_id;
+   
     my @selected_traits = $c->req->param('trait');
 
     if (!@selected_traits)
@@ -767,10 +771,10 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
 
 sub all_traits_output :Path('/traits/all/population') Arg(1) {
      my ($self, $c, $pop_id) = @_;
+  
+     my @traits = $c->req->param; 
      
-     my @traits = $c->req->param;    
      @traits = grep {$_ ne 'rank'} @traits;
-
      $c->stash->{pop_id} = $pop_id;
      
      $self->analyzed_traits($c);
@@ -790,7 +794,7 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
 
      $c->stash->{template} = '/population/multiple_traits_output.mas';
      $c->stash->{trait_pages} = \@trait_pages;
-   
+  
      my @values;
      foreach (@traits)
      {
@@ -804,7 +808,32 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
          $self->gebv_rel_weights($c, $params);
          
          $c->forward('rank_genotypes');
-     }
+         
+         my $geno = $self->tohtml_genotypes($c);
+         
+         my $link = $c->stash->{ranked_genotypes_download_url};
+                       
+         my $ret->{status} = 'success';
+         $ret->{genotypes} = $geno;
+         $ret->{link} = $link;
+       
+         $ret = to_json($ret);
+        
+         $c->res->content_type('application/json');
+         $c->res->body($ret);
+    }
+}
+
+sub tohtml_genotypes {
+    my ($self, $c) = @_;
+  
+    my $genotypes = $c->stash->{top_ranked_genotypes};
+    my %geno = ();
+    foreach (@$genotypes)
+    {
+        $geno{$_->[0]} = $_->[1];
+    }
+    return \%geno;
 }
 
 sub get_all_traits {
@@ -1143,9 +1172,7 @@ sub run_r_script {
         $c->throw($err);
     };
 
-
 }
-
   
 sub get_solgs_dirs {
     my ($self, $c) = @_;
