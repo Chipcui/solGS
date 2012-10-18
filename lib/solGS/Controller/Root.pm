@@ -410,7 +410,10 @@ sub download_urls {
     my $pop_id         = $c->stash->{pop_id};
     my $trait_id       = $c->stash->{trait_id};
     my $ranked_genos_file = $c->stash->{genotypes_mean_gebv_file};
-    ($ranked_genos_file) = fileparse($ranked_genos_file);
+    if ($ranked_genos_file) 
+    {
+        ($ranked_genos_file) = fileparse($ranked_genos_file);
+    }
     
     my $blups_url      = qq | <a href="/download/blups/pop/$pop_id/trait/$trait_id">Download all GEBVs</a> |;
     my $marker_url     = qq | <a href="/download/marker/pop/$pop_id/trait/$trait_id">Download all marker effects</a> |;
@@ -800,7 +803,7 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
      {
          push @values, $c->req->param($_);
      }
- 
+      
      if (@values) 
      {
          $self->gebv_files_weighted($c, \@traits);
