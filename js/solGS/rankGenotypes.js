@@ -107,21 +107,23 @@ var rankGenotypes = {
                         var genos = new Hash();
                         genos = res.genotypes;
                         var download_link = res.link;
-                        var kys = [];
-                        kys = Object.keys(genos);
-                         
+                                            
                         var table = '<table  style="padding: 1px; width:75%;">';
                         table += '<tr><th>Genotypes</th><th>Weighted Mean</th></tr>';
-                       
-                        for (var i=0; i<kys.length; i++) {
-                            var ky = kys[i];
-                            var val = genos[kys[i]];
+                        
+                        var sorted = []; 
+                        for (var geno in genos) {
+                            sorted.push([geno, genos[geno]]);
+                            sorted = sorted.sort(function(a, b) {return b[1] - a[1]});
+                        }
+
+                        for (var i=0; i<sorted.length; i++) {
                             table += '<tr class="columnar_table bgcoloralt1">';
                             table += '<td>' 
-                                + ky + '</td>' + '<td>' 
-                                + val + '</td>';
+                                + sorted[i][0] + '</td>' + '<td>' 
+                                + sorted[i][1] + '</td>';
                             table += '</tr>';                          
-                        }
+                         }
                         
                         table += '</table>';                    
                         table += '<br>' + download_link;
