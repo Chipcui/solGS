@@ -18,7 +18,8 @@ var rankGenotypes = {
         var all = rel_form.getElementsByTagName('input');
         var params, validate;
         var allValues = [];
-        
+        var legend = 'Relative Weights:<br/>';
+
         for (var i = 0; i < all.length; i++) {         
              var nm = all[i].name;
              var val = all[i].value;
@@ -28,11 +29,15 @@ var rankGenotypes = {
                  validate = this.validateValues(nm, val);
               
                  if (validate) {
+                     
                      if (i == 0) { 
                          params = nm+'='+val; 
                      } else {
                          params = params +'&'+ nm + '=' + val;
-                     }
+                     }                     
+                   
+                     legend += '<b> ' + nm + '</b>' + ': '+ val;
+
                  }
              }            
          } 
@@ -47,7 +52,7 @@ var rankGenotypes = {
         }
       
         if (params && validate) {
-            this.sendArguments(params, pop_id );
+            this.sendArguments(params, legend, pop_id );
         }//else {
             // params = false;
             //  window.location = '/traits/all/population/' + pop_id;
@@ -89,10 +94,10 @@ var rankGenotypes = {
         return sum;
     },
 
- sendArguments: function(params, pop_id) {
+ sendArguments: function(params, legend, pop_id) {
        
         if(params) {
-           
+                                 
             jQuery.blockUI.defaults.applyPlatformOpacityRules = false;
             jQuery.blockUI({message: 'Please wait..'});
             
@@ -107,10 +112,10 @@ var rankGenotypes = {
                         var genos = new Hash();
                         genos = res.genotypes;
                         var download_link = res.link;
-                                            
+                          
                         var table = '<table  style="padding: 1px; width:75%;">';
                         table += '<tr><th>Genotypes</th><th>Weighted Mean</th></tr>';
-                        
+                       
                         var sorted = []; 
                         for (var geno in genos) {
                             sorted.push([geno, genos[geno]]);
@@ -127,8 +132,9 @@ var rankGenotypes = {
                         
                         table += '</table>';                    
                         table += '<br>' + download_link;
-
-                        jQuery('#top_genotypes').append(table).show();
+                        table += '<br>' + legend + '<br/><br/>';  
+                        
+                        jQuery('#top_genotypes').append(table).show();                       
                         jQuery.unblockUI();                   
                     }
                 });
