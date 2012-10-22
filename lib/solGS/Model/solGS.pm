@@ -31,58 +31,6 @@ it under the same terms as Perl itself.
 
 
 
-sub solgs_phenotype_data {
-    my ($self, $pop_id) = @_;
-    return $self->get_file('phenotype', $pop_id);
-}
-
-sub solgs_genotype_data {
-    my ($self, $pop_id) = @_;
-   return $self->get_file('genotype', $pop_id);
-}
-
-
-sub get_file {
-    my ($self, $c, $type, $pop_id) = @_; 
-    my $solgs_path = $self->solgs_path($c);
-    my $trait = 'abc'; # figure out how to determine trait data file...
-    
-    if ($type eq 'phenotype')
-    {
-        return  catfile($solgs_path, $pop_id, $type, $trait);
-    }
-    else
-    {
-    return  catfile($solgs_path, $pop_id, $type);
-    }
-}
-
-
-sub file_paths {
-    my ($self, $c, $pop_id) = @_; 
-    my $solgs_path = catfile($self->solgs_path($c), $pop_id);
-    my $geno_path  = catfile($solgs_path, 'genotype');
-    my $pheno_path = catfile($solgs_path, 'phenotype');
-  
-    mkpath ([$geno_path, $pheno_path], 0, 0755);        
-    return  $geno_path, $pheno_path;
-   
-}
-
-sub solgs_path {
-    my ($self, $c) = @_;
-    return  $c->config->{'solgs'};
-}
-
-
-sub write_data {
-#make query to db and store population level phenotype and genotype data in tab delimited files
-
-}
-sub data_quality {
-#data quality, formatting check
-
-}
 
 sub search_trait {
     my ($self, $c, $trait) = @_;
