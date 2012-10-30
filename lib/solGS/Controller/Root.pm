@@ -49,7 +49,7 @@ The root page (/)
 
 sub index :Path :Args(0) {
     my ($self, $c) = @_; 
-    $c->stash(template=>'home.mas')
+    $c->forward('search');
 }
 
 sub submit :Path('/submit/intro') :Args(0) {
@@ -832,6 +832,7 @@ sub tohtml_genotypes {
   
     my $genotypes = $c->stash->{top_ranked_genotypes};
     my %geno = ();
+
     foreach (@$genotypes)
     {
         $geno{$_->[0]} = $_->[1];
