@@ -59,14 +59,24 @@ sub _filter_stock_rs {
     my ( $self, $c, $rs ) = @_;
 
     # filter by genoytpe and phenotype experiments
+    #check if there are any direct or indirect phenotypes scored on this stock
+    my $recursive_phenotypes = $self->schema->resultset("Stock::Stock")->recursive_phenotypes_rs($rs);
+    my @r_stocks;
+    foreach my $p_rs (@$recursive_phenotypes) {
+        while ( my $r =  $p_rs->next )  {
+            my $observable = $r->get_column('observable');
+            next if !$observable;
+            no warnings 'uninitialized';
+            push @r_stocks,  ( $r->get_column('stock_id') );
+        }
+    }
+    #filter the rs by the stock_ids above with scored phenotypes
     $rs = $rs->search(
         {
-            'type.name' => 'phenotyping experiment'
-        } ,
-        { join => {nd_experiment_stocks => { nd_experiment => 'type'  } } ,
-          distinct => 1
-        } );
-
+            'me.stock_id' => { -in =>  \@r_stocks },
+        }
+        );
+    #filter for phenotyped stocks that have a scored genotype
     $rs = $rs->search(
         {
             'type.name' => 'genotyping experiment'
