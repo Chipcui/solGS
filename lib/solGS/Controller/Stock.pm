@@ -63,7 +63,7 @@ sub _filter_stock_rs {
         {
             'type.name' => 'phenotyping experiment'
         } ,
-        { join => {nd_experiment_stocks => { nd_experiment => { 'type' } } } ,
+        { join => {nd_experiment_stocks => { nd_experiment => 'type'  } } ,
           distinct => 1
         } );
 
@@ -71,7 +71,7 @@ sub _filter_stock_rs {
         {
             'type.name' => 'genotyping experiment'
         } ,
-        { join => {nd_experiment_stocks => { nd_experiment => { 'type' } } } ,
+        { join => {nd_experiment_stocks => { nd_experiment =>  'type'  } } ,
           distinct => 1
         } );
 
