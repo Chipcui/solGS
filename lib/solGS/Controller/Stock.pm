@@ -51,7 +51,7 @@ sub validate_stock_list {
               distinct => 1
            }
         );
-    $self->_filter_stock_rs($c,$stock_rs);
+   return  $self->_filter_stock_rs($c,$stock_rs);
 
 }
 # select stock_rs for genomic selection tool
@@ -60,6 +60,7 @@ sub _filter_stock_rs {
 
     # filter by genoytpe and phenotype experiments
     #check if there are any direct or indirect phenotypes scored on this stock
+     print STDERR "\n\n check if there are any direct or indirect phenotypes scored on this stock..\n\n";
     my $recursive_phenotypes = $self->schema->resultset("Stock::Stock")->recursive_phenotypes_rs($rs);
     my @r_stocks;
     foreach my $p_rs (@$recursive_phenotypes) {
@@ -71,12 +72,38 @@ sub _filter_stock_rs {
         }
     }
     #filter the rs by the stock_ids above with scored phenotypes
+    print STDERR "\n\nfilter the rs by the stock_ids above with scored phenotypes\n\n";
     $rs = $rs->search(
         {
             'me.stock_id' => { -in =>  \@r_stocks },
         }
         );
     #filter for phenotyped stocks that have a scored genotype
+
+#             'type.name' => 'phenotyping experiment'
+#         } ,
+#         { join => {nd_experiment_stocks => { nd_experiment => 'type'  } } ,
+#           distinct => 1
+#        } );
+
+ my $cnt =0;
+    
+  while (my $p = $rs->next) {
+
+         
+          print STDERR "\ngs stock phenotype: found one stock with phenotype\n\n";
+         # my $id = $p->stock_id;
+        #  my $name = $p->name;
+        #  print STDERR "\ngs stock phenotype: $id, $name\n\n";
+      
+       #   $cnt++;
+       #   last  if $cnt == 3;
+    
+    }  
+   
+    
+    print STDERR "\n\nstarting genotype rs..\n\n";
+
     $rs = $rs->search(
         {
             'type.name' => 'genotyping experiment'
@@ -85,61 +112,84 @@ sub _filter_stock_rs {
           distinct => 1
         } );
 
-    # optional - filter by project name , project year, location
-    if( my $project_ids = $c->req->param('projects') ) {
-        # filter by multiple project names select box should allow selecting of multiple
-        # project names. Value is a listref of project_ids
-        $rs = $rs->search(
-            { 'project.project_id' => { -in =>  $project_ids },
-            },
-            { join => { nd_experiment_stocks => { nd_experiment => { 'nd_experiment_project' => 'project'  }}},
-              distinct => 1
-            } );
-    }
-    if (my $years = $c->req->param('years') ) {
-        # filter by multiple years. param is a listref of values
-        $rs = $rs->search(
-            { 'projectprop.value' => { -in =>  $years },
-              'lower(type.name)' => { like => '%year%' }
-            },
-            { join => { nd_experiment_stocks => { nd_experiment => { 'nd_experiment_project' =>  { 'project' =>  { 'projectprops' => 'type' }}}}},
-              distinct => 1
-            });
-    }
-    if( my $location_ids = $c->req->param('locations') ) {
-        # filter by multiple locations. param is listref of nd_geolocation_ids
-        $rs = $rs->search(
-            { 'nd_experiment.nd_geolocation_id' => { -in =>  $location_ids },
-            },
-            { join => { nd_experiment_stocks => ' nd_experiment' },
-              distinct => 1
-            });
-    }
+
+     print STDERR "\ngs stock genotype: starting\n\n";
+    my $count =0;
+     
+  while (my $p = $rs->next) {
+
+         
+          print STDERR "\ngs stock genotype: found one stock with genotype\n\n";
+         # my $id = $p->stock_id;
+         # my $name = $p->name;
+        #  print STDERR "\ngs stock genotype: $id, $name\n\n";
+      
+         # $count++;
+         # last  if $count == 3;
+    
+    } 
+ 
+
+
+   #  # optional - filter by project name , project year, location
+#     if( my $project_ids = $c->req->param('projects') ) {
+#         # filter by multiple project names select box should allow selecting of multiple
+#         # project names. Value is a listref of project_ids
+#         $rs = $rs->search(
+#             { 'project.project_id' => { -in =>  $project_ids },
+#             },
+#             { join => { nd_experiment_stocks => { nd_experiment => { 'nd_experiment_project' => 'project'  }}},
+#               distinct => 1
+#             } );
+#     }
+#     if (my $years = $c->req->param('years') ) {
+#         # filter by multiple years. param is a listref of values
+#         $rs = $rs->search(
+#             { 'projectprop.value' => { -in =>  $years },
+#               'lower(type.name)' => { like => '%year%' }
+#             },
+#             { join => { nd_experiment_stocks => { nd_experiment => { 'nd_experiment_project' =>  { 'project' =>  { 'projectprops' => 'type' }}}}},
+#               distinct => 1
+#             });
+#     }
+#     if( my $location_ids = $c->req->param('locations') ) {
+#         # filter by multiple locations. param is listref of nd_geolocation_ids
+#         $rs = $rs->search(
+#             { 'nd_experiment.nd_geolocation_id' => { -in =>  $location_ids },
+#             },
+#             { join => { nd_experiment_stocks => ' nd_experiment' },
+#               distinct => 1
+#             });
+#     }
     return $rs;
 }
 
 sub project_years {
     my ($self, $c) = shift;
-    my @years = $self->schema->resultset("Project::Projectprop")->search(
+    my $years_rs = $self->schema->resultset("Project::Projectprop")->search(
         {
             'lower(type.name)' => { like => '%year%' }
         },
         { join => 'type',
           distinct => 1
-        } )->get_column('value');
+        } ); #->get_column('value');
+    
+    return $years_rs;
 }
 
 sub project_names {
     my ($self, $c) = shift;
-    my @projects = $self->schema->resultset("Project::Project")->search(
-        {} )->get_column('name');
+    my $projects_rs =  $self->schema->resultset("Project::Project")->search(
+        {} );#->get_column('name');
+    return $projects_rs;
 }
 
 sub locations {
     my ($self, $c) = shift;
-    my @locations = $self->schema->resultset("NaturalDiversity::NdGeolocation")->search(
-        {} )->get_column('name');
+    my $locations_rs = $self->schema->resultset("NaturalDiversity::NdGeolocation")->search(
+        {} );#->get_column('description');
 
+    return $locations_rs;
 }
 =head1 PRIVATE ACTIONS
 
