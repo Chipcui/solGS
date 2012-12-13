@@ -127,41 +127,6 @@ sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
 
 }
 
-# sub show_search_result_pops : Path('/search/result/populations') Args(1) {
-#     my ($self, $c, $trait_id) = @_;
-  
-#     my $pop_ids = $c->model('solGS')->search_populations($c, $trait_id);
-  
-#     my (@result, @unique_ids);
-   
-    
-#     my $form;
-#     if (@$pop_ids[0])
-#     {
-#         foreach my $pop_id (@$pop_ids) 
-#         {      
-#             unless (grep {$_ == $pop_id} @unique_ids) 
-#             {
-#                 push @unique_ids, $pop_id;        
-#                 my $pop_rs   = $c->model('solGS')->get_population_details($c, $pop_id);
-#                 my $pop_name = $pop_rs->single->name;
-#                 push @result, [qq|<a href="/trait/$trait_id/population/$pop_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
-#             }
-#         }
-        
-#         $self->get_trait_name($c, $trait_id);
-       
-#         $c->stash(template => '/search/result/populations.mas',
-#                   result   => \@result,
-#                   form     => $form
-#             );
-#     }
-#     else
-#     {
-#         $c->res->redirect('/search/solgs');     
-#     }
-
-# }
 
 sub show_search_result_pops : Path('/search/result/populations') Args(1) {
     my ($self, $c, $trait_id) = @_;
@@ -231,7 +196,7 @@ sub population : Regex('^population/([\d]+)(?:/([\w+]+))?'){
     {   
         $c->stash->{pop_id} = $pop_id;  
         $self->phenotype_file($c);
-        #$self->genotype_file($c);
+        $self->genotype_file($c);
         $self->get_all_traits($c);
        
         $c->stash->{template} = '/population.mas';
@@ -442,7 +407,7 @@ sub download_urls {
     my $blups_url      = qq | <a href="/download/blups/pop/$pop_id/trait/$trait_id">Download all GEBVs</a> |;
     my $marker_url     = qq | <a href="/download/marker/pop/$pop_id/trait/$trait_id">Download all marker effects</a> |;
     my $validation_url = qq | <a href="/download/validation/pop/$pop_id/trait/$trait_id">Download</a> |;
-    my $ranked_genotypes_url = qq | <a href="/download/ranked/genotypes/pop/$pop_id/$ranked_genos_file>Download all ranked genotypes</a> |;
+    my $ranked_genotypes_url = qq | <a href="/download/ranked/genotypes/pop/$pop_id/$ranked_genos_file">Download all ranked genotypes</a> |;
    
     $c->stash(blups_download_url            => $blups_url,
               marker_effects_download_url   => $marker_url,
