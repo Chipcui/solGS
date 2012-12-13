@@ -234,7 +234,8 @@ sub trait :Path('/trait') Args(3) {
     {   
         $self->get_trait_name($c, $trait_id);
         $c->stash->{pop_id} = $pop_id;
-                      
+        
+        print STDERR "\n/trait/$trait_id/population/$pop_id/:\n";                            
         $self->get_rrblup_output($c);
         $self->gs_files($c);
 
@@ -252,10 +253,12 @@ sub gs_files {
     my ($self, $c) = @_;
     
     $self->output_files($c);
+    #$self->input_files($c);
     $self->model_accuracy($c);
     $self->blups_file($c);
     $self->download_urls($c);
     $self->top_markers($c);
+
 }
 
 sub input_files {
@@ -527,7 +530,6 @@ sub get_trait_name {
 
     my $trait_name = $c->model('solGS')->trait_name($c, $trait_id);
   
-    print STDERR "\ntrait name: $trait_name\n";
     if (!$trait_name) 
     { 
         $c->throw(public_message =>"No trait name corresponding to the id was found in the database.", 
@@ -535,8 +537,8 @@ sub get_trait_name {
             );
     }
 
-    my $abbr = $self->abbreviate_term($trait_name);
-    
+    my $abbr = $self->abbreviate_term($c, $trait_name);
+   
     $c->stash->{trait_id}   = $trait_id;
     $c->stash->{trait_name} = $trait_name;
     $c->stash->{trait_abbr} = $abbr;
@@ -713,15 +715,15 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
     
     $c->stash->{pop_id} = $pop_id;
    
-    my @selected_traits = $c->req->param('trait');
-
+    my @selected_traits = $c->req->param('trait_id');
+    
     if (!@selected_traits)
     {
         $c->res->redirect("/population/$pop_id/selecttraits");
     }
     elsif (scalar(@selected_traits) == 1)
     {
-        my $trait_id = $c->model('solGS')->get_trait_id($c, $selected_traits[$0]);
+        my $trait_id = $selected_traits[0]; 
         $c->res->redirect("/trait/$trait_id/population/$pop_id");
     }
     elsif(scalar(@selected_traits) > 1)
@@ -729,14 +731,17 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
         my $traits;    
         for (my $i = 0; $i <= $#selected_traits; $i++)
         {
-            $traits .= $self->abbreviate_term($selected_traits[$i]);
+            my $tr = $c->model('solGS')->trait_name($c, $selected_traits[$i]);
+   
+            my $abbr = $self->abbreviate_term($c, $tr);
+            $traits .= $abbr;
             $traits .= "\t" unless ($i == $#selected_traits);           
         } 
-        
+    
         my $trait_id;
         foreach (@selected_traits)
         {
-            $trait_id .= $c->model('solGS')->get_trait_id($c, $_);
+            $trait_id .= $_; #$c->model('solGS')->get_trait_id($c, $_);
         } 
         
         my $identifier = crc($trait_id);
@@ -766,23 +771,38 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
      my ($self, $c, $pop_id) = @_;
   
      my @traits = $c->req->param; 
-     
      @traits = grep {$_ ne 'rank'} @traits;
      $c->stash->{pop_id} = $pop_id;
      
      $self->analyzed_traits($c);
      my @analyzed_traits = @{$c->stash->{analyzed_traits}};
-     
+ 
      if (!@analyzed_traits) 
      {
          $c->res->redirect("/population/$pop_id/selecttraits/");
      }
    
      my @trait_pages;
-     foreach (@analyzed_traits)
+     foreach my $tr (@analyzed_traits)
      {
-         my $trait_id = $c->model('solGS')->get_trait_id($c, $_);
-         push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id">$_</a>| ];
+         my $acronym_pairs = $self->get_acronym_pairs($c);
+         my $trait_name;
+         if ($acronym_pairs)
+         {
+             foreach my $r (@$acronym_pairs) 
+             {
+                 if ($r->[0] eq $tr) 
+                 {
+                     $trait_name = $r->[1];
+                     $trait_name =~ s/\n//g;
+                     $c->stash->{trait_name} = $trait_name;
+                     $c->stash->{trait_abbr} = $r->[0];
+                   }
+               }
+
+         }
+         my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);         
+         push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id">$tr</a>| ];
      } 
 
      $c->stash->{template} = '/population/multiple_traits_output.mas';
@@ -837,7 +857,7 @@ sub get_all_traits {
     
     open my $ph, "<", $pheno_file or die "$pheno_file:$!\n";
     my $headers = <$ph>;
-    $headers =~ s/uniquename\t|stock_id\t|stock_name\t//g;
+    $headers =~ s/uniquename\t|object_id\t|object_name\t|stock_id\t|stock_name\t|//g;
     $ph->close;
 
     $self->add_trait_ids($c, $headers);
@@ -846,15 +866,19 @@ sub get_all_traits {
 
 sub add_trait_ids {
     my ($self, $c, $list) = @_;   
+    
     $list =~ s/\n//;
     my @traits = split (/\t/, $list);
 
     my $table = 'trait_name' . "\t" . 'trait_id' . "\n"; 
     
-    foreach (@traits)
+    my $acronym_pairs = $self->get_acronym_pairs($c);
+    foreach (@$acronym_pairs)
     {
-        my $trait_id = $c->model('solGS')->get_trait_id($c, $_);
-        $table .= $_ . "\t" . $trait_id . "\n";
+        my $trait_name = $_->[1];
+        $trait_name =~ s/\n//g;
+        my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
+        $table .= $trait_name . "\t" . $trait_id . "\n";
     }
 
     $self->all_traits_file($c);
@@ -878,6 +902,66 @@ sub all_traits_file {
 
 }
 
+sub get_acronym_pairs {
+    my ($self, $c) = @_;
+
+    my $pop_id = $c->stash->{pop_id};
+    
+    my $dir    = $c->stash->{solgs_cache_dir};
+    opendir my $dh, $dir 
+        or die "can't open $dir: $!\n";
+
+    my ($file)   =  grep(/traits_acronym_pop_${pop_id}/, readdir($dh));
+    $dh->close;
+
+    my $acronyms_file = catfile($dir, $file);
+      
+   
+    my @acronym_pairs;
+    if (-f $acronyms_file) 
+    {
+        @acronym_pairs =  map { [ split(/\t/) ] }  read_file($acronyms_file);   
+        shift(@acronym_pairs); # remove header;
+    }
+
+    return \@acronym_pairs;
+
+}
+
+
+sub traits_acronym_table {
+    my ($self, $c, $acronym_table) = @_;
+    
+    my $table = 'acronym' . "\t" . 'name' . "\n"; 
+
+    foreach (keys %$acronym_table)
+    {
+        $table .= $_ . "\t" . $acronym_table->{$_} . "\n";
+    }
+
+    $self->traits_acronym_file($c);
+    my $acronym_file =  $c->stash->{traits_acronym_file};
+    
+    write_file($acronym_file, $table);
+
+}
+
+
+sub traits_acronym_file {
+    my ($self, $c) = @_;
+
+    my $pop_id = $c->stash->{pop_id};
+
+    my $cache_data = {key       => 'traits_acronym_pop' . $pop_id,
+                      file      => 'traits_acronym_pop_' . $pop_id,
+                      stash_key => 'traits_acronym_file'
+    };
+
+    $self->cache_file($c, $cache_data);
+
+}
+
+
 sub analyzed_traits {
     my ($self, $c) = @_;
     my $pop_id = $c->stash->{pop_id};
@@ -896,15 +980,17 @@ sub analyzed_traits {
     $c->stash->{analyzed_traits_files} = \@files;
 }
 
+
 sub abbreviate_term {
-    my ($self, $term) = @_;
+    my ($self, $c, $term) = @_;
   
     my @words = split(/\s/, $term);
+    
     my $acronym;
 	
     if (scalar(@words) == 1) 
     {
-	$acronym .= shift(@words);
+	$acronym = shift(@words);
     }  
     else 
     {
@@ -919,11 +1005,13 @@ sub abbreviate_term {
             {
                 $acronym .= $word;
             }
+
 	    $acronym = uc($acronym);
 	    $acronym =~/(\w+)/;
-	    $acronym = $1;
+	    $acronym = $1; 
 	}	   
     }
+
     return $acronym;
 
 }
@@ -945,10 +1033,8 @@ sub phenotype_file {
         $pheno_file = catfile($c->stash->{solgs_cache_dir}, "phenotype_data_" . $pop_id . ".txt");
         $c->model('solGS')->phenotype_data($c, $pop_id);
         my $data = $c->stash->{phenotype_data};
-
-        $c->model('solGS')->genotype_data($c, $pop_id);
         
-        $data = $self->format_phenotype_dataset($data);
+        $data = $self->format_phenotype_dataset($c, $data);
         write_file($pheno_file, $data);
 
         $file_cache->set($key, $pheno_file, '30 days');
@@ -959,26 +1045,34 @@ sub phenotype_file {
 }
 
 sub format_phenotype_dataset {
-    my ($self, $data) = @_;
+    my ($self, $c, $data) = @_;
     
     my @rows = split (/\n/, $data);
     
     $rows[0] =~ s/SP:\d+\|//g;  
     $rows[0] =~ s/\w+:\w+\|//g;
-  
+   
+
     my @headers = split(/\t/, $rows[0]);
     
-    my $header;
+    my $header;   
+    my %acronym_table;
+
     my $cnt = 0;
-    
-    foreach (@headers)
+    foreach my $trait_name (@headers)
     {
         $cnt++;
-        $header .= $self->abbreviate_term($_);    
+        
+        my $abbr = $self->abbreviate_term($c, $trait_name);
+        $header .= $abbr;
+       
         unless ($cnt == scalar(@headers))
         {
             $header .= "\t";
         }
+        
+        $abbr =~ s/uniquename|object_id|object_name|stock_id|stock_name//g;
+        $acronym_table{$abbr} = $trait_name if $abbr;
     }
     
     $rows[0] = $header;
@@ -988,6 +1082,8 @@ sub format_phenotype_dataset {
         $_ =~ s/\s+plot//g;
         $_ .= "\n";
     }
+    
+    $self->traits_acronym_table($c, \%acronym_table);
 
     return \@rows;
 }
@@ -1024,14 +1120,15 @@ sub genotype_file  {
 sub get_rrblup_output :Private{
     my ($self, $c) = @_;
     
-    my $pop_id = $c->stash->{pop_id};
+    my $pop_id      = $c->stash->{pop_id};
     my $trait_abbr  = $c->stash->{trait_abbr};
-    my $trait_name = $c->stash->{trait_name};
+    my $trait_name  = $c->stash->{trait_name};
+    
     my ($traits_file, @traits, @trait_pages);
    
     if ($trait_name)     
     {
-        $self->run_rrblup_trait($c, $trait_name);
+        $self->run_rrblup_trait($c, $trait_abbr);
     }
     else 
     {    
@@ -1047,11 +1144,27 @@ sub get_rrblup_output :Private{
             push  @traits, $content;
         }
             
-       foreach (@traits) 
-       {                       
-           $self->run_rrblup_trait($c, $_);
-           my $trait_id = $c->stash->{trait_id};
-           push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id">$_</a>| ];
+       foreach my $tr (@traits) 
+       { 
+           my $acronym_pairs = $self->get_acronym_pairs($c);
+           my $trait_name;
+           if ($acronym_pairs)
+           {
+               foreach my $r (@$acronym_pairs) 
+               {
+                   if ($r->[0] eq $tr) 
+                   {
+                       $trait_name = $r->[1];
+                       $trait_name =~ s/\n//g;
+                       $c->stash->{trait_name} = $trait_name;
+                       $c->stash->{trait_abbr} = $r->[0];
+                   }
+               }
+           }    
+           
+           $self->run_rrblup_trait($c, $tr);
+           my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
+           push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id">$tr</a>| ];
        }    
     }
 
@@ -1079,7 +1192,6 @@ sub run_rrblup_trait {
     my $trait_abbr = $c->stash->{trait_abbr};
 
     my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
-
     $c->stash->{trait_id}   = $trait_id ; 
                                 
     my ($fh, $file) = tempfile("trait_${trait_id}_pop_${pop_id}-XXXXX", 
@@ -1098,8 +1210,9 @@ sub run_rrblup_trait {
         )
     {  
         $self->input_files($c);            
-        $self->output_files($c);  
-        $self->run_rrblup($c);    
+        $self->output_files($c);
+        $self->run_rrblup($c); 
+       
     }
 }
 
