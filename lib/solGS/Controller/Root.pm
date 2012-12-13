@@ -127,41 +127,64 @@ sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
 
 }
 
+# sub show_search_result_pops : Path('/search/result/populations') Args(1) {
+#     my ($self, $c, $trait_id) = @_;
+  
+#     my $pop_ids = $c->model('solGS')->search_populations($c, $trait_id);
+  
+#     my (@result, @unique_ids);
+   
+    
+#     my $form;
+#     if (@$pop_ids[0])
+#     {
+#         foreach my $pop_id (@$pop_ids) 
+#         {      
+#             unless (grep {$_ == $pop_id} @unique_ids) 
+#             {
+#                 push @unique_ids, $pop_id;        
+#                 my $pop_rs   = $c->model('solGS')->get_population_details($c, $pop_id);
+#                 my $pop_name = $pop_rs->single->name;
+#                 push @result, [qq|<a href="/trait/$trait_id/population/$pop_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
+#             }
+#         }
+        
+#         $self->get_trait_name($c, $trait_id);
+       
+#         $c->stash(template => '/search/result/populations.mas',
+#                   result   => \@result,
+#                   form     => $form
+#             );
+#     }
+#     else
+#     {
+#         $c->res->redirect('/search/solgs');     
+#     }
+
+# }
+
 sub show_search_result_pops : Path('/search/result/populations') Args(1) {
     my ($self, $c, $trait_id) = @_;
   
-    my $pop_ids = $c->model('solGS')->search_populations($c, $trait_id);
-  
-    my (@result, @unique_ids);
-   
-    
+    my $projects = $c->model('solGS')->search_populations($c, $trait_id);
+
     my $form;
-    if (@$pop_ids[0])
-    {
-        foreach my $pop_id (@$pop_ids) 
-        {      
-            unless (grep {$_ == $pop_id} @unique_ids) 
-            {
-                push @unique_ids, $pop_id;        
-                my $pop_rs   = $c->model('solGS')->get_population_details($c, $pop_id);
-                my $pop_name = $pop_rs->single->name;
-                push @result, [qq|<a href="/trait/$trait_id/population/$pop_id">$pop_name</a>|, 'loc', 2012, $pop_id]; 
-            }
-        }
-        
-        $self->get_trait_name($c, $trait_id);
+     if (@$projects[0])
+     {
+         $self->get_trait_name($c, $trait_id);
        
-        $c->stash(template => '/search/result/populations.mas',
-                  result   => \@result,
-                  form     => $form
-            );
-    }
+         $c->stash(template => '/search/result/populations.mas',
+                   result   => $projects,
+                   form     => $form
+             );
+     }
     else
     {
         $c->res->redirect('/search/solgs');     
     }
 
 }
+
 
 sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfig('search/solgs.yml'){
     my ($self, $c, $query) = @_;
@@ -273,17 +296,18 @@ sub gs_files {
 sub input_files {
     my ($self, $c) = @_;
     
-    #$self->genotype_file($c);
+    $self->genotype_file($c);
     $self->phenotype_file($c);
   
     my $pheno_file  = $c->stash->{phenotype_file};
-   #my $geno_file   = $c->stash->{genotype_file};
+    my $geno_file   = $c->stash->{genotype_file};
     my $traits_file = $c->stash->{selected_traits_file};
     my $trait_file  = $c->stash->{trait_file};
     my $pop_id      = $c->stash->{pop_id};
    
     my $input_files = join ("\t",
                             $pheno_file,
+                            $geno_file,
                             $traits_file,
                             $trait_file
         );
@@ -538,6 +562,7 @@ sub get_trait_name {
 
     my $trait_name = $c->model('solGS')->trait_name($c, $trait_id);
   
+    print STDERR "\ntrait name: $trait_name\n";
     if (!$trait_name) 
     { 
         $c->throw(public_message =>"No trait name corresponding to the id was found in the database.", 
@@ -739,7 +764,7 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
         my $traits;    
         for (my $i = 0; $i <= $#selected_traits; $i++)
         {
-            $traits .= $selected_traits[$i];
+            $traits .= $self->abbreviate_term($selected_traits[$i]);
             $traits .= "\t" unless ($i == $#selected_traits);           
         } 
         
@@ -955,7 +980,9 @@ sub phenotype_file {
         $pheno_file = catfile($c->stash->{solgs_cache_dir}, "phenotype_data_" . $pop_id . ".txt");
         $c->model('solGS')->phenotype_data($c, $pop_id);
         my $data = $c->stash->{phenotype_data};
-  
+
+        $c->model('solGS')->genotype_data($c, $pop_id);
+        
         $data = $self->format_phenotype_dataset($data);
         write_file($pheno_file, $data);
 
@@ -1000,38 +1027,46 @@ sub format_phenotype_dataset {
     return \@rows;
 }
 
-sub genotype_file :Private {
-    my ($self, $c) = @_;
 
-    my $pop_id = $c->stash->{pop_id};
-    $c->controller('Stock')->download_genotypes($pop_id);
-    my $geno_file = "stock_" . $pop_id . "_plot_genotypes.csv";
-    $geno_file    =  catfile($c->config->{solgs_tempfiles}, $geno_file);
-    if (-s $geno_file >= 100 )
-    {
+sub genotype_file  {
+    my ($self, $c) = @_;
+    my $pop_id     = $c->stash->{pop_id};
+    
+    die "Population id must be provided to get the genotype data set." if !$pop_id;
+  
+    my $file_cache  = Cache::File->new(cache_root => $c->stash->{solgs_cache_dir});
+    $file_cache->purge();
+   
+    my $key        = "genotype_data_" . $pop_id;
+    my $geno_file = $file_cache->get($key);
+
+    unless ($geno_file)
+    {  
+        $geno_file = catfile($c->stash->{solgs_cache_dir}, "genotype_data_" . $pop_id . ".txt");
+        $c->model('solGS')->genotype_data($c, $pop_id);
+        my $data = $c->stash->{genotype_data};
         
-        $c->stash->{genotype_file} = $geno_file;
+        write_file($geno_file, $data);
+
+        $file_cache->set($key, $geno_file, '30 days');
     }
-    else
-    {
-        $c->throw_client_error( public_message => "The genotype data file $geno_file
-                                               does not seem to contain data."
-            );
-    }
+   
+    $c->stash->{genotype_file} = $geno_file;
 
 }
+
 
 sub get_rrblup_output :Private{
     my ($self, $c) = @_;
     
     my $pop_id = $c->stash->{pop_id};
-    my $trait  = $c->stash->{trait_abbr};
-   
+    my $trait_abbr  = $c->stash->{trait_abbr};
+    my $trait_name = $c->stash->{trait_name};
     my ($traits_file, @traits, @trait_pages);
    
-    if ($trait)     
+    if ($trait_name)     
     {
-        $self->run_rrblup_trait($c, $trait);
+        $self->run_rrblup_trait($c, $trait_name);
     }
     else 
     {    
@@ -1072,13 +1107,16 @@ sub get_rrblup_output :Private{
 }
 
 sub run_rrblup_trait {
-    my ($self, $c, $trait) = @_;
-    my $pop_id = $c->stash->{pop_id};
+    my ($self, $c, $trait_abbr) = @_;
+    
+    my $pop_id     = $c->stash->{pop_id};
+    my $trait_name = $c->stash->{trait_name};
+    my $trait_abbr = $c->stash->{trait_abbr};
 
-    my $trait_id = $c->model('solGS')->get_trait_id($c, $trait);
+    my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
+
     $c->stash->{trait_id}   = $trait_id ; 
-    $c->stash->{trait_abbr} = $trait;                          
-        
+                                
     my ($fh, $file) = tempfile("trait_${trait_id}_pop_${pop_id}-XXXXX", 
                                DIR => $c->stash->{solgs_tempfiles_dir}
         );
@@ -1086,7 +1124,7 @@ sub run_rrblup_trait {
     $fh->close;   
 
     $c->stash->{trait_file} = $file;       
-    write_file($file, $trait);
+    write_file($file, $trait_abbr);
 
     $self->output_files($c);
     if (-s $c->stash->{gebv_kinship_file} == 0 ||
