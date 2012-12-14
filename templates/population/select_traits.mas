@@ -35,8 +35,8 @@ while (<FH>)
     <tr>
       <td>
         <input type  = "checkbox" 
-               name  = "trait"
-               value = $trait > $trait_link
+               name  = "trait_id"
+               value = $id > $trait_link
       </td>
     </tr> 
 ROW
