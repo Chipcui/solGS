@@ -1,6 +1,6 @@
 <%doc>
 
-displays list of GS populations evaluated for a trait or traits.
+displays list of GS populations evaluated for a trait.
 
 </%doc>
 
@@ -8,11 +8,15 @@ displays list of GS populations evaluated for a trait or traits.
 
 $result
 $form
+$pager
+$page_links
+$query
+$trait_id
 
 </%args>
 
 <& /page/page_title.mas,
-    title => 'GS Populations evaluated for trait x ',
+    title => "GS Populations evaluated for trait $query" ,
 &>
   
 % if ($result) 
@@ -29,6 +33,12 @@ $form
     __alt_width  => 1,
     __align      => 'l'
  &>
+ 
+  <& /page/pagination_control.mas, 
+     pager     => $pager, 
+    link_maker => $page_links 
+  &> 
+
 </&>
 
 %}
@@ -38,11 +48,17 @@ $form
       title => 'No Search Results',
 &>
 
-<br>No GS poulations were for trait x.<br />
-
-</&>
-
+%if ( $query )
+%{
+<br>No results found for <i><strong>'<% $query %>'.</strong></i><br />
 %}
+%else
+%{
+<br>No results. Search again with a trait name.<br />
+%}
+</&>
+%}
+
 
 
 
