@@ -131,16 +131,48 @@ sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
 sub show_search_result_pops : Path('/search/result/populations') Args(1) {
     my ($self, $c, $trait_id) = @_;
   
-    my $projects = $c->model('solGS')->search_populations($c, $trait_id);
+    my $projects_rs = $c->model('solGS')->search_populations($c, $trait_id);
+    my $trait       = $c->model('solGS')->trait_name($c, $trait_id);
+    
+    my ($year, $location, $pr_id, $pr_name, $pr_desc, @projects_list);  
+    while (my $pr = $projects_rs->next) 
+    {
+        $pr_id   = $pr->project_id;
+        $pr_name = $pr->name;
+        $pr_desc = $pr->description;
+        
+        my $pr_yr_rs = $c->model('solGS')->project_year($c, $pr_id);
+        
+        while (my $pr = $pr_yr_rs->next) 
+        {
+            $year = $pr->value;
+        }
 
+        my $pr_loc_rs = $c->model('solGS')->project_location($c, $pr_id);
+    
+        while (my $pr = $pr_loc_rs->next) 
+        {
+            $location = $pr->description;          
+        }
+           
+        my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
+        push @projects_list, [ $checkbox, qq|<a href="/trait/$trait_id/population/$pr_id">$pr_name</a>|, 
+                               $pr_desc, $location, $year
+        ];
+    }
+    
     my $form;
-     if (@$projects[0])
+     if (@projects_list)
      {
          $self->get_trait_name($c, $trait_id);
        
-         $c->stash(template => '/search/result/populations.mas',
-                   result   => $projects,
-                   form     => $form
+         $c->stash(template   => '/search/result/populations.mas',
+                   result     => \@projects_list,
+                   form       => $form,
+                   trait_id   => $trait_id,
+                   query      => $trait,
+                   pager      => $projects_rs->pager,
+                   page_links => sub {uri ( query => { trait => $trait, page => shift } ) }
              );
      }
     else
