@@ -59,6 +59,8 @@ sub search_trait {
 
     return $rs;      
 }
+
+
 sub search_populations {
     my ($self, $c, $trait_id) = @_;
   
@@ -71,7 +73,6 @@ sub search_populations {
 
     my $pr_rs = $c->controller('Stock')->stock_projects_rs($rs);
 
-    my @projects_list;
     $pr_rs = $pr_rs->search(
         {},                                
         { 
@@ -79,47 +80,12 @@ sub search_populations {
             page     => $c->req->param('page') || 1,
             rows     => 10,
         }
-        );  
+        ); 
 
-    my ($year, $location, $pr_id, $pr_name, $pr_desc);
-    while (my $pr = $pr_rs->next) 
-    {
-        $pr_id   = $pr->project_id;
-        $pr_name = $pr->name;
-        $pr_desc  = $pr->description;
-
-        my $pr_prop_rs = $self->schema($c)->resultset("Project::Projectprop")
-            ->search(
-            {
-                'me.project_id' => $pr_id
-            }
-            );
-
-        while (my $pr = $pr_prop_rs->next) 
-        {
-            $year = $pr->value;
-        }
-                      
-        my $pr_meta_rs = $self->schema($c)->resultset("NaturalDiversity::NdExperimentProject")
-            ->search({'me.project_id' => $pr_id})
-            ->search_related('nd_experiment')
-            ->search_related('nd_geolocation');
-      
-        while (my $pr = $pr_meta_rs->next) 
-        {
-            $location = $pr->description;
-          
-        }
-        
-        my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
-        push @projects_list, [ $checkbox, qq|<a href="/trait/$trait_id/population/$pr_id">$pr_name</a>|, 
-                               $pr_desc, $location, $year
-        ];
-    }
-    
-    return \@projects_list;
+    return $pr_rs; 
 
 }
+ 
 # sub search_populations {
 #     my ($self, $c, $trait_id) = @_;
     
@@ -150,6 +116,28 @@ sub search_populations {
 #     return \@pop_ids;
 
 # }
+
+
+sub project_year {
+    my ($self, $c, $pr_id) =  @_;
+    
+    return $self->schema($c)->resultset("Project::Projectprop")
+        ->search(
+        {
+            'me.project_id' => $pr_id
+        }
+        );
+}
+
+sub project_location {
+    my ($self, $c, $pr_id) = @_;
+
+    return $self->schema($c)->resultset("NaturalDiversity::NdExperimentProject")
+        ->search({'me.project_id' => $pr_id})
+        ->search_related('nd_experiment')
+        ->search_related('nd_geolocation');
+
+}
 
 sub get_population_details {
     my ($self, $c, $pop_id) = @_;
@@ -382,7 +370,7 @@ sub phenotypes_by_trait {
         }
         $d .= "\n";
     }
-
+   
     return $d;
 }
 
