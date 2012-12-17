@@ -110,7 +110,11 @@ sub genotype_form : Path('/form/population/genotype') Args(0) FormConfig('popula
 sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
     my ($self, $c) = @_;
     my $form = $c->stash->{form};
-    
+
+    my $project_rs = $c->model('solGS')->all_projects($c);
+    $self->projects_links($c, $project_rs);
+    my $projects = $c->stash->{projects_pages};
+
     my $query;
     if ($form->submitted_and_valid) 
     {
@@ -119,28 +123,98 @@ sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
     }        
     else
     {
-        $c->stash(template => '/search/solgs.mas',
-                  form     => $form,
-                  message  => $query
+        $c->stash(template   => '/search/solgs.mas',
+                  form       => $form,
+                  message    => $query,
+                  result     => $projects,
+                  pager      => $project_rs->pager,
+                  page_links => sub {uri ( query => {  page => shift } ) }
             );
     }
 
 }
 
+sub projects_links {
+    my ($self, $c, $pr_rs) = @_;
+
+    my $projects = $self->get_projects_details($c, $pr_rs);
+
+    my @projects_pages;
+    foreach my $pr_id (keys %$projects) 
+    {
+        my $pr_name     = $projects->{$pr_id}{project_name};
+        my $pr_desc     = $projects->{$pr_id}{project_desc};
+        my $pr_year     = $projects->{$pr_id}{project_year};
+        my $pr_location = $projects->{$pr_id}{project_location};
+
+        my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
+        push @projects_pages, [ $checkbox, qq|<a href="/population/$pr_id">$pr_name</a>|, 
+                               $pr_desc, $pr_location, $pr_year
+        ];
+    }
+
+    $c->stash->{projects_pages} = \@projects_pages;
+
+}
 
 sub show_search_result_pops : Path('/search/result/populations') Args(1) {
     my ($self, $c, $trait_id) = @_;
-  
+     
     my $projects_rs = $c->model('solGS')->search_populations($c, $trait_id);
     my $trait       = $c->model('solGS')->trait_name($c, $trait_id);
     
-    my ($year, $location, $pr_id, $pr_name, $pr_desc, @projects_list);  
-    while (my $pr = $projects_rs->next) 
+    $self->get_projects_details($c, $projects_rs);
+    my $projects = $c->stash->{projects_details};
+     
+    my @projects_list;
+   
+    foreach my $pr_id (keys %$projects) 
     {
+        my $pr_name     = $projects->{$pr_id}{project_name};
+        my $pr_desc     = $projects->{$pr_id}{project_desc};
+        my $pr_year     = $projects->{$pr_id}{project_year};
+        my $pr_location = $projects->{$pr_id}{project_location};
+
+        my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
+        push @projects_list, [ $checkbox, qq|<a href="/trait/$trait_id/population/$pr_id">$pr_name</a>|, 
+                               $pr_desc, $pr_location, $pr_year
+        ];
+    }
+
+    my $form;
+    if ($projects_rs)
+    {
+        $self->get_trait_name($c, $trait_id);
+       
+        $c->stash(template   => '/search/result/populations.mas',
+                  result     => \@projects_list,
+                  form       => $form,
+                  trait_id   => $trait_id,
+                  query      => $trait,
+                  pager      => $projects_rs->pager,
+                  page_links => sub {uri ( query => { trait => $trait, page => shift } ) }
+            );
+    }
+    else
+    {
+        $c->res->redirect('/search/solgs');     
+    }
+
+}
+
+sub get_projects_details {
+    my ($self,$c, $pr_rs) = @_;
+ 
+    my ($year, $location, $pr_id, $pr_name, $pr_desc);
+    my %projects_details = ();
+
+    while (my $pr = $pr_rs->next) 
+    {
+       
         $pr_id   = $pr->project_id;
         $pr_name = $pr->name;
         $pr_desc = $pr->description;
-        
+       
         my $pr_yr_rs = $c->model('solGS')->project_year($c, $pr_id);
         
         while (my $pr = $pr_yr_rs->next) 
@@ -153,35 +227,19 @@ sub show_search_result_pops : Path('/search/result/populations') Args(1) {
         while (my $pr = $pr_loc_rs->next) 
         {
             $location = $pr->description;          
-        }
-           
-        my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
-        push @projects_list, [ $checkbox, qq|<a href="/trait/$trait_id/population/$pr_id">$pr_name</a>|, 
-                               $pr_desc, $location, $year
-        ];
+        } 
+
+        $projects_details{$pr_id}  = { 
+                  project_name     => $pr_name, 
+                  project_desc     => $pr_desc, 
+                  project_year     => $year, 
+                  project_location => $location,
+        };
     }
-    
-    my $form;
-     if (@projects_list)
-     {
-         $self->get_trait_name($c, $trait_id);
-       
-         $c->stash(template   => '/search/result/populations.mas',
-                   result     => \@projects_list,
-                   form       => $form,
-                   trait_id   => $trait_id,
-                   query      => $trait,
-                   pager      => $projects_rs->pager,
-                   page_links => sub {uri ( query => { trait => $trait, page => shift } ) }
-             );
-     }
-    else
-    {
-        $c->res->redirect('/search/solgs');     
-    }
+        
+    $c->stash->{projects_details} = \%projects_details;
 
 }
-
 
 sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfig('search/solgs.yml'){
     my ($self, $c, $query) = @_;
@@ -210,11 +268,18 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
     }
     else
     {
+        my $project_rs = $c->model('solGS')->all_projects($c);
+        $self->projects_links($c, $project_rs);
+        my $projects = $c->stash->{projects_pages};
+        
         my $form = $c->stash->{form};
-        $c->stash(template => '/search/solgs.mas',
-                  form     => $form,
-                  message  => $query
-            );  
+        $c->stash(template   => '/search/solgs.mas',
+                  form       => $form,
+                  message    => $query, 
+                  result     => $projects,
+                  pager      => $project_rs->pager,
+                  page_links => sub {uri ( query => {  page => shift } ) }
+            );
     }
 
 } 
@@ -266,8 +331,7 @@ sub trait :Path('/trait') Args(3) {
     {   
         $self->get_trait_name($c, $trait_id);
         $c->stash->{pop_id} = $pop_id;
-        
-        print STDERR "\n/trait/$trait_id/population/$pop_id/:\n";                            
+                                    
         $self->get_rrblup_output($c);
         $self->gs_files($c);
 
