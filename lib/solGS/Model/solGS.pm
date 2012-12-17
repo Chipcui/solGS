@@ -76,9 +76,9 @@ sub search_populations {
     $pr_rs = $pr_rs->search(
         {},                                
         { 
-            distinct => 1,
             page     => $c->req->param('page') || 1,
             rows     => 10,
+            order_by => 'name',
         }
         ); 
 
@@ -137,6 +137,22 @@ sub project_location {
         ->search_related('nd_experiment')
         ->search_related('nd_geolocation');
 
+}
+
+
+sub all_projects {
+    my ($self, $c) = @_;
+    my $projects_rs =  $self->schema($c)->resultset("Project::Project")
+        ->search({}, 
+                 { 
+                     distinct => 1,
+                     page     => $c->req->param('page') || 1,
+                     rows     => 10,
+                     order_by => 'name'              
+                 },                       
+        );
+
+    return $projects_rs;
 }
 
 sub get_population_details {
