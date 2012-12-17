@@ -136,12 +136,7 @@ sub project_years {
     return $years_rs;
 }
 
-sub project_names {
-    my ($self, $c) = shift;
-    my $projects_rs =  $self->schema->resultset("Project::Project")->search(
-        {} );#->get_column('name');
-    return $projects_rs;
-}
+
 
 sub locations {
     my ($self, $c) = shift;
@@ -237,7 +232,9 @@ sub stock_projects_rs {
         ->search_related('nd_experiment_projects')
         ->search_related('project', 
                          {},
-                         { distinct =>1 } 
+                         { 
+                             distinct => 1,
+                         } 
         );
 
     return $project_rs;
