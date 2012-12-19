@@ -61,6 +61,26 @@ sub search_trait {
 }
 
 
+sub all_gs_traits {
+    my ($self, $c) = @_;
+
+    my $rs = $self->schema($c)->resultset("Phenotype::Phenotype")
+        ->search(
+        {}, 
+        {
+            columns => 'observable_id', 
+            distinct => 1
+        }
+        )
+        ->search_related('observable', 
+                         {},                        
+        );
+
+    return $rs;      
+}
+
+
+
 sub search_populations {
     my ($self, $c, $trait_id) = @_;
   
@@ -86,37 +106,6 @@ sub search_populations {
 
 }
  
-# sub search_populations {
-#     my ($self, $c, $trait_id) = @_;
-    
-#     my $rs = $self->schema($c)->resultset("Phenotype::Phenotype")
-#         ->search({'observable_id' =>  $trait_id})
-#         ->search_related('nd_experiment_phenotypes')
-#         ->search_related('nd_experiment')
-#         ->search_related('nd_experiment_stocks')
-#         ->search_related('stock')
-#         ->search_related('stock_relationship_subjects')
-#         ->search_related('object')
-#         ->search_related('stock_relationship_subjects');
-
-#     my @stock_ids;    
-#     while (my $row = $rs->next)
-#     {                    
-#         push @stock_ids, $row->object_id;
-#     }
-
-#     @stock_ids = uniq @stock_ids;
-
-#     my @pop_ids;
-#     foreach my $st (@stock_ids)
-#     {
-#         push @pop_ids, $st  if ($self->check_stock_type($c, $st) eq 'population');
-#     }
-
-#     return \@pop_ids;
-
-# }
-
 
 sub project_year {
     my ($self, $c, $pr_id) =  @_;
@@ -128,6 +117,7 @@ sub project_year {
         }
         );
 }
+
 
 sub project_location {
     my ($self, $c, $pr_id) = @_;
@@ -155,6 +145,7 @@ sub all_projects {
     return $projects_rs;
 }
 
+
 sub get_population_details {
     my ($self, $c, $pop_id) = @_;
    
@@ -165,6 +156,7 @@ sub get_population_details {
         }, 
         );
 }
+
 
 sub trait_name {
     my ($self, $c, $trait_id) = @_;
@@ -177,6 +169,7 @@ sub trait_name {
     return $trait_name;
 
 }
+
 
 sub get_trait_id {
     my ($self, $c, $trait) = @_;
@@ -191,6 +184,7 @@ sub get_trait_id {
 
 }
 
+
 sub check_stock_type {
     my ($self, $c, $stock_id) = @_;
 
@@ -204,6 +198,7 @@ sub check_stock_type {
         ->single
         ->name;
 }
+
 
 sub phenotype_data {
      my ($self, $c, $pop_id ) = @_; 
@@ -273,6 +268,7 @@ sub stock_genotypes_rs {
 
 }
 
+
 sub extract_project_markers {
     my ($self, $genopropvalue_rs) = @_;
     
@@ -313,6 +309,7 @@ sub stock_genotype_values {
 
     return $geno_values;
 }
+
 
 =head2 phenotypes_by_trait
 
@@ -389,7 +386,6 @@ sub phenotypes_by_trait {
    
     return $d;
 }
-
 
 
 sub schema {
