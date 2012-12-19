@@ -13,6 +13,7 @@ use File::Copy;
 use File::Basename;
 use Cache::File;
 use Try::Tiny;
+use List::MoreUtils qw /uniq/;
 use Scalar::Util 'weaken';
 use CatalystX::GlobalContext ();
 
@@ -48,7 +49,7 @@ The root page (/)
 
 
 sub index :Path :Args(0) {
-    my ($self, $c) = @_; 
+    my ($self, $c) = @_;     
     $c->forward('search');
 }
 
@@ -111,6 +112,9 @@ sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
     my ($self, $c) = @_;
     my $form = $c->stash->{form};
 
+    $self->gs_traits_index($c);
+    my $gs_traits_index = $c->stash->{gs_traits_index};
+    
     my $project_rs = $c->model('solGS')->all_projects($c);
     $self->projects_links($c, $project_rs);
     my $projects = $c->stash->{projects_pages};
@@ -123,12 +127,13 @@ sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
     }        
     else
     {
-        $c->stash(template   => '/search/solgs.mas',
-                  form       => $form,
-                  message    => $query,
-                  result     => $projects,
-                  pager      => $project_rs->pager,
-                  page_links => sub {uri ( query => {  page => shift } ) }
+        $c->stash(template        => '/search/solgs.mas',
+                  form            => $form,
+                  message         => $query,
+                  gs_traits_index => $gs_traits_index,
+                  result          => $projects,
+                  pager           => $project_rs->pager,
+                  page_links      => sub {uri ( query => {  page => shift } ) }
             );
     }
 
@@ -1057,6 +1062,19 @@ sub traits_acronym_file {
 
 }
 
+# sub all_gs_traits_file {
+#     my ($self, $c) = @_;
+
+#     my $pop_id = $c->stash->{pop_id};
+
+#     my $cache_data = {key       => 'all_gs_traits',
+#                       file      => 'all_gs_traits',
+#                       stash_key => 'all_gs_traits_file'
+#     };
+
+#     $self->cache_file($c, $cache_data);
+
+# }
 
 sub analyzed_traits {
     my ($self, $c) = @_;
@@ -1107,10 +1125,129 @@ sub abbreviate_term {
 	    $acronym = $1; 
 	}	   
     }
-
+    
     return $acronym;
 
 }
+
+
+sub all_gs_traits_list {
+    my ($self, $c) = @_;
+
+    my $rs = $c->model('solGS')->all_gs_traits($c);
+ 
+    my @all_traits;
+    while (my $row = $rs->next)
+    {
+        my $trait_id = $row->id;
+        my $trait    = $row->name;
+        push @all_traits, $trait;
+    }
+
+    $c->stash->{all_gs_traits} = \@all_traits;
+}
+
+
+sub gs_traits_index {
+    my ($self, $c) = @_;
+    
+    $self->all_gs_traits_list($c);
+    my $all_traits = $c->stash->{all_gs_traits};
+    my @all_traits =  sort{$a cmp $b} @$all_traits;
+   
+    my @indices = ('A'..'Z');
+    my %traits_hash;
+    my @valid_indices;
+
+    foreach my $index (@indices) 
+    {
+        my @index_traits;
+        foreach my $trait (@all_traits) 
+        {
+            if ($trait =~ /^$index/i) 
+            {
+                push @index_traits, $trait; 
+		   
+            }		
+        }
+        if (@index_traits) 
+        {
+            $traits_hash{$index}=[ @index_traits ];
+        }
+    }
+           
+    foreach my $k ( keys(%traits_hash)) 
+    {
+	push @valid_indices, $k;
+    }
+
+    @valid_indices = sort( @valid_indices );
+    
+    my $trait_index;
+    foreach my $v_i (@valid_indices) 
+    {
+        $trait_index .= qq | <a href=/gs/traits/$v_i>$v_i</a> |;
+	unless ($v_i eq $valid_indices[-1]) 
+        {
+	    $trait_index .= " | ";
+	}	 
+    }
+   
+    $c->stash->{gs_traits_index} = $trait_index;
+   
+}
+
+
+sub traits_starting_with {
+    my ($self, $c, $index) = @_;
+
+    $self->all_gs_traits_list($c);
+    my $all_traits = $c->stash->{all_gs_traits};
+   
+    my $trait_gr = [
+        sort { $a cmp $b  }
+        grep { /^$index/i }
+        uniq @$all_traits
+        ];
+
+    $c->stash->{trait_subgroup} = $trait_gr;
+}
+
+
+sub hyperlink_traits {
+    my ($self, $c, $traits) = @_;
+
+    my @traits_urls;
+    foreach my $tr (@$traits)
+    {
+        push @traits_urls, [ qq | <a href="/search/result/traits/$tr">$tr</a> | ];
+    }
+    $c->stash->{traits_urls} = \@traits_urls;
+}
+
+
+sub gs_traits : PathPart('gs/traits') Chained Args(1) {
+    my ($self, $c, $index) = @_;
+    
+    if ($index =~ /^\w{1}$/) 
+    {
+        $self->traits_starting_with($c, $index);
+        my $traits_gr = $c->stash->{trait_subgroup};
+        
+        $self->hyperlink_traits($c, $traits_gr);
+        my $traits_urls = $c->stash->{traits_urls};
+        
+        $c->stash( template    => '/search/traits/list.mas',
+                   index       => $index,
+                   traits_list => $traits_urls
+            );
+    }
+    else 
+    {
+        $c->forward('search');
+    }
+}
+
 
 sub phenotype_file {
     my ($self, $c) = @_;
