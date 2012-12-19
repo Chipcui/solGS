@@ -300,7 +300,8 @@ sub population : Regex('^population/([\d]+)(?:/([\w+]+))?'){
         $self->phenotype_file($c);
         $self->genotype_file($c);
         $self->get_all_traits($c);
-       
+        $self->project_description($c, $pop_id);
+
         $c->stash->{template} = '/population.mas';
       
         if ($action && $action =~ /selecttraits/ ) {
@@ -319,6 +320,23 @@ sub population : Regex('^population/([\d]+)(?:/([\w+]+))?'){
             );
     }
 } 
+
+
+sub project_description {
+    my ($self, $c, $pr_id) = @_;
+
+    my $pr_rs = $c->model('solGS')->project_details($c, $pr_id);
+
+    while (my $row = $pr_rs->next)
+    {
+        $c->stash(project_id   => $row->id,
+                  project_name => $row->name,
+                  project_desc => $row->description
+            );
+    }
+
+}
+
 
 sub select_traits   {
     my ($self, $c) = @_;
