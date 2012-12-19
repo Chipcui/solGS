@@ -5,6 +5,8 @@ $show_data => 1;
 $traits_form
 $all_traits_file
 $no_traits_selected
+$project_name
+$project_desc
 
 </%args>
 
@@ -15,7 +17,7 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 </%perl>
 
 <& /page/page_title.mas, 
-   title => "Genomic Selection Models for Population"
+   title => "Genomic Selection Models for Population $project_name"
 &>
 
 <&| /page/info_section.mas, 
