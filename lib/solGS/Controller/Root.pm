@@ -1062,19 +1062,6 @@ sub traits_acronym_file {
 
 }
 
-# sub all_gs_traits_file {
-#     my ($self, $c) = @_;
-
-#     my $pop_id = $c->stash->{pop_id};
-
-#     my $cache_data = {key       => 'all_gs_traits',
-#                       file      => 'all_gs_traits',
-#                       stash_key => 'all_gs_traits_file'
-#     };
-
-#     $self->cache_file($c, $cache_data);
-
-# }
 
 sub analyzed_traits {
     my ($self, $c) = @_;
