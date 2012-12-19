@@ -19,6 +19,7 @@ $message
 $result
 $pager
 $page_links
+$gs_traits_index
 
 </%args>
 
@@ -40,8 +41,14 @@ $page_links
 <p style="color:red">There is no phenotyped trait for <b>'<% $message %>'</b>.</p>
 %}
 
+<p style="text-align:center">Browse by traits: <b><% $gs_traits_index %> </b></p>
+<p>&nbsp</p>
+<p>&nbsp</p>
+
 <% $form %>
 
+<p>&nbsp</p>
+<p>&nbsp</p>
 
 </&>
 
