@@ -146,6 +146,13 @@ sub all_projects {
 }
 
 
+sub project_details {
+    my ($self, $c, $pr_id) = @_;
+    
+    return $self->schema($c)->resultset("Project::Project")
+        ->search( {'me.project_id' => $pr_id});
+}
+
 sub get_population_details {
     my ($self, $c, $pop_id) = @_;
    
