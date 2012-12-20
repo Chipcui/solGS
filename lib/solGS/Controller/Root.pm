@@ -343,15 +343,17 @@ sub project_description {
 
     $self->phenotype_file($c);
     my $pheno_file = $c->stash->{phenotype_file};
-    my @phe_lines = read_file($pheno_file);
-    my $traits_no = scalar(split ('\t', $phe_lines[0])) - 1;
+    my @phe_lines  = read_file($pheno_file);   
+    my $traits     = $phe_lines[0];
    
+    $traits       =~ s/uniquename\t|object_id\t|object_name\t|stock_id\t|stock_name\t|//g;
+    my @traits    =  split (/\t/, $traits);    
+    my $traits_no = scalar(uniq(@traits));
+
     $c->stash(markers_no => $markers_no,
               traits_no  => $traits_no,
               stocks_no  => $stocks_no
         );
-    
-    print STDERR "\nstocks: $stocks_no\tmarkers: $markers_no\ttraits_no: $traits_no\n";
 }
 
 
@@ -1006,7 +1008,7 @@ sub add_trait_ids {
     
     $list =~ s/\n//;
     my @traits = split (/\t/, $list);
-
+  
     my $table = 'trait_name' . "\t" . 'trait_id' . "\n"; 
     
     my $acronym_pairs = $self->get_acronym_pairs($c);
