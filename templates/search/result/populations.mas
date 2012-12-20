@@ -16,7 +16,7 @@ $trait_id
 </%args>
 
 <& /page/page_title.mas,
-    title => "GS Populations evaluated for trait $query" ,
+    title => "GS Populations evaluated for $query" ,
 &>
   
 % if ($result) 
