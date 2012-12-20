@@ -181,14 +181,14 @@ sub trait_name {
 sub get_trait_id {
     my ($self, $c, $trait) = @_;
 
-    print STDERR "\ntrait: $trait\n";
-    my $trait_id = $self->schema($c)->resultset('Cv::Cvterm')
-        ->search( {name => $trait})
-        ->single
-        ->id;
-
-    return $trait_id;
-
+    if ($trait) 
+    {
+        my $trait_id = $self->schema($c)->resultset('Cv::Cvterm')
+            ->search( {name => $trait})
+            ->single
+            ->id;
+        return $trait_id;
+    }
 }
 
 
