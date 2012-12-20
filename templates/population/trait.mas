@@ -1,6 +1,6 @@
 <%args>
 
-$pop_id => undef;
+$pop_id
 $show_data => 1;
 $accuracy_report
 $top_blups
@@ -9,6 +9,11 @@ $marker_effects_download_url
 $top_marker_effects
 $validation_download_url
 $trait_abbr
+$project_name
+$project_desc
+$stocks_no
+$markers_no
+$traits_no
 
 </%args>
 
@@ -19,7 +24,7 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 </%perl>
 
 <& /page/page_title.mas, 
-   title => "Genomic Selection Model for $trait_abbr"
+   title => "Genomic Selection Model for $trait_abbr in $project_name"
 &>
 
 <&| /page/info_section.mas, 
@@ -28,7 +33,16 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
   title       => "Population summary",
   subtitle    => $submit_new
   &>
- summary of population
+
+ <& summary.mas,
+    project_id   => $pop_id,
+    project_name => $project_name,
+    project_desc => $project_desc,
+    stocks_no    => $stocks_no,
+    markers_no   => $markers_no,
+    traits_no    => $traits_no
+ &>
+ 
 </&>
 
 % if ($show_data) 
