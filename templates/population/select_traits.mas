@@ -30,7 +30,7 @@ my $trait_rows;
 while (<FH>)
   {
     my ($trait, $id) = split (/\t/);      
-    my $trait_link   = qq | <a href="/trait/$id/populaton/$pop_id" onclick="solgs.waitPage()">$trait</a> |;     
+    my $trait_link   = qq | <a href="/trait/$id/populaton/$pop_id" onclick="solGS.waitPage()">$trait</a> |;     
     my $row          = <<ROW;    
     <tr>
       <td>
@@ -57,15 +57,19 @@ if ($no_traits_selected eq 'none')
 
 <% $message %>
 
+
 <form action="/analyze/traits/population/<%$pop_id %>" method="POST">
   <table>
     <% $trait_rows %>
     <tr>   
       <td>
-        <input type  = "submit" 
-               value = "Run GS"
+        <input type    = "submit" 
+               value   = "Run GS"
+               name    = "runGS"
+               onclick = "solGS.waitPage()"
                >
-      </td
+      </td>
    </tr>
   </table>
 </form>
+
