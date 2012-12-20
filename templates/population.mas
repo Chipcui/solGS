@@ -19,6 +19,8 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 
 </%perl>
 
+<& /util/import_javascript.mas, classes => ["solGS.solGS"] &>
+
 <& /page/page_title.mas, 
    title => "Genomic Selection Models for Population $project_name"
 &>

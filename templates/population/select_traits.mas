@@ -30,7 +30,7 @@ my $trait_rows;
 while (<FH>)
   {
     my ($trait, $id) = split (/\t/);      
-    my $trait_link   = qq | <a href="/trait/$id/populaton/$pop_id">$trait</a> |;     
+    my $trait_link   = qq | <a href="/trait/$id/populaton/$pop_id" onclick="solgs.waitPage()">$trait</a> |;     
     my $row          = <<ROW;    
     <tr>
       <td>
@@ -52,6 +52,8 @@ if ($no_traits_selected eq 'none')
   }
 
 </%perl>
+
+<& /util/import_javascript.mas, classes => ["solGS.solGS"] &>
 
 <% $message %>
 
