@@ -853,9 +853,9 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
     my ($self, $c, $pop_id) = @_;
     
     $c->stash->{pop_id} = $pop_id;
-   
+  
     my @selected_traits = $c->req->param('trait_id');
-    
+  
     if (!@selected_traits)
     {
         $c->res->redirect("/population/$pop_id/selecttraits");
@@ -905,6 +905,7 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
         $c->forward('get_rrblup_output');
     }
 }
+
 
 sub all_traits_output :Path('/traits/all/population') Arg(1) {
      my ($self, $c, $pop_id) = @_;
@@ -1422,7 +1423,7 @@ sub get_rrblup_output :Private{
            
            $self->run_rrblup_trait($c, $tr);
            my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
-           push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id" onlclick="solGS.waitPage()">$tr</a>| ];
+           push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id" onclick="solGS.waitPage()">$tr</a>| ];
        }    
     }
 
