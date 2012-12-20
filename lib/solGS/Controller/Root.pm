@@ -181,7 +181,7 @@ sub show_search_result_pops : Path('/search/result/populations') Args(1) {
         my $pr_location = $projects->{$pr_id}{project_location};
 
         my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
-        push @projects_list, [ $checkbox, qq|<a href="/trait/$trait_id/population/$pr_id">$pr_name</a>|, 
+        push @projects_list, [ $checkbox, qq|<a href="/trait/$trait_id/population/$pr_id" onclick="solGS.waitPage()">$pr_name</a>|, 
                                $pr_desc, $pr_location, $pr_year
         ];
     }
@@ -941,7 +941,7 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
 
          }
          my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);         
-         push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id">$tr</a>| ];
+         push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id" onclick="solGS.waitPage()">$tr</a>| ];
      } 
 
      $c->stash->{template} = '/population/multiple_traits_output.mas';
@@ -1422,7 +1422,7 @@ sub get_rrblup_output :Private{
            
            $self->run_rrblup_trait($c, $tr);
            my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
-           push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id">$tr</a>| ];
+           push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id" onlclick="solGS.waitPage()">$tr</a>| ];
        }    
     }
 
