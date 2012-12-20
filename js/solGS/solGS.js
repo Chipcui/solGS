@@ -8,8 +8,7 @@
 
 JSAN.use('jquery.blockUI');
 
-
-var solgs = {
+var solGS = {
              
     waitPage: function() 
     {                    
@@ -21,6 +20,15 @@ var solgs = {
                 jQuery.unblockUI();
             }
     }, 
+
+ 
+
+
+
+
+
+
+
 
                          
 ///////
