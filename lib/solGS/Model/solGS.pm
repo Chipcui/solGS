@@ -266,8 +266,8 @@ sub stock_genotypes_rs {
         ->search_related('genotypeprops',
                          {},
                          { 
-                             '+select' => [ qw /me.project_id me.name object.stock_id object.name/ ], 
-                             '+as'     => [ qw /project_id project_name stock_id stock_name/ ] 
+                             '+select' => [ qw / me.project_id me.name object.stock_id object.name / ], 
+                             '+as'     => [ qw / project_id project_name stock_id stock_name / ] 
                          }
         );
 
