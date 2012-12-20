@@ -334,7 +334,24 @@ sub project_description {
                   project_desc => $row->description
             );
     }
+    
+    $self->genotype_file($c);
+    my $geno_file  = $c->stash->{genotype_file};
+    my @geno_lines = read_file($geno_file);
+    my $stocks_no  = scalar(@geno_lines) - 1;
+    my $markers_no = scalar(split ('\t', $geno_lines[0])) - 1;
 
+    $self->phenotype_file($c);
+    my $pheno_file = $c->stash->{phenotype_file};
+    my @phe_lines = read_file($pheno_file);
+    my $traits_no = scalar(split ('\t', $phe_lines[0])) - 1;
+   
+    $c->stash(markers_no => $markers_no,
+              traits_no  => $traits_no,
+              stocks_no  => $stocks_no
+        );
+    
+    print STDERR "\nstocks: $stocks_no\tmarkers: $markers_no\ttraits_no: $traits_no\n";
 }
 
 
@@ -354,7 +371,8 @@ sub trait :Path('/trait') Args(3) {
     {   
         $self->get_trait_name($c, $trait_id);
         $c->stash->{pop_id} = $pop_id;
-                                    
+        $self->project_description($c, $pop_id);
+                            
         $self->get_rrblup_output($c);
         $self->gs_files($c);
 
