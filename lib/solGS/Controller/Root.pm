@@ -153,7 +153,7 @@ sub projects_links {
         my $pr_location = $projects->{$pr_id}{project_location};
 
         my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
-        push @projects_pages, [ $checkbox, qq|<a href="/population/$pr_id">$pr_name</a>|, 
+        push @projects_pages, [ $checkbox, qq|<a href="/population/$pr_id" onclick="solGS.waitPage()">$pr_name</a>|, 
                                $pr_desc, $pr_location, $pr_year
         ];
     }
@@ -206,6 +206,7 @@ sub show_search_result_pops : Path('/search/result/populations') Args(1) {
     }
 
 }
+
 
 sub get_projects_details {
     my ($self,$c, $pr_rs) = @_;
@@ -345,8 +346,12 @@ sub project_description {
     my $pheno_file = $c->stash->{phenotype_file};
     my @phe_lines  = read_file($pheno_file);   
     my $traits     = $phe_lines[0];
+
+    $self->filter_header($c);
+    my $filter_header = $c->stash->{filter_header};
    
-    $traits       =~ s/uniquename\t|object_id\t|object_name\t|stock_id\t|stock_name\t|//g;
+    $traits       =~ s/$filter_header//g;
+
     my @traits    =  split (/\t/, $traits);    
     my $traits_no = scalar(uniq(@traits));
 
@@ -625,6 +630,7 @@ sub combined_gebvs_file {
     $self->cache_file($c, $cache_data);
 
 }
+
 
 sub download_validation :Path('/download/validation/pop') Args(3) {
     my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
@@ -995,9 +1001,12 @@ sub get_all_traits {
     
     my $pheno_file = $c->stash->{phenotype_file};
     
+    $self->filter_header($c);
+    my $filter_header = $c->stash->{filter_header};
+    
     open my $ph, "<", $pheno_file or die "$pheno_file:$!\n";
     my $headers = <$ph>;
-    $headers =~ s/uniquename\t|object_id\t|object_name\t|stock_id\t|stock_name\t|//g;
+    $headers =~ s/$filter_header//g;
     $ph->close;
 
     $self->add_trait_ids($c, $headers);
@@ -1118,6 +1127,14 @@ sub analyzed_traits {
   
     $c->stash->{analyzed_traits} = \@traits;
     $c->stash->{analyzed_traits_files} = \@files;
+}
+
+sub filter_header {
+    my ($self, $c) = @_;
+    
+    my $meta_headers = "uniquename\t|object_id\t|object_name\t|stock_id\t|stock_name\t";
+    $c->stash->{filter_header} = $meta_headers;
+
 }
 
 
@@ -1317,6 +1334,10 @@ sub format_phenotype_dataset {
     my $header;   
     my %acronym_table;
 
+    $self->filter_header($c);
+    my $filter_header = $c->stash->{filter_header};
+    $filter_header =~ s/\t//g;
+
     my $cnt = 0;
     foreach my $trait_name (@headers)
     {
@@ -1330,7 +1351,7 @@ sub format_phenotype_dataset {
             $header .= "\t";
         }
         
-        $abbr =~ s/uniquename|object_id|object_name|stock_id|stock_name//g;
+        $abbr =~ s/$filter_header//g;
         $acronym_table{$abbr} = $trait_name if $abbr;
     }
     
