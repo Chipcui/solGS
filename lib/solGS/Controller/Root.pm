@@ -910,6 +910,8 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
         $c->stash->{trait_file} = $file2;
         $c->forward('get_rrblup_output');
     }
+
+    $c->res->redirect("/traits/all/population/$pop_id");
 }
 
 
@@ -958,7 +960,6 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
                                 readdir($dh);   
          closedir $dh; 
    
-         my $accuracy_value = $self->model_accuracy($c);
          my @accuracy_value = grep {/Average/} read_file(catfile($dir, $validation_file[0]));
          @accuracy_value    = split(/\t/,  $accuracy_value[0]);
 
