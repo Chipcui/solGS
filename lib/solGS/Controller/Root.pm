@@ -947,12 +947,34 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
                }
 
          }
-         my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);         
-         push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id" onclick="solGS.waitPage()">$tr</a>| ];
-     } 
 
-     $c->stash->{template} = '/population/multiple_traits_output.mas';
+         my $trait_id   = $c->model('solGS')->get_trait_id($c, $trait_name);
+         my $trait_abbr = $c->stash->{trait_abbr}; 
+         
+         my $dir = $c->stash->{solgs_cache_dir};
+         opendir my $dh, $dir or die "can't open $dir: $!\n";
+    
+         my @validation_file  = grep { /cross_validation_${trait_abbr}_${pop_id}/ && -f "$dir/$_" } 
+                                readdir($dh);   
+         closedir $dh; 
+   
+         my $accuracy_value = $self->model_accuracy($c);
+         my @accuracy_value = grep {/Average/} read_file(catfile($dir, $validation_file[0]));
+         @accuracy_value    = split(/\t/,  $accuracy_value[0]);
+
+         push @trait_pages,  [ qq | <a href="/trait/$trait_id/population/$pop_id" onclick="solGS.waitPage()">$trait_name</a>|, $accuracy_value[1] ];
+     }
+
+
+     $self->project_description($c, $pop_id);
+     my $project_name = $c->stash->{project_name};
+     my $project_desc = $c->stash->{project_desc};
+     
+     my @model_desc = ([qq | <a href="/population/$pop_id">$project_name</a> |, $project_desc, \@trait_pages]);
+     
+     $c->stash->{template}    = '/population/multiple_traits_output.mas';
      $c->stash->{trait_pages} = \@trait_pages;
+     $c->stash->{model_data}  = \@model_desc;
   
      my @values;
      foreach (@traits)
@@ -1121,7 +1143,7 @@ sub analyzed_traits {
     my @files  = map { $_ =~ /($pop_id)/ ? $_ : 0 } 
                  grep { /gebv_kinship_[a-zA-Z0-9]/ && -f "$dir/$_" } 
                  readdir($dh);   
-    closedir $dh;
+    closedir $dh;                     
     
     my @traits = map { s/gebv|kinship|_|($pop_id)//g ? $_ : 0} @files;
   
