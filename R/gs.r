@@ -158,18 +158,38 @@ genoFile <- grep("geno",
                  value = TRUE
                  )
 
-#genoFile <- c("/home/tecle/Desktop/R data/Genomic Selection/barley_jl/cap123geno_sorted.csv")
+genoFile <- c("/home/tecle/Desktop/R data/Genomic Selection/barley_jl/cap123geno_sorted.csv")
 
 genoData <- read.table(genoFile,
                        header = TRUE,
                        row.names = 1,
-                       sep = "\t",
+                       sep = ",",
                        na.strings = c("NA", " ", "--", "-"),
                        dec = "."
                       )
 
 genoData   <- data.matrix(genoData[order(row.names(genoData)), ])
 
+predictionFile <- grep(kinshipTrait,
+                       inFiles,
+                       ignore.case = TRUE,
+                       fixed = FALSE,
+                       value = TRUE
+                       )
+
+predictionFile <- c("/home/tecle/Desktop/R data/Genomic Selection/barley_jl/cap123geno_prediction.csv")
+predictionData <- c()
+
+if (exists("predictionFile") == TRUE)
+  {
+    predictionData <- read.table(predictionFile,
+                       header = TRUE,
+                       row.names = 1,
+                       sep = ",",
+                       na.strings = c("NA", " ", "--", "-"),
+                       dec = "."
+                      )
+  }
 
 #add checks for all input data
 #create phenotype and genotype datasets with
@@ -210,6 +230,12 @@ if (sum(is.na(genoDataMatrix)) > 0)
 
 #change genotype coding to [-1, 0, 1], to use the A.mat )
 genoDataMatrix <- genoDataMatrix - 1
+
+if (exists("predictionData") == TRUE)
+  {
+    predictionData <- predictionData - 1
+
+  }
 
 #use REML (default) to calculate variance components
 
@@ -320,11 +346,12 @@ for (i in 1:10)
   
   result <- kinship.BLUP(y = phenoTrait[trG],
                          G.train = genoDataMatrix[trG, ],
-                         G.pred = genoDataMatrix[slG, ],
+                         G.pred = genoDataMatrix[slG, ],                      
                          mixed.method = "REML",
                          K.method = "RR"
                          )
-
+print("BLUP for prediction pop")
+#print(result)
   assign(kblup, result)
  
 #calculate cross-validation accuracy
@@ -363,6 +390,28 @@ if (is.null(validationAll) == FALSE)
     validationAll <- rbind(validationAll, validationMean)
     colnames(validationAll) <- c("Correlation")
   }
+
+#predict GEBVs for selection population
+print(predictionData[1:10, 1:20])
+predictionData <- data.matrix(round(predictionData, digits = 0 ))
+print(predictionData[1:10, 1:20])
+
+if(exists("predictionData") == TRUE)
+  {
+    predictionPopGEBV <- kinship.BLUP(y = phenoTrait,
+                                      G.train = genoDataMatrix,
+                                      G.pred = predictionData,
+                                      mixed.method = "REML",
+                                      K.method = "RR"
+                                      )
+
+    print("test prediction...predicted")
+    print(data.matrix(predictionPopGEBV$g.pred))
+    print("test prediction..train...")
+    print(data.matrix(predictionPopGEBV$g.train))
+
+  }
+
 
 if(is.null(validationAll) == FALSE)
   {
