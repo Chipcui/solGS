@@ -36,3 +36,5 @@ $model_data
    pop_id          => $pop_id
 &>
 
+<& /population/selection_populations.mas &>
+
