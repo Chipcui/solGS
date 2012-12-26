@@ -51,13 +51,13 @@ ROW
 
 <& /util/import_javascript.mas, classes => [ "solGS.rankGenotypes"] &>
 
- <&| /page/info_section.mas, 
-     collapsible => 1, 
-     collapsed   => 0, 
-     title       => "Rank Genotypes based on GEBV of multiple traits"
-  &> 
+<&| /page/info_section.mas, 
+    collapsible => 1, 
+    collapsed   => 0, 
+    title       => "Rank Genotypes based on GEBV of multiple traits"
+&> 
   
-  <p>Fill in the relative weight you want to apply to each trait.</p>
+<p>Fill in the relative weight you want to apply to each trait.</p>
 <div id="mulitple_traits">
  <div id="rel_gebv_form">
    <table>
@@ -73,9 +73,10 @@ ROW
      </tr>
    </table>
 </div>
-</&> 
+ 
 
 <& /model/top_genotypes.mas &> 
 
 </div>
 
+</&>
