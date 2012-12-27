@@ -405,22 +405,38 @@ print(predictionData[1:10, 1:20])
 predictionData <- data.matrix(round(predictionData, digits = 0 ))
 print(predictionData[1:10, 1:20])
 
+predictionResult   <- c()
+predictionPopGEBVs <- c()
+
 if(exists("predictionData") == TRUE)
   {
-    predictionPopGEBV <- kinship.BLUP(y = phenoTrait,
-                                      G.train = genoDataMatrix,
-                                      G.pred = predictionData,
-                                      mixed.method = "REML",
-                                      K.method = "RR"
-                                      )
+    predictionPopResult <- kinship.BLUP(y = phenoTrait,
+                                        G.train = genoDataMatrix,
+                                        G.pred = predictionData,
+                                        mixed.method = "REML",
+                                        K.method = "RR"
+                                        )
+
+    predictionPopGEBVs <- data.matrix(predictionPopResult$g.pred)
 
     print("test prediction...predicted")
-    print(data.matrix(predictionPopGEBV$g.pred))
+    print(predictionPopGEBVs)
     print("test prediction..train...")
-    print(data.matrix(predictionPopGEBV$g.train))
+    print(data.matrix(predictionPopResult$g.train))
 
   }
 
+
+if(is.null(predictionPopGEBVs) == FALSE)
+  {
+    write.table(predictionPopGEBVs,
+                file = predictionPopGEBVsFile,
+                sep = "\t",
+                col.names = NA,
+                quote = FALSE,
+                append = FALSE
+                )
+  }
 
 if(is.null(validationAll) == FALSE)
   {
@@ -432,7 +448,6 @@ if(is.null(validationAll) == FALSE)
                 append = FALSE
                 )
   }
-
 if(is.null(ordered.markerGEBV2) == FALSE)
   {
     write.table(ordered.markerGEBV2,
