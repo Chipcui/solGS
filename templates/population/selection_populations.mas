@@ -11,6 +11,11 @@ $result => undef;
 
 </%args>
 
+<%perl>
+
+my $pred_pop = qq | <a href="/model/134/prediction/268">Barley prediction population test</a> |;
+
+</%perl>
 
 <&| /page/info_section.mas, 
     collapsible => 1, 
@@ -20,7 +25,7 @@ $result => undef;
 
 <& /page/columnar_table.mas,
      headings    => ['',  'Selection Population', 'Description', 'Generation', 'Year' ],
-     data        => [['', 'Cassava selection', 'half-sib population from...', 'F1', '2013']],
+     data        => [['', $pred_pop, 'barley prediction population from crosses...', 'F1', '2013']],
     __alt_freq   => 2,
     __alt_width  => 1,
     __align      => 'l'
