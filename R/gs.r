@@ -170,13 +170,22 @@ genoData <- read.table(genoFile,
 
 genoData   <- data.matrix(genoData[order(row.names(genoData)), ])
 
-predictionFile <- grep(kinshipTrait,
+predictionFile <- grep("prediction_population",
                        inFiles,
                        ignore.case = TRUE,
                        fixed = FALSE,
                        value = TRUE
                        )
 
+predictionPopGEBVsFile <- grep("prediction_pop_gebvs",
+                       outFiles,
+                       ignore.case = TRUE,
+                       fixed = FALSE,
+                       value = TRUE
+                       )
+print("prediction files")
+print(predictionFile)
+print(predictionPopGEBVsFile)
 predictionFile <- c("/home/tecle/Desktop/R data/Genomic Selection/barley_jl/cap123geno_prediction.csv")
 predictionData <- c()
 
