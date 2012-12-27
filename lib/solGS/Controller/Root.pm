@@ -391,6 +391,7 @@ sub trait :Path('/trait') Args(3) {
                   is_client_error => 1, 
             );
     }
+   
 }
 
 sub gs_files {
@@ -410,6 +411,8 @@ sub input_files {
     
     $self->genotype_file($c);
     $self->phenotype_file($c);
+   
+    my $prediction_population_file = 'cap123geno_prediction.csv';
   
     my $pheno_file  = $c->stash->{phenotype_file};
     my $geno_file   = $c->stash->{genotype_file};
@@ -421,7 +424,8 @@ sub input_files {
                             $pheno_file,
                             $geno_file,
                             $traits_file,
-                            $trait_file
+                            $trait_file,
+                            $prediction_population_file
         );
 
     my $tmp_dir         = $c->stash->{solgs_tempfiles_dir};
@@ -445,11 +449,22 @@ sub output_files {
     $self->gebv_kinship_file($c); 
     $self->validation_file($c);
 
+    my $prediction_id = $c->stash->{prediction_pop_id};
+    my $identifier    = $pop_id . '_' . $prediction_id;
+    my $pred_pop_gebvs_file;
+    
+    if ($prediction_id) 
+    {
+        $self->prediction_pop_gebvs_file($c, $identifier);
+        $pred_pop_gebvs_file = $c->stash->{prediction_pop_gebvs_file};
+    }
+
     my $file_list = join ("\t",
                           $c->stash->{gebv_kinship_file},
                           $c->stash->{gebv_marker_file},
                           $c->stash->{validation_file},
-                          $c->stash->{selected_traits_gebv_file}
+                          $c->stash->{selected_traits_gebv_file},
+                          $pred_pop_gebvs_file
         );
                           
     my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
@@ -650,6 +665,53 @@ sub download_validation :Path('/download/validation/pop') Args(3) {
     }
  
 }
+
+# my ($self, $c, $model_id, $pop, $prediction_id, $trait, $trait_id)  
+sub prediction_population :Path('/model') Args(3) {
+    my ($self, $c, $model_id, $pop, $prediction_id) = @_;
+    
+   # $c->stash->{pop_id} = $model_id;
+    #$self->get_trait_name($c, $trait_id);
+   # my $trait_id = $c->stash->{trait_id};
+    #$c->stash->{prediction_pop_id} = $prediction_id;
+    $c->forward("traits_to_analyze", [$model_id, $prediction_id]);
+
+
+    #add the prediction population's file name to the input files list
+   #  my $prediction_population_file = "\t" . 'cap123geno_prediction.csv';
+#     $self->input_files($c);
+#     my $input_files = $c->stash->{input_files};
+#     write_file($input_files, {append => 1}, $prediction_population_file);
+
+
+#     #create file for storing GEBVs of prediction population
+#     #add the file to the output_files list
+#     my $identifier = $model_id . '_' . $prediction_id;
+#     $self->prediction_pop_gebvs_file($c, $identifier);
+#     my $pred_pop_gebvs_file = "\t" . $c->stash->{prediction_pop_gebvs_file};
+
+#     $self->output_files($c);   
+#     my $output_files = $c->stash->{output_files};
+#     write_file($output_files, {append => 1}, $pred_pop_gebvs_file);
+
+
+}
+
+
+sub prediction_pop_gebvs_file {    
+    my ($self, $c, $identifier) = @_;
+
+    my $trait_id = $c->stash->{trait_id};
+       
+    my $cache_data = {key       => 'prediction_pop_gebvs_' . $identifier . '_' . $trait_id, 
+                      file      => 'prediction_pop_gebvs_' . $identifier . '_' . $trait_id,
+                      stash_key => 'prediction_pop_gebvs_file'
+    };
+
+    $self->cache_file($c, $cache_data);
+
+}
+
 
 sub model_accuracy {
     my ($self, $c) = @_;
@@ -858,38 +920,81 @@ sub top_ranked_genotypes {
 sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
     my ($self, $c, $pop_id) = @_;
     
+    my $prediction_id = $c->req->args->[1];
+
     $c->stash->{pop_id} = $pop_id;
+    $c->stash->{prediction_pop_id} = $prediction_id;
   
     my @selected_traits = $c->req->param('trait_id');
   
+    my $single_trait_id;
+    if (!@selected_traits)
+    {
+        $self->analyzed_traits($c);
+        @selected_traits = @{$c->stash->{analyzed_traits}};
+    }
+
     if (!@selected_traits)
     {
         $c->res->redirect("/population/$pop_id/selecttraits");
     }
     elsif (scalar(@selected_traits) == 1)
     {
-        my $trait_id = $selected_traits[0]; 
-        $c->res->redirect("/trait/$trait_id/population/$pop_id");
+        $single_trait_id = $selected_traits[0]; 
+        $c->res->redirect("/trait/$single_trait_id/population/$pop_id");
     }
     elsif(scalar(@selected_traits) > 1)
     {
-        my $traits;    
-        for (my $i = 0; $i <= $#selected_traits; $i++)
-        {
-            my $tr = $c->model('solGS')->trait_name($c, $selected_traits[$i]);
-   
-            my $abbr = $self->abbreviate_term($c, $tr);
-            $traits .= $abbr;
-            $traits .= "\t" unless ($i == $#selected_traits);           
-        } 
-    
-        my $trait_id;
-        foreach (@selected_traits)
-        {
-            $trait_id .= $_; #$c->model('solGS')->get_trait_id($c, $_);
-        } 
+        my ($traits, $trait_ids);    
         
-        my $identifier = crc($trait_id);
+        for (my $i = 0; $i <= $#selected_traits; $i++)
+        {           
+            if ($selected_traits[$i] =~ /\D/)
+            {               
+                my $acronym_pairs = $self->get_acronym_pairs($c);                   
+                if ($acronym_pairs)
+                {
+                    foreach my $r (@$acronym_pairs) 
+                    {
+                        if ($r->[0] eq $selected_traits[$i]) 
+                        {
+                            my $trait_name =  $r->[1];
+                            $trait_name    =~ s/\n//g;                                
+                            my $trait_id   =  $c->model('solGS')->get_trait_id($c, $trait_name);
+
+                            $c->stash->{trait_name} = $trait_name;
+                            $c->stash->{trait_abbr} = $r->[0];
+                            $c->stash->{trait_id}   = $trait_id;
+                               
+                            $traits .= $r->[0];
+                            $traits .= "\t" unless ($i == $#selected_traits);
+
+                            $trait_ids .= $trait_id; #$c->model('solGS')->get_trait_id($c, $_);
+                        }
+                    }
+                }
+                 
+                $c->forward('get_rrblup_output');
+            }
+            else 
+            {
+                my $tr = $c->model('solGS')->trait_name($c, $selected_traits[$i]);
+   
+                my $abbr = $self->abbreviate_term($c, $tr);
+                $traits .= $abbr;
+                $traits .= "\t" unless ($i == $#selected_traits); 
+
+                    
+                foreach (@selected_traits)
+                {
+                    $trait_ids .= $_; #$c->model('solGS')->get_trait_id($c, $_);
+                }
+                
+                $c->forward('get_rrblup_output');
+            }                 
+        } 
+
+        my $identifier = crc($trait_ids);
 
         $self->combined_gebvs_file($c, $identifier);
         
@@ -901,17 +1006,18 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
         $fh->print($traits);
         $fh->close;
 
-        my ($fh2, $file2) = tempfile("trait_${trait_id}_pop_${pop_id}-XXXXX", 
+        my ($fh2, $file2) = tempfile("trait_${single_trait_id}_pop_${pop_id}-XXXXX", 
                                      DIR => $tmp_dir
-            );
+                );
         $fh2->close;
   
         $c->stash->{selected_traits_file} = $file;
         $c->stash->{trait_file} = $file2;
-        $c->forward('get_rrblup_output');
+  
     }
-
+   
     $c->res->redirect("/traits/all/population/$pop_id");
+
 }
 
 
@@ -1006,6 +1112,7 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
     }
 }
 
+
 sub tohtml_genotypes {
     my ($self, $c) = @_;
   
@@ -1018,6 +1125,7 @@ sub tohtml_genotypes {
     }
     return \%geno;
 }
+
 
 sub get_all_traits {
     my ($self, $c) = @_;
@@ -1060,6 +1168,7 @@ sub add_trait_ids {
 
 }
 
+
 sub all_traits_file {
     my ($self, $c) = @_;
 
@@ -1073,6 +1182,7 @@ sub all_traits_file {
     $self->cache_file($c, $cache_data);
 
 }
+
 
 sub get_acronym_pairs {
     my ($self, $c) = @_;
@@ -1428,7 +1538,8 @@ sub get_rrblup_output :Private{
     my $trait_name  = $c->stash->{trait_name};
     
     my ($traits_file, @traits, @trait_pages);
-   
+    my $pred_id = $c->stash->{prediction_pop_id};
+    print STDERR "\n\nget_rrblup_ouput: prediction_id: $pred_id\n\n";
     if ($trait_name)     
     {
         $self->run_rrblup_trait($c, $trait_abbr);
@@ -1506,16 +1617,34 @@ sub run_rrblup_trait {
     $c->stash->{trait_file} = $file;       
     write_file($file, $trait_abbr);
 
+    my $pred_id = $c->stash->{prediction_pop_id};
+
+    print STDERR "\n\nrun_rrblup_trait: prediction_id: $pred_id\n\n";
+
     $self->output_files($c);
-    if (-s $c->stash->{gebv_kinship_file} == 0 ||
-        -s $c->stash->{gebv_marker_file}  == 0 ||
-        -s $c->stash->{validation_file}   == 0
-        )
-    {  
+
+    if ($c->stash->{prediction_pop_id})
+    {
+         print STDERR "\n\nthere is prediction_id: $pred_id and run prediction\n\n";
+
         $self->input_files($c);            
         $self->output_files($c);
         $self->run_rrblup($c); 
+    }
+    else
+    {
+         print STDERR "\n\nthere is no prediction_id: $pred_id and run training population\n\n";
+
+        if (-s $c->stash->{gebv_kinship_file} == 0 ||
+            -s $c->stash->{gebv_marker_file}  == 0 ||
+            -s $c->stash->{validation_file}   == 0       
+            )
+        {  
+            $self->input_files($c);            
+            $self->output_files($c);
+            $self->run_rrblup($c); 
        
+        }
     }
 }
 
