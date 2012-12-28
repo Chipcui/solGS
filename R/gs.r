@@ -405,8 +405,8 @@ print(predictionData[1:10, 1:20])
 predictionData <- data.matrix(round(predictionData, digits = 0 ))
 print(predictionData[1:10, 1:20])
 
-predictionResult   <- c()
-predictionPopGEBVs <- c()
+predictionPopResult <- c()
+predictionPopGEBVs  <- c()
 
 if(exists("predictionData") == TRUE)
   {
@@ -420,14 +420,14 @@ if(exists("predictionData") == TRUE)
     predictionPopGEBVs <- data.matrix(predictionPopResult$g.pred)
 
     print("test prediction...predicted")
-    print(predictionPopGEBVs)
+ #   print(predictionPopGEBVs)
     print("test prediction..train...")
-    print(data.matrix(predictionPopResult$g.train))
+  #  print(data.matrix(predictionPopResult$g.train))
 
   }
 
 
-if(is.null(predictionPopGEBVs) == FALSE)
+if(!is.null(predictionPopGEBVs) & length(predictionPopGEBVsFile) != 0)  
   {
     write.table(predictionPopGEBVs,
                 file = predictionPopGEBVsFile,
@@ -448,6 +448,7 @@ if(is.null(validationAll) == FALSE)
                 append = FALSE
                 )
   }
+
 if(is.null(ordered.markerGEBV2) == FALSE)
   {
     write.table(ordered.markerGEBV2,
