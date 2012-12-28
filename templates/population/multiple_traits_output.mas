@@ -18,6 +18,7 @@ $trait_pages
 $analyzed_traits
 $pop_id
 $model_data
+$download_prediction
 
 </%args>
 
@@ -36,5 +37,7 @@ $model_data
    pop_id          => $pop_id
 &>
 
-<& /population/selection_populations.mas &>
+<& /population/selection_populations.mas, 
+   download_prediction => $download_prediction 
+&>
 
