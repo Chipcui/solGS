@@ -419,15 +419,8 @@ if(exists("predictionData") == TRUE)
 
     predictionPopGEBVs <- round(data.matrix(predictionPopResult$g.pred), digits = 2)
     predictionPopGEBVs <- data.matrix(predictionPopGEBVs[order(-predictionPopGEBVs[, 1]), ])
-  print("colnames..start")
-    colnames(predictionPopGEBVs) <- c(trait)
-     print("colnames..end")
 
-    print("test prediction...predicted")
- #   print(predictionPopGEBVs)
-    print("test prediction..train...")
-  #  print(data.matrix(predictionPopResult$g.train))
-
+    colnames(predictionPopGEBVs) <- c(trait)    
   }
 
 
