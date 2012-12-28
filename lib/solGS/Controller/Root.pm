@@ -962,10 +962,6 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
                             $trait_name    =~ s/\n//g;                                
                             my $trait_id   =  $c->model('solGS')->get_trait_id($c, $trait_name);
 
-                            $c->stash->{trait_name} = $trait_name;
-                            $c->stash->{trait_abbr} = $r->[0];
-                            $c->stash->{trait_id}   = $trait_id;
-                               
                             $traits .= $r->[0];
                             $traits .= "\t" unless ($i == $#selected_traits);
 
@@ -973,8 +969,6 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
                         }
                     }
                 }
-                 
-                $c->forward('get_rrblup_output');
             }
             else 
             {
@@ -989,8 +983,6 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
                 {
                     $trait_ids .= $_; #$c->model('solGS')->get_trait_id($c, $_);
                 }
-                
-                $c->forward('get_rrblup_output');
             }                 
         } 
 
@@ -1013,9 +1005,10 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
   
         $c->stash->{selected_traits_file} = $file;
         $c->stash->{trait_file} = $file2;
+        $c->forward('get_rrblup_output');
   
     }
-   
+
     $c->res->redirect("/traits/all/population/$pop_id");
 
 }
@@ -1619,22 +1612,16 @@ sub run_rrblup_trait {
 
     my $pred_id = $c->stash->{prediction_pop_id};
 
-    print STDERR "\n\nrun_rrblup_trait: prediction_id: $pred_id\n\n";
-
     $self->output_files($c);
 
     if ($c->stash->{prediction_pop_id})
-    {
-         print STDERR "\n\nthere is prediction_id: $pred_id and run prediction\n\n";
-
+    {       
         $self->input_files($c);            
         $self->output_files($c);
         $self->run_rrblup($c); 
     }
     else
-    {
-         print STDERR "\n\nthere is no prediction_id: $pred_id and run training population\n\n";
-
+    {       
         if (-s $c->stash->{gebv_kinship_file} == 0 ||
             -s $c->stash->{gebv_marker_file}  == 0 ||
             -s $c->stash->{validation_file}   == 0       
