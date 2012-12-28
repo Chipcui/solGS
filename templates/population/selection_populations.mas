@@ -13,9 +13,12 @@ $download_prediction
 
 <%perl>
 
-my $pred_pop = qq | <a href="/model/134/prediction/268">Barley prediction population test</a> |;
+my $pred_pop = qq | <a href="/model/134/prediction/268" onclick="solGS.waitPage()">Barley prediction population test</a> |;
 
 </%perl>
+
+
+<& /util/import_javascript.mas, classes => ["solGS.solGS"] &>
 
 <&| /page/info_section.mas, 
     collapsible => 1, 
