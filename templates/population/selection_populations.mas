@@ -7,7 +7,7 @@ displays list of prediction populations.
 <%args>
 
 $result => undef;
-
+$download_prediction
 
 </%args>
 
@@ -24,8 +24,8 @@ my $pred_pop = qq | <a href="/model/134/prediction/268">Barley prediction popula
 &>
 
 <& /page/columnar_table.mas,
-     headings    => ['',  'Selection Population', 'Description', 'Generation', 'Year' ],
-     data        => [['', $pred_pop, 'barley prediction population from crosses...', 'F1', '2013']],
+     headings    => ['',  'Selection Population', 'Description', 'Generation', 'Year', 'Download GEBVs' ],
+     data        => [['', $pred_pop, 'barley prediction population from crosses...', 'F1', '2013', $download_prediction]],
     __alt_freq   => 2,
     __alt_width  => 1,
     __align      => 'l'
