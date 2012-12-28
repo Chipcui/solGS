@@ -417,7 +417,11 @@ if(exists("predictionData") == TRUE)
                                         K.method = "RR"
                                         )
 
-    predictionPopGEBVs <- data.matrix(predictionPopResult$g.pred)
+    predictionPopGEBVs <- round(data.matrix(predictionPopResult$g.pred), digits = 2)
+    predictionPopGEBVs <- data.matrix(predictionPopGEBVs[order(-predictionPopGEBVs[, 1]), ])
+  print("colnames..start")
+    colnames(predictionPopGEBVs) <- c(trait)
+     print("colnames..end")
 
     print("test prediction...predicted")
  #   print(predictionPopGEBVs)
