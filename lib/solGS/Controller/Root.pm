@@ -442,8 +442,9 @@ sub input_files {
 sub output_files {
     my ($self, $c) = @_;
     
-    my $pop_id = $c->stash->{pop_id};
-    my $trait  = $c->stash->{trait_abbr}; 
+    my $pop_id   = $c->stash->{pop_id};
+    my $trait    = $c->stash->{trait_abbr}; 
+    my $trait_id = $c->stash->{trait_id}; 
     
     $self->gebv_marker_file($c);  
     $self->gebv_kinship_file($c); 
@@ -455,7 +456,7 @@ sub output_files {
     
     if ($prediction_id) 
     {
-        $self->prediction_pop_gebvs_file($c, $identifier);
+        $self->prediction_pop_gebvs_file($c, $identifier, $trait_id);
         $pred_pop_gebvs_file = $c->stash->{prediction_pop_gebvs_file};
     }
 
@@ -699,10 +700,9 @@ sub prediction_population :Path('/model') Args(3) {
 
 
 sub prediction_pop_gebvs_file {    
-    my ($self, $c, $identifier) = @_;
+    my ($self, $c, $identifier, $trait_id) = @_;
 
-    my $trait_id = $c->stash->{trait_id};
-       
+    # my $trait_id = $c->stash->{trait_id};  
     my $cache_data = {key       => 'prediction_pop_gebvs_' . $identifier . '_' . $trait_id, 
                       file      => 'prediction_pop_gebvs_' . $identifier . '_' . $trait_id,
                       stash_key => 'prediction_pop_gebvs_file'
@@ -711,6 +711,92 @@ sub prediction_pop_gebvs_file {
     $self->cache_file($c, $cache_data);
 
 }
+
+
+sub download_prediction_GEBVs :Path('/download/prediction/model') Args(4) {
+    my ($self, $c, $pop_id, $prediction, $prediction_id, $trait_id) = @_;   
+ 
+    $self->get_trait_name($c, $trait_id);
+    $c->stash->{pop_id} = $pop_id;
+
+    my $identifier = $pop_id . "_" . $prediction_id;
+    $self->prediction_pop_gebvs_file($c, $identifier, $trait_id);
+    my $prediction_gebvs_file = $c->stash->{prediction_pop_gebvs_file};
+    
+    unless (!-e $prediction_gebvs_file || -s $prediction_gebvs_file == 0) 
+    {
+        my @prediction_gebvs =  map { [ split(/\t/) ] }  read_file($prediction_gebvs_file);
+    
+        $c->stash->{'csv'}={ data => \@prediction_gebvs };
+        $c->forward("solGS::View::Download::CSV");
+    }
+ 
+}
+
+
+sub prediction_pop_analyzed_traits {
+    my ($self, $c) = @_;
+        
+    my $training_pop_id = 134; # $c->stash->{pop_id};
+    my $prediction_pop_id = 268; # $c->stash->{prediction_pop_id};
+
+    my $dir = $c->stash->{solgs_cache_dir};
+    opendir my $dh, $dir or die "can't open $dir: $!\n";
+   
+    my @files  =  grep { /prediction_pop_gebvs_$training_pop_id/ && -f "$dir/$_" } 
+                 readdir($dh);   
+    closedir $dh;                     
+   
+    my @trait_ids = map { s/prediction_pop_gebvs_|($training_pop_id)|($prediction_pop_id)|_//g ? $_ : 0} @files;
+  
+    $c->stash->{prediction_pop_analyzed_traits} = \@trait_ids;
+    $c->stash->{prediction_pop_analyzed_traits_files} = \@files;
+}
+
+
+sub download_prediction_urls {
+    my ($self, $c) = @_;
+    
+    $self->prediction_pop_analyzed_traits($c);
+    my $trait_ids = $c->stash->{prediction_pop_analyzed_traits};
+    
+    my $download_url = $c->stash->{download_prediction};
+    
+    foreach my $trait_id (@$trait_ids) 
+    {
+        my $pop_id = $c->stash->{pop_id};
+        my $prediction_id = 268; #$c->stash->{prediction_pop_id};
+
+        $self->get_trait_name($c, $trait_id);
+        my $trait_name  = $c->stash->{trait_name};
+
+        
+        $download_url   .= " | " if $download_url;
+        $download_url   .= qq | <a href="/download/prediction/model/$pop_id/prediction/$prediction_id/$trait_id">$trait_name</a> |;
+    }
+    
+    $c->stash->{download_prediction} = $download_url;
+  
+}
+
+# sub download_prediction_urls {
+#     my ($self, $c) = @_;
+    
+#     my $pop_id         = $c->stash->{pop_id};
+#     my $prediction_id  = $c->stash->{prediction_pop_id};
+#     my $trait_id       = $c->stash->{trait_id};
+   
+#     $self->get_trait_name($c, $trait_id);
+#     my $trait_name  = $c->stash->{trait_name};
+   
+    
+#     my $download_url = $c->stash->{download_prediction};
+#     $download_url   .= " | " if $download_url;
+#     $download_url   .= qq |<a href="/download/model/$pop_id/prediction/$prediction_id/$trait_id">$trait_name</a> |;
+      
+#     $c->stash->{download_prediction} = $download_url;
+  
+# }
 
 
 sub model_accuracy {
@@ -962,10 +1048,9 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
                             $trait_name    =~ s/\n//g;                                
                             my $trait_id   =  $c->model('solGS')->get_trait_id($c, $trait_name);
 
-                            $traits .= $r->[0];
-                            $traits .= "\t" unless ($i == $#selected_traits);
-
-                            $trait_ids .= $trait_id; #$c->model('solGS')->get_trait_id($c, $_);
+                            $traits    .= $r->[0];
+                            $traits    .= "\t" unless ($i == $#selected_traits);
+                            $trait_ids .= $trait_id;                                                        
                         }
                     }
                 }
@@ -1075,7 +1160,18 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
      $c->stash->{template}    = '/population/multiple_traits_output.mas';
      $c->stash->{trait_pages} = \@trait_pages;
      $c->stash->{model_data}  = \@model_desc;
-  
+
+     $self->download_prediction_urls($c);
+     my $download_prediction = $c->stash->{download_prediction};
+     if ($download_prediction)
+     {
+         $c->stash->{download_prediction} = $download_prediction;
+     }
+     else
+     {
+         $c->stash->{download_prediction} = 'N/A';
+     }
+    
      my @values;
      foreach (@traits)
      {
@@ -1529,13 +1625,21 @@ sub get_rrblup_output :Private{
     my $pop_id      = $c->stash->{pop_id};
     my $trait_abbr  = $c->stash->{trait_abbr};
     my $trait_name  = $c->stash->{trait_name};
-    
+
     my ($traits_file, @traits, @trait_pages);
-    my $pred_id = $c->stash->{prediction_pop_id};
-    print STDERR "\n\nget_rrblup_ouput: prediction_id: $pred_id\n\n";
+    my $prediction_id = $c->stash->{prediction_pop_id};
+   
     if ($trait_name)     
     {
         $self->run_rrblup_trait($c, $trait_abbr);
+        
+       #  my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
+#         $self->get_trait_name($c, $trait_id);
+        
+#         if ($prediction_id)
+#         {
+#             $self->download_prediction_urls($c);
+#         }
     }
     else 
     {    
@@ -1570,6 +1674,16 @@ sub get_rrblup_output :Private{
            }    
            
            $self->run_rrblup_trait($c, $tr);
+           
+          #  my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
+#            $self->get_trait_name($c, $trait_id);
+           
+#            if ($prediction_id)
+#            {
+              
+#                $self->download_prediction_urls($c);
+#            }
+
            my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
            push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id" onclick="solGS.waitPage()">$tr</a>| ];
        }    
