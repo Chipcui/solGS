@@ -25,7 +25,7 @@ $trait_id
 % { 
 
 <&| /page/info_section.mas,
-      title => 'Search Results',
+      title => 'GS training populations',
 &>
 
 <& /population/project_details_form.mas,
