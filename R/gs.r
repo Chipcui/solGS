@@ -82,7 +82,7 @@ markerFile  <- grep(markerTrait,
                    value = TRUE
                    )
 
-phenoFile <- grep("pheno",
+phenoFile <- grep("phenotype_data",
                   inFiles,
                   ignore.case = TRUE,
                   fixed = FALSE,
@@ -98,6 +98,7 @@ phenoData <- read.table(phenoFile,
                         dec = "."
                         )
 
+print(phenoFile)
 
 dropColumns <- c("uniquename", "stock_name")
 phenoData   <- phenoData[,!(names(phenoData) %in% dropColumns)]
@@ -151,7 +152,7 @@ row.names(phenoTrait) <- phenoTrait[, 1]
 phenoTrait[, 1] <- NULL
 
 #find genotype file name
-genoFile <- grep("geno",
+genoFile <- grep("genotype_data",
                  inFiles,
                  ignore.case = TRUE,                
                  fixed = FALSE,
@@ -188,6 +189,7 @@ print(predictionFile)
 print(predictionPopGEBVsFile)
 predictionFile <- c("/home/tecle/Desktop/R data/Genomic Selection/barley_jl/cap123geno_prediction.csv")
 predictionData <- c()
+
 
 if (exists("predictionFile") == TRUE)
   {
