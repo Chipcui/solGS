@@ -38,6 +38,8 @@ $download_prediction
 &>
 
 <& /population/selection_populations.mas, 
-   download_prediction => $download_prediction 
+   download_prediction => $download_prediction,
+   analyzed_traits     => $analyzed_traits,
+   pop_id              => $pop_id
 &>
 
