@@ -8,12 +8,15 @@ displays list of prediction populations.
 
 $result => undef;
 $download_prediction
+$analyzed_traits
+$pop_id
 
 </%args>
 
 <%perl>
 
 my $pred_pop = qq | <a href="/model/134/prediction/268" onclick="solGS.waitPage()">Barley prediction population test</a> |;
+
 
 </%perl>
 
@@ -22,7 +25,7 @@ my $pred_pop = qq | <a href="/model/134/prediction/268" onclick="solGS.waitPage(
 
 <&| /page/info_section.mas, 
     collapsible => 1, 
-    collapsed   => 1, 
+    collapsed   => 0, 
     title       => "Prediction populations",
 &>
 
@@ -33,8 +36,21 @@ my $pred_pop = qq | <a href="/model/134/prediction/268" onclick="solGS.waitPage(
     __alt_width  => 1,
     __align      => 'l'
 &>
- 
+
+<p>&nbsp</p>
+
+% if ($download_prediction ne 'N/A') 
+%{
+
+<& rank_genotypes.mas, 
+   analyzed_traits => $analyzed_traits,
+   pop_id          => $pop_id
+&>
+
+%}
+
 </&>
+
 
 
 
