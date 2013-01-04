@@ -30,12 +30,15 @@ $download_prediction
 <& /model/model_summary.mas, 
      model_data => $model_data
 &>
+% if ($download_prediction eq 'N/A')
+%{
 
+  <& rank_genotypes.mas, 
+     analyzed_traits => $analyzed_traits,
+     pop_id          => $pop_id
+  &>
 
-<& rank_genotypes.mas, 
-   analyzed_traits => $analyzed_traits,
-   pop_id          => $pop_id
-&>
+%}
 
 <& /population/selection_populations.mas, 
    download_prediction => $download_prediction,
