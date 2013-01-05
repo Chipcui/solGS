@@ -15,10 +15,8 @@
   <table id="pagecontent_t" summary="" width="740" cellpadding="0" cellspacing="0" border="0">
   <tr>
     <td id="pagecontent_td">
-      <hr />
-      some header
-      <hr />
-
+      <& /header/header.mas &>
+        <p>&nbsp</p>
 % $m->call_next;
 
 <!--add your site's footer stuff here-->
@@ -26,9 +24,8 @@
   </tr>
   <tr>
     <td>
-      <hr/>   
-      some footer
-      <hr/>
+         <p>&nbsp</p>
+        <& /footer/footer.mas &>
     </td>
   </tr>
   </table>
