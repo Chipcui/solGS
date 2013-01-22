@@ -670,31 +670,8 @@ sub download_validation :Path('/download/validation/pop') Args(3) {
 # my ($self, $c, $model_id, $pop, $prediction_id, $trait, $trait_id)  
 sub prediction_population :Path('/model') Args(3) {
     my ($self, $c, $model_id, $pop, $prediction_id) = @_;
-    
-   # $c->stash->{pop_id} = $model_id;
-    #$self->get_trait_name($c, $trait_id);
-   # my $trait_id = $c->stash->{trait_id};
-    #$c->stash->{prediction_pop_id} = $prediction_id;
+     
     $c->forward("traits_to_analyze", [$model_id, $prediction_id]);
-
-
-    #add the prediction population's file name to the input files list
-   #  my $prediction_population_file = "\t" . 'cap123geno_prediction.csv';
-#     $self->input_files($c);
-#     my $input_files = $c->stash->{input_files};
-#     write_file($input_files, {append => 1}, $prediction_population_file);
-
-
-#     #create file for storing GEBVs of prediction population
-#     #add the file to the output_files list
-#     my $identifier = $model_id . '_' . $prediction_id;
-#     $self->prediction_pop_gebvs_file($c, $identifier);
-#     my $pred_pop_gebvs_file = "\t" . $c->stash->{prediction_pop_gebvs_file};
-
-#     $self->output_files($c);   
-#     my $output_files = $c->stash->{output_files};
-#     write_file($output_files, {append => 1}, $pred_pop_gebvs_file);
-
 
 }
 
@@ -702,7 +679,6 @@ sub prediction_population :Path('/model') Args(3) {
 sub prediction_pop_gebvs_file {    
     my ($self, $c, $identifier, $trait_id) = @_;
 
-    # my $trait_id = $c->stash->{trait_id};  
     my $cache_data = {key       => 'prediction_pop_gebvs_' . $identifier . '_' . $trait_id, 
                       file      => 'prediction_pop_gebvs_' . $identifier . '_' . $trait_id,
                       stash_key => 'prediction_pop_gebvs_file'
@@ -1632,14 +1608,6 @@ sub get_rrblup_output :Private{
     if ($trait_name)     
     {
         $self->run_rrblup_trait($c, $trait_abbr);
-        
-       #  my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
-#         $self->get_trait_name($c, $trait_id);
-        
-#         if ($prediction_id)
-#         {
-#             $self->download_prediction_urls($c);
-#         }
     }
     else 
     {    
@@ -1675,15 +1643,6 @@ sub get_rrblup_output :Private{
            
            $self->run_rrblup_trait($c, $tr);
            
-          #  my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
-#            $self->get_trait_name($c, $trait_id);
-           
-#            if ($prediction_id)
-#            {
-              
-#                $self->download_prediction_urls($c);
-#            }
-
            my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
            push @trait_pages, [ qq | <a href="/trait/$trait_id/population/$pop_id" onclick="solGS.waitPage()">$tr</a>| ];
        }    
