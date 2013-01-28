@@ -480,6 +480,7 @@ sub output_files {
 
 }
 
+
 sub gebv_marker_file {
     my ($self, $c) = @_;
    
@@ -816,7 +817,7 @@ sub get_trait_name {
 
 #creates and writes a list of GEBV files of 
 #traits selected for ranking genotypes.
-sub gebv_files_weighted {
+sub get_gebv_files_of_traits {
     my ($self, $c, $traits) = @_;
       
     my $pop_id = $c->stash->{pop_id};  
@@ -829,21 +830,21 @@ sub gebv_files_weighted {
         opendir my $dh, $dir 
             or die "can't open $dir: $!\n";
 
-        my ($file)   =  grep(/gebv_kinship_${tr}_${pop_id}/, readdir($dh));
+        my ($file)   = grep(/gebv_kinship_${tr}_${pop_id}/, readdir($dh));
         $gebv_files .= catfile($dir, $file);
         $gebv_files .= "\t" unless (@$traits[-1] eq $tr);
     
         closedir $dh;  
     }
    
-    my ($fh, $file) = tempfile("rank_traits_file_${pop_id}-XXXXX",
+    my ($fh, $file) = tempfile("gebv_files_of_traits_${pop_id}-XXXXX",
                                DIR => $c->stash->{solgs_tempfiles_dir}
         );
     $fh->close;
 
     write_file($file, $gebv_files);
    
-    $c->stash->{rank_gebv_files} = $file;
+    $c->stash->{gebv_files_of_traits} = $file;
     
 }
 
@@ -873,6 +874,7 @@ sub gebv_rel_weights {
     
 }
 
+
 sub ranked_genotypes_file {
     my ($self, $c) = @_;
 
@@ -885,6 +887,7 @@ sub ranked_genotypes_file {
     $c->stash->{ranked_genotypes_file} = $file;
    
 }
+
 
 sub mean_gebvs_file {
     my ($self, $c) = @_;
@@ -916,6 +919,7 @@ sub download_ranked_genotypes :Path('/download/ranked/genotypes/pop') Args(2) {
 
 }
 
+
 sub rank_genotypes : Private {
     my ($self, $c) = @_;
 
@@ -923,7 +927,7 @@ sub rank_genotypes : Private {
 
     my $input_files = join("\t", 
                            $c->stash->{rel_weights_file},
-                           $c->stash->{rank_gebv_files}
+                           $c->stash->{gebv_files_of_traits}
         );
 
     $self->ranked_genotypes_file($c);
@@ -1156,7 +1160,7 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
       
      if (@values) 
      {
-         $self->gebv_files_weighted($c, \@traits);
+         $self->get_gebv_files_of_traits($c, \@traits);
          my $params = $c->req->params;
          $self->gebv_rel_weights($c, $params);
          
