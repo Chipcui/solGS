@@ -89,7 +89,10 @@ for (i in 1:traitsTotal)
                             sep = "\t",
                             dec = "."
                             )
-    
+
+  
+    traitGEBV <- traitGEBV[order(rownames(traitGEBV)),,drop=FALSE]
+   
     trait <- colnames(traitGEBV)
     relWeight <- relWeights[trait, ]
 
