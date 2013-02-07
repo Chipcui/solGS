@@ -11,9 +11,8 @@ JSAN.use('Prototype');
 JSAN.use('jquery.blockUI');
 
 var rankGenotypes = {
- gebvWeights: function( pop_id )
- {
-      
+    gebvWeights: function( pop_id, prediction_pop_id )
+ {     
         var rel_form = document.getElementById('rel_gebv_form');
         var all = rel_form.getElementsByTagName('input');
         var params, validate;
@@ -52,7 +51,7 @@ var rankGenotypes = {
         }
       
         if (params && validate) {
-            this.sendArguments(params, legend, pop_id );
+            this.sendArguments(params, legend, pop_id, prediction_pop_id);
         }//else {
             // params = false;
             //  window.location = '/traits/all/population/' + pop_id;
@@ -94,14 +93,22 @@ var rankGenotypes = {
         return sum;
     },
 
- sendArguments: function(params, legend, pop_id) {
+    sendArguments: function(params, legend, pop_id, prediction_pop_id) {
        
         if(params) {
                                  
             jQuery.blockUI.defaults.applyPlatformOpacityRules = false;
             jQuery.blockUI({message: 'Please wait..'});
             
-            var action = '/traits/all/population/' + pop_id;
+            var action;
+           
+            if (prediction_pop_id && isNaN(prediction_pop_id) == true) {
+                  
+                    action = '/traits/all/population/' + pop_id;
+            }else{
+                action = '/traits/all/population/' + pop_id +  '/' + prediction_pop_id;
+            }
+
             jQuery.ajax({
                     type: 'POST',
                         dataType: "json",
