@@ -15,6 +15,7 @@ Isaak Y Tecle (iyt2@cornell.edu)
 <%args>
 
 $pop_id
+$prediction_pop_id
 $analyzed_traits
 
 </%args>
@@ -68,7 +69,7 @@ ROW
                 value   = "rank"
                 name    = "rank"
                 id      = "rank_genotypes"               
-                onclick = "rankGenotypes.gebvWeights(<% $pop_id %>)" >
+                onclick = "rankGenotypes.gebvWeights('<% $pop_id %>', '<% $prediction_pop_id %>')" >
        </td>     
      </tr>
    </table>
