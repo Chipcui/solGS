@@ -16,7 +16,7 @@ $prediction_pop_id
 
 <%perl>
 
-my $pred_pop = qq | <a href="/model/134/prediction/268" onclick="solGS.waitPage()">Barley prediction population test</a> |;
+my $pred_pop = qq | <a href="/model/$pop_id/prediction/$prediction_pop_id" onclick="solGS.waitPage()">Barley prediction population test</a> |;
 
 
 </%perl>
