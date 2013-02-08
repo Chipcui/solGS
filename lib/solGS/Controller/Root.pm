@@ -53,10 +53,12 @@ sub index :Path :Args(0) {
     $c->forward('search');
 }
 
+
 sub submit :Path('/submit/intro') :Args(0) {
     my ($self, $c) = @_;
     $c->stash(template=>'/submit/intro.mas');
 }
+
 
 sub details_form : Path('/form/population/details') Args(0) FormConfig('population/details.yml')  {
     my ($self, $c) = @_;
@@ -91,6 +93,7 @@ sub phenotype_form : Path('/form/population/phenotype') Args(0) FormConfig('popu
 
 }
 
+
 sub genotype_form : Path('/form/population/genotype') Args(0) FormConfig('population/genotype.yml') {
     my ($self, $c) = @_;
     my $form = $c->stash->{form};
@@ -107,6 +110,7 @@ sub genotype_form : Path('/form/population/genotype') Args(0) FormConfig('popula
     }
 
 }
+
 
 sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
     my ($self, $c) = @_;
@@ -161,6 +165,7 @@ sub projects_links {
     $c->stash->{projects_pages} = \@projects_pages;
 
 }
+
 
 sub show_search_result_pops : Path('/search/result/populations') Args(1) {
     my ($self, $c, $trait_id) = @_;
@@ -247,6 +252,7 @@ sub get_projects_details {
 
 }
 
+
 sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfig('search/solgs.yml'){
     my ($self, $c, $query) = @_;
   
@@ -289,6 +295,7 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
     }
 
 } 
+
 
 sub population : Regex('^population/([\d]+)(?:/([\w+]+))?'){
     my ($self, $c) = @_;
@@ -371,6 +378,7 @@ sub select_traits   {
  
 }
 
+
 sub trait :Path('/trait') Args(3) {
     my ($self, $c, $trait_id, $key, $pop_id) = @_;
    
@@ -394,6 +402,7 @@ sub trait :Path('/trait') Args(3) {
    
 }
 
+
 sub gs_files {
     my ($self, $c) = @_;
     
@@ -405,6 +414,7 @@ sub gs_files {
     $self->top_markers($c);
 
 }
+
 
 sub input_files {
     my ($self, $c) = @_;
@@ -438,6 +448,7 @@ sub input_files {
     $c->stash->{input_files} = $tempfile;
   
 }
+
 
 sub output_files {
     my ($self, $c) = @_;
@@ -496,6 +507,7 @@ sub gebv_marker_file {
 
 }
 
+
 sub gebv_kinship_file {
     my ($self, $c) = @_;
 
@@ -511,12 +523,14 @@ sub gebv_kinship_file {
 
 }
 
+
 sub blups_file {
     my ($self, $c) = @_;
     
     $c->stash->{blups} = $c->stash->{gebv_kinship_file};
     $self->top_blups($c);
 }
+
 
 sub download_blups :Path('/download/blups/pop') Args(3) {
     my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
@@ -538,6 +552,7 @@ sub download_blups :Path('/download/blups/pop') Args(3) {
 
 }
 
+
 sub download_marker_effects :Path('/download/marker/pop') Args(3) {
     my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
  
@@ -556,6 +571,7 @@ sub download_marker_effects :Path('/download/marker/pop') Args(3) {
     } 
 
 }
+
 
 sub download_urls {
     my ($self, $c) = @_;
@@ -580,6 +596,7 @@ sub download_urls {
         );
 }
 
+
 sub top_blups {
     my ($self, $c) = @_;
     
@@ -599,6 +616,7 @@ sub top_blups {
 
     $c->stash->{top_blups} = \@top_blups;
 }
+
 
 sub top_markers {
     my ($self, $c) = @_;
@@ -620,6 +638,7 @@ sub top_markers {
     $c->stash->{top_marker_effects} = \@top_markers;
 }
 
+
 sub validation_file {
     my ($self, $c) = @_;
 
@@ -633,6 +652,7 @@ sub validation_file {
 
     $self->cache_file($c, $cache_data);
 }
+
 
 sub combined_gebvs_file {
     my ($self, $c, $identifier) = @_;
@@ -667,12 +687,11 @@ sub download_validation :Path('/download/validation/pop') Args(3) {
     }
  
 }
-
-# my ($self, $c, $model_id, $pop, $prediction_id, $trait, $trait_id)  
+ 
 sub prediction_population :Path('/model') Args(3) {
     my ($self, $c, $model_id, $pop, $prediction_id) = @_;
-     
-    $c->forward("traits_to_analyze", [$model_id, $prediction_id]);
+ 
+    $c->res->redirect("/analyze/traits/population/$model_id/$prediction_id");
 
 }
 
@@ -722,12 +741,14 @@ sub prediction_pop_analyzed_traits {
    
     my @files  =  grep { /prediction_pop_gebvs_$training_pop_id/ && -f "$dir/$_" } 
                  readdir($dh);   
-    closedir $dh;                     
-   
-    my @trait_ids = map { s/prediction_pop_gebvs_|($training_pop_id)|($prediction_pop_id)|_//g ? $_ : 0} @files;
+    closedir $dh; 
+        
+    my @copy_files = @files;
+    my @trait_ids = map { s/prediction_pop_gebvs_|($training_pop_id)|($prediction_pop_id)|_//g ? $_ : 0} @copy_files;
   
     $c->stash->{prediction_pop_analyzed_traits} = \@trait_ids;
     $c->stash->{prediction_pop_analyzed_traits_files} = \@files;
+    
 }
 
 
@@ -738,11 +759,11 @@ sub download_prediction_urls {
     my $trait_ids = $c->stash->{prediction_pop_analyzed_traits};
     
     my $download_url = $c->stash->{download_prediction};
-    
+
     foreach my $trait_id (@$trait_ids) 
     {
         my $pop_id = $c->stash->{pop_id};
-        my $prediction_id = 268; #$c->stash->{prediction_pop_id};
+        my $prediction_id = $c->stash->{prediction_pop_id};
 
         $self->get_trait_name($c, $trait_id);
         my $trait_name  = $c->stash->{trait_name};
@@ -795,6 +816,7 @@ sub model_accuracy {
    
 }
 
+
 sub get_trait_name {
     my ($self, $c, $trait_id) = @_;
 
@@ -818,40 +840,61 @@ sub get_trait_name {
 #creates and writes a list of GEBV files of 
 #traits selected for ranking genotypes.
 sub get_gebv_files_of_traits {
-    my ($self, $c, $traits) = @_;
-      
-    my $pop_id = $c->stash->{pop_id};  
+    my ($self, $c, $traits, $pred_pop_id) = @_;
     
+
+    my $pop_id = $c->stash->{pop_id}; 
     my $dir = $c->stash->{solgs_cache_dir};
     my $gebv_files; 
-  
-    foreach my $tr (@$traits) 
-    {         
-        opendir my $dh, $dir 
-            or die "can't open $dir: $!\n";
 
-        my ($file)   = grep(/gebv_kinship_${tr}_${pop_id}/, readdir($dh));
-        $gebv_files .= catfile($dir, $file);
-        $gebv_files .= "\t" unless (@$traits[-1] eq $tr);
-    
-        closedir $dh;  
-    }
+    $self->prediction_pop_analyzed_traits($c);
+    my $pred_gebv_files = $c->stash->{prediction_pop_analyzed_traits_files};
    
-    my ($fh, $file) = tempfile("gebv_files_of_traits_${pop_id}-XXXXX",
+   if (@$pred_gebv_files) 
+   {
+       foreach (@$pred_gebv_files)
+       {
+           $gebv_files .= catfile($dir, $_);
+           $gebv_files .= "\t" unless (@$pred_gebv_files[-1] eq $_);
+       }     
+   }
+   
+    unless ($pred_gebv_files->[0])
+    {
+        foreach my $tr (@$traits) 
+        {         
+            opendir my $dh, $dir 
+                or die "can't open $dir: $!\n";
+ 
+            my ($file)   = grep(/gebv_kinship_${tr}_${pop_id}/, readdir($dh));
+
+            $gebv_files .= catfile($dir, $file);
+            $gebv_files .= "\t" unless (@$traits[-1] eq $tr);
+    
+            closedir $dh;  
+        }
+    }
+    
+    my $pred_file_suffix;
+    $pred_file_suffix = '_' . $pred_pop_id  if $pred_pop_id; 
+     
+    my ($fh, $file) = tempfile("gebv_files_of_traits_${pop_id}${pred_file_suffix}-XXXXX",
                                DIR => $c->stash->{solgs_tempfiles_dir}
         );
     $fh->close;
 
+    
     write_file($file, $gebv_files);
    
     $c->stash->{gebv_files_of_traits} = $file;
     
 }
 
+
 sub gebv_rel_weights {
-    my ($self, $c, $params) = @_;
+    my ($self, $c, $params, $pred_pop_id) = @_;
     
-    my $pop_id = $c->stash->{pop_id};
+    my $pop_id      = $c->stash->{pop_id};
   
     my $rel_wts = "\t" . 'relative_weight' . "\n";
     foreach my $tr (keys %$params)
@@ -863,8 +906,11 @@ sub gebv_rel_weights {
             $rel_wts .= "\n" unless( (keys %$params)[-1] eq $tr);
         }
     }
+
+    my $pred_file_suffix;
+    $pred_file_suffix = '_' . $pred_pop_id  if $pred_pop_id; 
     
-    my ($fh, $file) =  tempfile("rel_weights_${pop_id}-XXXXX",
+    my ($fh, $file) =  tempfile("rel_weights_${pop_id}${pred_file_suffix}-XXXXX",
                                 DIR => $c->stash->{solgs_tempfiles_dir}
         );
 
@@ -876,11 +922,14 @@ sub gebv_rel_weights {
 
 
 sub ranked_genotypes_file {
-    my ($self, $c) = @_;
+    my ($self, $c, $pred_pop_id) = @_;
 
     my $pop_id = $c->stash->{pop_id};
-
-    my ($fh, $file) =  tempfile("ranked_genotypes_${pop_id}-XXXXX",
+ 
+    my $pred_file_suffix;
+    $pred_file_suffix = '_' . $pred_pop_id  if $pred_pop_id;
+  
+    my ($fh, $file) =  tempfile("ranked_genotypes_${pop_id}${pred_file_suffix}-XXXXX",
                                 DIR => $c->stash->{solgs_tempfiles_dir}
         );
 
@@ -890,11 +939,15 @@ sub ranked_genotypes_file {
 
 
 sub mean_gebvs_file {
-    my ($self, $c) = @_;
+    my ($self, $c, $pred_pop_id) = @_;
+print STDERR "\n\n mean_gebvs_file prediction id: $pred_pop_id\n\n";
+    my $pop_id      = $c->stash->{pop_id};
+   
 
-    my $pop_id = $c->stash->{pop_id};
+    my $pred_file_suffix;
+    $pred_file_suffix = '_' . $pred_pop_id  if $pred_pop_id;
 
-    my ($fh, $file) =  tempfile("genotypes_mean_gebv_${pop_id}-XXXXX",
+    my ($fh, $file) =  tempfile("genotypes_mean_gebv_${pop_id}${pred_file_suffix}-XXXXX",
                                 DIR => $c->stash->{solgs_tempfiles_dir}
         );
 
@@ -921,24 +974,29 @@ sub download_ranked_genotypes :Path('/download/ranked/genotypes/pop') Args(2) {
 
 
 sub rank_genotypes : Private {
-    my ($self, $c) = @_;
+    my ($self, $c, $pred_pop_id) = @_;
 
-    my $pop_id = $c->stash->{pop_id};
+    my $pop_id      = $c->stash->{pop_id};
+    
 
     my $input_files = join("\t", 
                            $c->stash->{rel_weights_file},
                            $c->stash->{gebv_files_of_traits}
         );
 
-    $self->ranked_genotypes_file($c);
-    $self->mean_gebvs_file($c);
+    $self->ranked_genotypes_file($c, $pred_pop_id);
+    $self->mean_gebvs_file($c, $pred_pop_id);
 
     my $output_files = join("\t",
                             $c->stash->{ranked_genotypes_file},
                             $c->stash->{genotypes_mean_gebv_file}
         );
  
-    my ($fh_o, $output_file) = tempfile("output_rank_genotypes_${pop_id}-XXXXX",
+   
+    my $pred_file_suffix;
+    $pred_file_suffix = '_' . $pred_pop_id  if $pred_pop_id;
+    
+    my ($fh_o, $output_file) = tempfile("output_rank_genotypes_${pop_id}${pred_file_suffix}-XXXXX",
                                         DIR => $c->stash->{solgs_tempfiles_dir}
         );
     $fh_o->close;
@@ -946,7 +1004,7 @@ sub rank_genotypes : Private {
     write_file($output_file, $output_files);
     $c->stash->{output_files} = $output_file;
     
-    my ($fh_i, $input_file) = tempfile("input_rank_genotypes_${pop_id}-XXXXX",
+    my ($fh_i, $input_file) = tempfile("input_rank_genotypes_${pop_id}${pred_file_suffix}-XXXXX",
                                        DIR => $c->stash->{solgs_tempfiles_dir}
         );
     $fh_i->close;
@@ -954,7 +1012,7 @@ sub rank_genotypes : Private {
     write_file($input_file, $input_files);
     $c->stash->{input_files} = $input_file;
 
-    $c->stash->{r_temp_file} = "rank-gebv-genotypes-${pop_id}";
+    $c->stash->{r_temp_file} = "rank-gebv-genotypes-${pop_id}${pred_file_suffix}";
     $c->stash->{r_script}    = 'R/rank_genotypes.r';
     
     $self->run_r_script($c);
@@ -983,11 +1041,12 @@ sub top_ranked_genotypes {
     $c->stash->{top_ranked_genotypes} = \@top_genotypes;
 }
 
-sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
-    my ($self, $c, $pop_id) = @_;
+ 
+sub traits_to_analyze :Regex('^analyze/traits/population/([\d]+)(?:/([\d+]+))?') {
+    my ($self, $c) = @_; 
+   
+    my ($pop_id, $prediction_id) = @{$c->req->captures};
     
-    my $prediction_id = $c->req->args->[1];
-
     $c->stash->{pop_id} = $pop_id;
     $c->stash->{prediction_pop_id} = $prediction_id;
   
@@ -1074,18 +1133,29 @@ sub traits_to_analyze : Path('/analyze/traits/population') :Args(1)  {
   
     }
 
-    $c->res->redirect("/traits/all/population/$pop_id");
+    $c->res->redirect("/traits/all/population/$pop_id/$prediction_id");
 
 }
 
 
-sub all_traits_output :Path('/traits/all/population') Arg(1) {
-     my ($self, $c, $pop_id) = @_;
-  
+sub all_traits_output :Regex('^traits/all/population/([\d]+)(?:/([\d+]+))?') {
+     my ($self, $c) = @_;
+     
+     my ($pop_id, $pred_pop_id) = @{$c->req->captures};
+
      my @traits = $c->req->param; 
      @traits = grep {$_ ne 'rank'} @traits;
      $c->stash->{pop_id} = $pop_id;
-     
+
+     if ($pred_pop_id)
+     {
+         $c->stash->{prediction_pop_id} = $pred_pop_id;
+     }
+     else
+     {
+         $c->stash->{prediction_pop_id} = 'N/A';
+     }
+
      $self->analyzed_traits($c);
      my @analyzed_traits = @{$c->stash->{analyzed_traits}};
  
@@ -1123,7 +1193,7 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
          my @validation_file  = grep { /cross_validation_${trait_abbr}_${pop_id}/ && -f "$dir/$_" } 
                                 readdir($dh);   
          closedir $dh; 
-   
+        
          my @accuracy_value = grep {/Average/} read_file(catfile($dir, $validation_file[0]));
          @accuracy_value    = split(/\t/,  $accuracy_value[0]);
 
@@ -1143,6 +1213,7 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
 
      $self->download_prediction_urls($c);
      my $download_prediction = $c->stash->{download_prediction};
+    
      if ($download_prediction)
      {
          $c->stash->{download_prediction} = $download_prediction;
@@ -1160,11 +1231,11 @@ sub all_traits_output :Path('/traits/all/population') Arg(1) {
       
      if (@values) 
      {
-         $self->get_gebv_files_of_traits($c, \@traits);
+         $self->get_gebv_files_of_traits($c, \@traits, $pred_pop_id);
          my $params = $c->req->params;
-         $self->gebv_rel_weights($c, $params);
+         $self->gebv_rel_weights($c, $params, $pred_pop_id);
          
-         $c->forward('rank_genotypes');
+         $c->forward('rank_genotypes', [$pred_pop_id]);
          
          my $geno = $self->tohtml_genotypes($c);
          
