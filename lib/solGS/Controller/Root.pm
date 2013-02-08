@@ -777,25 +777,6 @@ sub download_prediction_urls {
   
 }
 
-# sub download_prediction_urls {
-#     my ($self, $c) = @_;
-    
-#     my $pop_id         = $c->stash->{pop_id};
-#     my $prediction_id  = $c->stash->{prediction_pop_id};
-#     my $trait_id       = $c->stash->{trait_id};
-   
-#     $self->get_trait_name($c, $trait_id);
-#     my $trait_name  = $c->stash->{trait_name};
-   
-    
-#     my $download_url = $c->stash->{download_prediction};
-#     $download_url   .= " | " if $download_url;
-#     $download_url   .= qq |<a href="/download/model/$pop_id/prediction/$prediction_id/$trait_id">$trait_name</a> |;
-      
-#     $c->stash->{download_prediction} = $download_url;
-  
-# }
-
 
 sub model_accuracy {
     my ($self, $c) = @_;
