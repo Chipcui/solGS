@@ -116,30 +116,36 @@ var rankGenotypes = {
                         data: params,
                         success: function(res){                       
                         var suc = res.status;
-                        var genos = new Hash();
-                        genos = res.genotypes;
-                        var download_link = res.link;
+                        var table;
+                        if (suc == 'success' ) {
+                            var genos = new Hash();
+                            genos = res.genotypes;
+                            var download_link = res.link;
                           
-                        var table = '<table  style="padding: 1px; width:75%;">';
-                        table += '<tr><th>Genotypes</th><th>Weighted Mean</th></tr>';
+                            table = '<table  style="padding: 1px; width:75%;">';
+                            table += '<tr><th>Genotypes</th><th>Weighted Mean</th></tr>';
                        
-                        var sorted = []; 
-                        for (var geno in genos) {
-                            sorted.push([geno, genos[geno]]);
-                            sorted = sorted.sort(function(a, b) {return b[1] - a[1]});
-                        }
+                            var sorted = []; 
+                            for (var geno in genos) {
+                                sorted.push([geno, genos[geno]]);
+                                sorted = sorted.sort(function(a, b) {return b[1] - a[1]});
+                            }
 
-                        for (var i=0; i<sorted.length; i++) {
-                            table += '<tr class="columnar_table bgcoloralt1">';
-                            table += '<td>' 
-                                + sorted[i][0] + '</td>' + '<td>' 
-                                + sorted[i][1] + '</td>';
-                            table += '</tr>';                          
-                         }
+                            for (var i=0; i<sorted.length; i++) {
+                                table += '<tr class="columnar_table bgcoloralt1">';
+                                table += '<td>' 
+                                      + sorted[i][0] + '</td>' + '<td>' 
+                                      + sorted[i][1] + '</td>';
+                                table += '</tr>';                          
+                            }
                         
-                        table += '</table>';                    
-                        table += '<br>' + download_link;
-                        table += '<br>' + legend + '<br/><br/>';  
+                            table += '</table>';                    
+                            table += '<br>' + download_link;
+                            table += '<br>' + legend + '<br/><br/>';
+                        }
+                        else {
+                            table = 'Ranking the genotypes failed..Please report the problem.';
+                        }
                         
                         jQuery('#top_genotypes').append(table).show();                       
                         jQuery.unblockUI();                   
