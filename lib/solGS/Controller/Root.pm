@@ -1221,11 +1221,17 @@ sub all_traits_output :Regex('^traits/all/population/([\d]+)(?:/([\d+]+))?') {
          my $geno = $self->tohtml_genotypes($c);
          
          my $link = $c->stash->{ranked_genotypes_download_url};
-                       
-         my $ret->{status} = 'success';
-         $ret->{genotypes} = $geno;
-         $ret->{link} = $link;
-       
+         
+         my $ret->{status} = 'failed';
+         my $ranked_genos = $c->stash->{top_ranked_genotypes};
+        
+         if (@$ranked_genos) 
+         {
+             $ret->{status} = 'success';
+             $ret->{genotypes} = $geno;
+             $ret->{link} = $link;
+         }
+               
          $ret = to_json($ret);
         
          $c->res->content_type('application/json');
