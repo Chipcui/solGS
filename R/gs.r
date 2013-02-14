@@ -74,7 +74,6 @@ blupFile <- grep(kinshipTrait,
                  )
 
 markerTrait <- paste("marker", trait, sep = "_")
-
 markerFile  <- grep(markerTrait,
                    outFiles,
                    ignore.case = TRUE,
@@ -82,12 +81,21 @@ markerFile  <- grep(markerTrait,
                    value = TRUE
                    )
 
+traitPhenoFile <- paste("phenotype_trait", trait, sep = "_")
+traitPhenoFile <- grep(traitPhenoFile,
+                       outFiles,
+                       ignore.case = TRUE,
+                       fixed = FALSE,
+                       value = TRUE
+                       )
+
 phenoFile <- grep("phenotype_data",
                   inFiles,
                   ignore.case = TRUE,
                   fixed = FALSE,
                   value = TRUE
                   )
+
 
 print(phenoFile)
 phenoData <- read.table(phenoFile,
@@ -150,6 +158,8 @@ phenoTrait<-ddply(phenoTrait, "object_name", colwise(mean))
 #make stock_names row names
 row.names(phenoTrait) <- phenoTrait[, 1]
 phenoTrait[, 1] <- NULL
+
+traitPhenoData <- as.data.frame(round(phenoTrait, digits=2))
 
 #find genotype file name
 genoFile <- grep("genotype_data",
@@ -490,7 +500,18 @@ if(length(combinedGebvsFile) != 0 )
                   )
     }
   }
-  
+
+if(!is.null(traitPhenoData) & length(traitPhenoFile) != 0)  
+  {
+    write.table(traitPhenoData,
+                file = traitPhenoFile,
+                sep = "\t",
+                col.names = NA,
+                quote = FALSE,
+                append = FALSE
+                )
+  }
+
 #should also send notification to analysis owner
 to      <- c("<iyt2@cornell.edu>")
 subject <- paste(trait, ' GS analysis done', sep = ':')
