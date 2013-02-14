@@ -620,18 +620,10 @@ sub top_blups {
     
     my $blups_file = $c->stash->{blups};
     
-    open my $fh, "<", $blups_file or die "couldnot open $blups_file: $!";
-    
-    my @top_blups;
-    
-    while (<$fh>)
-    {
-        push @top_blups,  map { [ split(/\t/) ] } $_;
-        last if $. == 11;
-    }
-
-    shift(@top_blups); #add condition
-
+    my $blups = $self->convert_to_arrayref($c, $blups_file);
+    shift(@$blups); #add condition
+    my @top_blups = @$blups[0..9];
+ 
     $c->stash->{top_blups} = \@top_blups;
 }
 
@@ -641,17 +633,9 @@ sub top_markers {
     
     my $markers_file = $c->stash->{gebv_marker_file};
 
-    open my $fh, $markers_file or die "couldnot open $markers_file: $!";
-    
-    my @top_markers;
-    
-    while (<$fh>)
-    {
-        push @top_markers,  map { [ split(/\t/) ] } $_;
-        last if $. == 11;
-    }
-
-    shift(@top_markers); #add condition
+    my $markers = $self->convert_to_arrayref($c, $markers_file);
+    shift(@$markers); #add condition
+    my @top_markers = @$markers[0..9];
 
     $c->stash->{top_marker_effects} = \@top_markers;
 }
@@ -1025,22 +1009,34 @@ sub top_ranked_genotypes {
     my ($self, $c) = @_;
     
     my $genotypes_file = $c->stash->{genotypes_mean_gebv_file};
-    open my $fh, $genotypes_file or die "couldnot open $genotypes_file: $!";
+  
+    my $genos_data = $self->convert_to_arrayref($c, $genotypes_file);
+    shift(@$genos_data); #add condition
+    my @top_genotypes = @$genos_data[0..9];
     
-    my @top_genotypes;
-    
-    while (<$fh>)
-    {
-        push @top_genotypes,  map { [ split(/\t/) ] } $_;
-        last if $. == 11;
-    }
-
-    shift(@top_genotypes); #add condition
-
     $c->stash->{top_ranked_genotypes} = \@top_genotypes;
 }
 
- 
+
+#converts a tab delimitted > two column data file
+#into an array of array ref
+sub convert_to_arrayref {
+    my ($self, $c, $file) = @_;
+
+    open my $fh, $file or die "couldnot open $file: $!";    
+    
+    my @data;   
+    while (<$fh>)
+    {
+        push @data,  map { [ split(/\t/) ] } $_;
+    }
+
+    return \@data;
+
+}
+
+
+
 sub traits_to_analyze :Regex('^analyze/traits/population/([\d]+)(?:/([\d+]+))?') {
     my ($self, $c) = @_; 
    
