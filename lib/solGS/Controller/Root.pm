@@ -354,8 +354,8 @@ sub project_description {
     my @phe_lines  = read_file($pheno_file);   
     my $traits     = $phe_lines[0];
 
-    $self->filter_header($c);
-    my $filter_header = $c->stash->{filter_header};
+    $self->filter_phenotype_header($c);
+    my $filter_header = $c->stash->{filter_phenotype_header};
    
     $traits       =~ s/$filter_header//g;
 
@@ -1277,8 +1277,8 @@ sub get_all_traits {
     
     my $pheno_file = $c->stash->{phenotype_file};
     
-    $self->filter_header($c);
-    my $filter_header = $c->stash->{filter_header};
+    $self->filter_phenotype_header($c);
+    my $filter_header = $c->stash->{filter_phenotype_header};
     
     open my $ph, "<", $pheno_file or die "$pheno_file:$!\n";
     my $headers = <$ph>;
@@ -1407,11 +1407,12 @@ sub analyzed_traits {
     $c->stash->{analyzed_traits_files} = \@files;
 }
 
-sub filter_header {
+
+sub filter_phenotype_header {
     my ($self, $c) = @_;
     
     my $meta_headers = "uniquename\t|object_id\t|object_name\t|stock_id\t|stock_name\t";
-    $c->stash->{filter_header} = $meta_headers;
+    $c->stash->{filter_phenotype_header} = $meta_headers;
 
 }
 
@@ -1612,8 +1613,8 @@ sub format_phenotype_dataset {
     my $header;   
     my %acronym_table;
 
-    $self->filter_header($c);
-    my $filter_header = $c->stash->{filter_header};
+    $self->filter_phenotype_header($c);
+    my $filter_header = $c->stash->{filter_phenotype_header};
     $filter_header =~ s/\t//g;
 
     my $cnt = 0;
