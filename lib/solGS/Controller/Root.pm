@@ -460,6 +460,7 @@ sub output_files {
     $self->gebv_marker_file($c);  
     $self->gebv_kinship_file($c); 
     $self->validation_file($c);
+    $self->trait_phenodata_file($c);
 
     my $prediction_id = $c->stash->{prediction_pop_id};
     my $identifier    = $pop_id . '_' . $prediction_id;
@@ -475,6 +476,7 @@ sub output_files {
                           $c->stash->{gebv_kinship_file},
                           $c->stash->{gebv_marker_file},
                           $c->stash->{validation_file},
+                          $c->stash->{trait_phenodata_file},
                           $c->stash->{selected_traits_gebv_file},
                           $pred_pop_gebvs_file
         );
@@ -501,6 +503,22 @@ sub gebv_marker_file {
     my $cache_data = {key       => 'gebv_marker_' . $pop_id . '_'.  $trait,
                       file      => 'gebv_marker_' . $trait . '_' . $pop_id,
                       stash_key => 'gebv_marker_file'
+    };
+
+    $self->cache_file($c, $cache_data);
+
+}
+
+
+sub trait_phenodata_file {
+    my ($self, $c) = @_;
+   
+    my $pop_id = $c->stash->{pop_id};
+    my $trait  = $c->stash->{trait_abbr};
+    
+    my $cache_data = {key       => 'phenotype_' . $pop_id . '_'.  $trait,
+                      file      => 'phenotype_trait_' . $trait . '_' . $pop_id,
+                      stash_key => 'trait_phenodata_file'
     };
 
     $self->cache_file($c, $cache_data);
