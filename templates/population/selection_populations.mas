@@ -1,6 +1,6 @@
 <%doc>
 
-displays list of prediction populations.
+displays list of prediction populations and their GS output.
 
 </%doc>
 
@@ -11,12 +11,11 @@ $download_prediction
 $analyzed_traits
 $pop_id
 $prediction_pop_id
+$list_of_prediction_pops
 
 </%args>
 
 <%perl>
-
-my $pred_pop = qq | <a href="/model/$pop_id/prediction/$prediction_pop_id" onclick="solGS.waitPage()">Barley prediction population test</a> |;
 
 
 </%perl>
@@ -32,7 +31,7 @@ my $pred_pop = qq | <a href="/model/$pop_id/prediction/$prediction_pop_id" oncli
 
 <& /page/columnar_table.mas,
      headings    => ['',  'Selection Population', 'Description', 'Generation', 'Year', 'Download GEBVs' ],
-     data        => [['', $pred_pop, 'barley prediction population from crosses...', 'F1', '2013', $download_prediction]],
+     data        => $list_of_prediction_pops,
     __alt_freq   => 2,
     __alt_width  => 1,
     __align      => 'l'
