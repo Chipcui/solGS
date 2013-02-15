@@ -689,6 +689,7 @@ sub download_validation :Path('/download/validation/pop') Args(3) {
     }
  
 }
+
  
 sub prediction_population :Path('/model') Args(3) {
     my ($self, $c, $model_id, $pop, $prediction_id) = @_;
@@ -1036,6 +1037,20 @@ sub convert_to_arrayref {
 }
 
 
+#retrieve from db prediction pops relevant to the
+#training population
+sub list_of_prediction_pops {
+    my ($self, $c, $training_pop_id, $download_prediction) = @_;
+   
+    my $prediction_pop_id = 268;
+    my $pred_pop_name = qq | <a href="/model/$training_pop_id/prediction/$prediction_pop_id" onclick="solGS.waitPage()">Barley prediction population test</a> |;
+
+    my $pred_pop = [ ['', $pred_pop_name, 'barley prediction population from crosses...', 'F1', '2013', $download_prediction]];
+    
+    $c->stash->{list_of_prediction_pops} = $pred_pop;
+
+}
+
 
 sub traits_to_analyze :Regex('^analyze/traits/population/([\d]+)(?:/([\d+]+))?') {
     my ($self, $c) = @_; 
@@ -1145,10 +1160,12 @@ sub all_traits_output :Regex('^traits/all/population/([\d]+)(?:/([\d+]+))?') {
      if ($pred_pop_id)
      {
          $c->stash->{prediction_pop_id} = $pred_pop_id;
+         $c->stash->{population_is} = 'prediction population';
      }
      else
      {
          $c->stash->{prediction_pop_id} = 'N/A';
+         $c->stash->{population_is} = 'training population';
      }
 
      $self->analyzed_traits($c);
@@ -1174,8 +1191,8 @@ sub all_traits_output :Regex('^traits/all/population/([\d]+)(?:/([\d+]+))?') {
                      $trait_name =~ s/\n//g;
                      $c->stash->{trait_name} = $trait_name;
                      $c->stash->{trait_abbr} = $r->[0];
-                   }
-               }
+                 }
+             }
 
          }
 
@@ -1208,15 +1225,19 @@ sub all_traits_output :Regex('^traits/all/population/([\d]+)(?:/([\d+]+))?') {
 
      $self->download_prediction_urls($c);
      my $download_prediction = $c->stash->{download_prediction};
-    
+ 
      if ($download_prediction)
      {
          $c->stash->{download_prediction} = $download_prediction;
      }
      else
      {
-         $c->stash->{download_prediction} = 'N/A';
+         $download_prediction = 'N/A';
+         $c->stash->{download_prediction} = $download_prediction;
      }
+    
+     #get prediction populations list..     
+     $self->list_of_prediction_pops($c, $pop_id, $download_prediction);
     
      my @values;
      foreach (@traits)
