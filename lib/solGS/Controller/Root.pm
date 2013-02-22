@@ -1031,11 +1031,29 @@ sub convert_to_arrayref {
     {
         push @data,  map { [ split(/\t/) ] } $_;
     }
-
+   
+    shift(@data);
+    
     return \@data;
 
 }
 
+
+sub trait_phenotype_file {
+    my ($self, $c, $pop_id, $trait) = @_;
+
+    my $dir = $c->stash->{solgs_cache_dir};
+    
+    opendir my $dh, $dir or die "can't open $dir: $!\n";
+ 
+    my ($file)   = grep(/phenotype_trait_${trait}_${pop_id}/, readdir($dh));
+    my $trait_pheno_file .= catfile($dir, $file);
+       
+    closedir $dh; 
+
+    $c->stash->{trait_phenotype_file} = $trait_pheno_file;
+
+}
 
 #retrieve from db prediction pops relevant to the
 #training population
@@ -1272,6 +1290,35 @@ sub all_traits_output :Regex('^traits/all/population/([\d]+)(?:/([\d+]+))?') {
          $c->res->content_type('application/json');
          $c->res->body($ret);
     }
+}
+
+
+sub phenotype_graph :Path('/phenotype/graph') Args(0) {
+    my ($self, $c) = @_;
+
+    my $pop_id   = $c->req->param('pop_id');
+    my $trait_id = $c->req->param('trait_id');
+
+    my $trait_name = $c->model('solGS')->trait_name($c, $trait_id);
+    my $trait_abbr = $self->abbreviate_term($c, $trait_name);
+    
+    $self->trait_phenotype_file($c, $pop_id, $trait_abbr);
+    my $trait_pheno_file = $c->{stash}->{trait_phenotype_file};
+    my $trait_data = $self->convert_to_arrayref($c, $trait_pheno_file);
+
+    my $ret->{status} = 'failed';
+    
+    if (@$trait_data) 
+    {            
+        $ret->{status} = 'success';
+        $ret->{trait_data} = $trait_data;
+    } 
+    
+    $ret = to_json($ret);
+        
+    $c->res->content_type('application/json');
+    $c->res->body($ret);
+
 }
 
 
