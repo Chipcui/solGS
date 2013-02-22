@@ -1,0 +1,35 @@
+<%doc>
+
+=head1 NAME
+ 
+population/rank_genotypes.mas - displays a form for ranking genotypes based on weighted GEBVs of multiple traits
+
+=AUTHOR
+
+Isaak Y Tecle (iyt2@cornell.edu)
+
+=cut
+
+</%doc>
+
+<%args>
+
+$pop_id => 134;
+$trait_id => 76439;
+
+</%args>
+
+<%perl>
+
+
+</%perl>
+
+<& /util/import_javascript.mas, classes => [ "solGS.phenotypeData", "jquery.canvasTextRendererMin", "jquery.canvasAxisLabelRendererMin", "jquery.json2Min", "jquery.highlighter", "jquery.canvasAxisTickRenderer", "jquery.cursor", "jquery.categoryAxisRenderer"] &>
+
+
+<div id="phenoHistogram">
+
+ <input type="hidden" name="population_id" value="<% $pop_id %>" /> 
+ <input type="hidden" name="trait_id" value="<% $trait_id %>" /> 
+
+</div>
