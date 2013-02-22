@@ -2,7 +2,7 @@
 
 =head1 NAME
  
-population/rank_genotypes.mas - displays a form for ranking genotypes based on weighted GEBVs of multiple traits
+population/trait_phenotype_data.mas - displays scatter plot of trait phenotype data
 
 =AUTHOR
 
@@ -14,8 +14,8 @@ Isaak Y Tecle (iyt2@cornell.edu)
 
 <%args>
 
-$pop_id => 134;
-$trait_id => 76439;
+$pop_id
+$trait_id
 
 </%args>
 
