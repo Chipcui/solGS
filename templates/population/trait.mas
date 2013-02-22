@@ -49,7 +49,7 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 <&| /page/info_section.mas, 
     collapsible => 1, 
     collapsed   => 0, 
-    title       => "Frequency distribution of phenotype data"
+    title       => "Trait phenotype data"
 &> 
   
 <& /population/trait_phenotype_data.mas,
