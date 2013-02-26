@@ -83,7 +83,7 @@ var rankGenotypes = {
      }
  },
 
- sumElements: function(elements) {
+    sumElements: function(elements) {
         var sum = 0;
         for(var i=0; i<elements.length; i++) {            
             if(!isNaN(elements[i])) {
