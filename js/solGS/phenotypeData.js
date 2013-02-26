@@ -93,11 +93,16 @@ jQuery(window).load( function() {
                                 angle: -90, 
                                 fontSize:5,
                             },
+                            labelRenderer: jQuery.jqplot.CanvasAxisLabelRenderer,
+                            label: 'Genotypes',
                         },
                         yaxis: {
+                            tickRenderer: jQuery.jqplot.CanvasAxisTickRenderer,
                             tickOptions: { 
-                                fontSize: 9,
-                            },              
+                                fontSize: 10,
+                            },                           
+                            labelRenderer: jQuery.jqplot.CanvasAxisLabelRenderer,
+                            label: 'Trait values',
                         },
                     }
                 });
