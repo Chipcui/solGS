@@ -24,7 +24,7 @@ $trait_id
 
 </%perl>
 
-<& /util/import_javascript.mas, classes => [ "solGS.phenotypeData", "jquery.canvasTextRendererMin", "jquery.canvasAxisLabelRendererMin", "jquery.json2Min", "jquery.highlighter", "jquery.canvasAxisTickRenderer", "jquery.cursor", "jquery.categoryAxisRenderer"] &>
+<& /util/import_javascript.mas, classes => [ "solGS.phenotypeData", "jquery.canvasTextRendererMin", "jquery.canvasAxisLabelRendererMin", "jquery.json2Min", "jquery.highlighter", "jquery.canvasAxisTickRenderer", "jquery.cursorMin", "jquery.categoryAxisRendererMin"] &>
 
 
 <div id="phenoHistogram">
