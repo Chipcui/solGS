@@ -24,11 +24,6 @@ $trait_id
 
 </%perl>
 
-<& /util/import_javascript.mas, classes => [ "solGS.phenotypeData", "jquery.canvasTextRendererMin", "jquery.canvasAxisLabelRendererMin", "jquery.json2Min", "jquery.highlighter", "jquery.canvasAxisTickRenderer", "jquery.cursorMin", "jquery.categoryAxisRendererMin"] &>
-
-<link rel="stylesheet" href="/static/jqplot.css" type="text/css" />
-
-
 <div id="phenoHistogram">
 
  <input type="hidden" name="population_id" value="<% $pop_id %>" /> 
