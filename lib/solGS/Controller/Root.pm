@@ -621,7 +621,7 @@ sub top_blups {
     my $blups_file = $c->stash->{blups};
     
     my $blups = $self->convert_to_arrayref($c, $blups_file);
-    shift(@$blups); #add condition
+  
     my @top_blups = @$blups[0..9];
  
     $c->stash->{top_blups} = \@top_blups;
@@ -634,7 +634,7 @@ sub top_markers {
     my $markers_file = $c->stash->{gebv_marker_file};
 
     my $markers = $self->convert_to_arrayref($c, $markers_file);
-    shift(@$markers); #add condition
+    
     my @top_markers = @$markers[0..9];
 
     $c->stash->{top_marker_effects} = \@top_markers;
@@ -924,10 +924,9 @@ sub ranked_genotypes_file {
 
 sub mean_gebvs_file {
     my ($self, $c, $pred_pop_id) = @_;
-print STDERR "\n\n mean_gebvs_file prediction id: $pred_pop_id\n\n";
+
     my $pop_id      = $c->stash->{pop_id};
    
-
     my $pred_file_suffix;
     $pred_file_suffix = '_' . $pred_pop_id  if $pred_pop_id;
 
@@ -1321,6 +1320,36 @@ sub phenotype_graph :Path('/phenotype/graph') Args(0) {
 
 }
 
+#sends an array of trait gebv data to an ajax request
+#with a population id and trait id parameters
+sub gebv_graph :Path('/trait/gebv/graph') Args(0) {
+    my ($self, $c) = @_;
+
+    my $pop_id   = $c->req->param('pop_id');
+    my $trait_id = $c->req->param('trait_id');
+    $c->stash->{pop_id} = $pop_id;
+
+    $self->get_trait_name($c, $trait_id);
+       
+    $self->gebv_kinship_file($c);
+    my $gebv_file = $c->stash->{gebv_kinship_file};    
+    my $gebv_data = $self->convert_to_arrayref($c, $gebv_file);
+
+    my $ret->{status} = 'failed';
+    
+    if (@$gebv_data) 
+    {            
+        $ret->{status} = 'success';
+        $ret->{gebv_data} = $gebv_data;
+    } 
+    
+    $ret = to_json($ret);
+        
+    $c->res->content_type('application/json');
+    $c->res->body($ret);
+
+}
+
 
 sub tohtml_genotypes {
     my ($self, $c) = @_;
@@ -1352,6 +1381,7 @@ sub get_all_traits {
     $self->add_trait_ids($c, $headers);
        
 }
+
 
 sub add_trait_ids {
     my ($self, $c, $list) = @_;   
