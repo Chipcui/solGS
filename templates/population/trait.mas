@@ -24,6 +24,16 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 
 </%perl>
 
+<& /util/import_javascript.mas, classes => [ "solGS.phenotypeData", "solGS.traitGebv", 
+                                             "jquery.canvasTextRendererMin", "jquery.canvasAxisLabelRendererMin", 
+                                             "jquery.json2Min", "jquery.highlighter", 
+                                             "jquery.canvasAxisTickRenderer", "jquery.cursorMin", 
+                                             "jquery.categoryAxisRendererMin", 
+                                           ] 
+&>
+
+<link rel="stylesheet" href="/static/jqplot.css" type="text/css" />
+
 <& /page/page_title.mas, 
    title => "Genomic Selection Model for $trait_abbr in $project_name"
 &>
