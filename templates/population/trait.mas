@@ -24,11 +24,12 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 
 </%perl>
 
-<& /util/import_javascript.mas, classes => [ "solGS.phenotypeData", "solGS.traitGebv", 
+<& /util/import_javascript.mas, classes => [ "solGS.phenotypeData", "solGS.traitGebv", "solGS.traitGebvFlot", 
                                              "jquery.canvasTextRendererMin", "jquery.canvasAxisLabelRendererMin", 
                                              "jquery.json2Min", "jquery.highlighter", 
                                              "jquery.canvasAxisTickRenderer", "jquery.cursorMin", 
-                                             "jquery.categoryAxisRendererMin", 
+                                             "jquery.categoryAxisRendererMin", "flot.flot", "flot.categories", 
+                                             "flot.tooltip", "flot.selection", "flot.navigate"
                                            ] 
 &>
 
