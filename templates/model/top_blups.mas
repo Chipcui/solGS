@@ -27,21 +27,58 @@ $blups_download_url
 &>
 
 <style type="text/css">
-    .gebvbutton-reset {
-      margin-top: 10px;
-      position: left;     
-      width: 90px;
-      height: 20px;
-      font-size: 10px;
-    }
+  #gebvbutton-reset {
+    margin-top: 10px;
+    position: left;     
+    width: 90px;
+    height: 20px;
+    font-size: 10px;
+  }
+
+  #gebvzoom-reset {
+    position: relative;
+    margin-top: 10px;
+    margin-right: 10px;  
+    width: 90px;
+    height: 20px;
+    font-size: 10px;
+  }
+
+  #gebvPlot2  {
+    width:800px;
+    height:400px;
+  }
+
+  #gebvPlot2 div.xAxis div.tickLabel {  
+    font-size: 10px;
+    margin-top: 40px;
+    transform: rotate(-90deg);
+    -ms-transform:rotate(-90deg); /* IE 9 */
+    -moz-transform:rotate(-90deg); /* Firefox */
+    -webkit-transform:rotate(-90deg); /* Safari and Chrome */
+    -o-transform:rotate(-90deg); /* Opera */
+    /*rotation-point:50% 50%;*/ /* CSS3 */
+    /*rotation:270deg;*/ /* CSS3 */
+  
+  }
+    
 </style>
 
 <div id="gebvPlot"> 
 </div> 
-<button class="gebvbutton-reset">Reset Zoom</button>
+<button id="gebvbutton-reset">Reset Zoom</button>
 <br/>
 <br/>
 
+<div id="gebvPlot2">
+</div> 
+<button id="gebvzoom-reset">Reset zoom</button>
+<br/>
+<br/>
+<div id="gebvPlotOverview" style="width:800px;height:100px"> 
+</div>
+<br/>
+<br/>
 <i>Top 10 genotypes</i>:
 
 <& /page/columnar_table.mas,
