@@ -160,7 +160,7 @@ jQuery(window).load( function() {
                 });
             
             //given datapoint position and content, displays a styled tooltip
-             var showTooltip = function(tp, lt, content) {                              
+             var showTooltip = function(lt, tp, content) {                              
                 jQuery('<div id="tooltip">' + content + '</div>').css({ 
                         position: 'absolute',
                         display: 'none',
