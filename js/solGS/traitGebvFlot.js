@@ -56,16 +56,15 @@ jQuery(window).load( function() {
                     }
                 });
            
-            return {
-                 'bothAxisValues': graphArray, 
-                'xAxisValues': xAxisTickValues,
-                'yAxisValues': yAxisTickValues,
-                'yValues': yValues 
-            };
+            return {'bothAxisValues' : graphArray, 
+                    'xAxisValues'    : xAxisTickValues,
+                    'yAxisValues'    : yAxisTickValues,
+                    'yValues'        : yValues 
+                    };
             
         };
               
-        var allData   = gebvDataRenderer();
+        var allData     = gebvDataRenderer();
         var xAxisValues = allData.xAxisValues;
         var yAxisValues = allData.yAxisValues;
         var yValues     = allData.yValues;         
@@ -139,7 +138,7 @@ jQuery(window).load( function() {
        
             jQuery("#gebvPlot2").bind("plotselected", function (event, ranges) {
                     //zoom in
-                    plot = jQuery.plot($("#gebvPlot2"), plotData,
+                    plot = jQuery.plot(jQuery("#gebvPlot2"), plotData,
                                        jQuery.extend(true, {}, options, {
                                                xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
                                                yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to },                    
@@ -159,8 +158,46 @@ jQuery(window).load( function() {
                     var plot = jQuery.plot("#gebvPlot2", plotData, options);
                     // plot.zoomOut();
                 });
+            
+            //given datapoint position and content, displays a styled tooltip
+             var showTooltip = function(tp, lt, content) {                              
+                jQuery('<div id="tooltip">' + content + '</div>').css({ 
+                        position: 'absolute',
+                        display: 'none',
+                        'font-weight': 'bold',
+                        top: tp + 10,
+                        left: lt + 10, 
+                        border: '1px solid #ffaf55',
+                        padding: '2px'              
+                    }).appendTo("body").show();                
+             };
+
+            //calls the tooltip display function and binds the 'plotover' event to
+            //the plot
+            var previousPoint = null;
+            var useTooltip = jQuery("#gebvPlot2").bind("plothover", function (event, pos, item) {            
+                    if (item) {
+                        if (previousPoint != item.dataIndex) {
+                            previousPoint = item.dataIndex;
+                   
+                            jQuery("#tooltip").remove();
+                            
+                            var x = item.datapoint[0];
+                            var y = item.datapoint[1].toFixed(2);
+                            var content = xAxisTickValues[x][1] + ', ' + y;
+                            
+                            showTooltip(item.pageX, item.pageY, content);                    
+                        }
+                    }
+                    else {
+                        jQuery("#tooltip").remove();
+                        previousPoint = null;            
+                    }          
+                });
+            
+ ////
         }
- 
+ //////
 ////
 });
 ////
