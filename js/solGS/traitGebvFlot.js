@@ -98,13 +98,20 @@ jQuery(window).load( function() {
                      mode: 'xy',
                      color: '#0066CC',
                  },
-                 xaxis: {
+                 xaxis:{
                      mode: 'categories',                 
-                     ticks: xAxisValues,                             
+                     ticks: xAxisValues, 
+                     axisLabel: 'Genotypes',
+                     position: 'bottom',
+                     axisLabelPadding: 10,
+                     color: '#0066CC',
                  },
                  yaxis: {                                
                      min: null,
-                     max: null,  
+                     max: null, 
+                     axisLabel: 'Trait values',
+                     position: 'left',
+                     color: '#0066CC',                    
                  },
                  zoom: {
                      interactive: true,
@@ -129,6 +136,7 @@ jQuery(window).load( function() {
                   xaxis: { 
                       ticks: [], 
                       mode: "categories", 
+                      label: 'Genotypes',
                     },                  
                     selection: { 
                       mode: "xy", 
