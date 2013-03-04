@@ -34,6 +34,7 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 &>
 
 <link rel="stylesheet" href="/static/jqplot.css" type="text/css" />
+<link rel="stylesheet" href="/static/flot.css" type="text/css" />
 
 <& /page/page_title.mas, 
    title => "Genomic Selection Model for $trait_abbr in $project_name"
