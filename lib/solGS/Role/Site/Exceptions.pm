@@ -13,7 +13,7 @@ use List::MoreUtils qw/ any part /;
 use Scalar::Util qw/ blessed /;
 use Try::Tiny;
 
-use SGN::Exception;
+use solGS::Exception;
 
 requires 'finalize_error', 'error', 'stash', 'view', 'res' ;
 
