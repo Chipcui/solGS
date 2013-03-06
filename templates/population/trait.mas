@@ -24,14 +24,12 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 
 </%perl>
 
-<& /util/import_javascript.mas, classes => [ "solGS.phenotypeData",  "solGS.traitGebvFlot", 
-                                             "jquery.canvasTextRendererMin", "jquery.canvasAxisLabelRendererMin", 
-                                             "jquery.json2Min", "jquery.highlighter", 
-                                             "jquery.canvasAxisTickRenderer", "jquery.cursorMin", 
-                                             "jquery.categoryAxisRendererMin", "flot.flot", "flot.categories", 
-                                             "flot.tooltip", "flot.selection", "flot.navigate", "flot.axisLabels",
-                                           ] 
-&>
+  <& /util/import_javascript.mas, classes => ["solGS.phenotypeDataFlot", "solGS.traitGebvFlot", 
+                                              "flot.flot", "flot.categories", 
+                                              "flot.tooltip", "flot.selection", "flot.navigate", 
+                                              "flot.axisLabels"
+                                             ] 
+  &>
 
 <link rel="stylesheet" href="/static/jqplot.css" type="text/css" />
 <link rel="stylesheet" href="/static/flot.css" type="text/css" />
@@ -76,7 +74,9 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 
 <& /model/top_blups.mas, 
    top_blups          => $top_blups,
-   blups_download_url => $blups_download_url
+   blups_download_url => $blups_download_url,
+   pop_id             => $pop_id,
+  trait_id            => $trait_id
 &>
 
 <& /model/marker_effects.mas, 
