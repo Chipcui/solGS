@@ -24,9 +24,16 @@ $trait_id
 
 </%perl>
 
-<div id="phenoHistogram">
+<div id="phenoPlot">
 
  <input type="hidden" name="population_id" value="<% $pop_id %>" /> 
  <input type="hidden" name="trait_id" value="<% $trait_id %>" /> 
 
 </div>
+<button id="phenozoom-reset">Reset zoom</button>
+<br/>
+<br/>
+<div id="phenoPlotOverview"> 
+</div>
+<br/>
+<br/>
