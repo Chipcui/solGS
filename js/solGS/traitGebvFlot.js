@@ -24,7 +24,7 @@ jQuery(window).load( function() {
         var xAxisTickValues = [];
         var yAxisTickValues = [];
         var yValues         = [];
-      
+       
         var gebvDataRenderer = function() {            
             jQuery.ajax({
                     async: false,
@@ -63,8 +63,9 @@ jQuery(window).load( function() {
                     };
             
         };
-              
+               
         var allData     = gebvDataRenderer();
+           
         var xAxisValues = allData.xAxisValues;
         var yAxisValues = allData.yAxisValues;
         var yValues     = allData.yValues;         
@@ -73,75 +74,73 @@ jQuery(window).load( function() {
         var minYLabel   = minY - (0.2*minY);
         var maxYLabel   = maxY + (0.2*maxY);
         var plotData    = allData.bothAxisValues;
-       
+          
         if (plotData == 'undefined') {
              var message = 'There is no GEBV data to plot. Please report this problem';  
              jQuery('#gebvPlot2').append(message).show();
          } else {
-            //  var gebvData2 = [ [[1,2], [2,3], [3,4], [2, 2], [7,8], [4,5], [5,7], [6, 7]] ];
-             var options = { 
-                 series: {
-                     lines: { 
-                         show: true 
-                     },
-                     points: { 
-                         show: true 
-                     },                
-                 },
-              
-                 grid: {
-                     show: true,
-                     clickable: true,
-                     hoverable: true,               
-                 },
-                 selection: {
-                     mode: 'xy',
-                     color: '#0066CC',
-                 },
-                 xaxis:{
-                     mode: 'categories',                 
-                     ticks: xAxisValues, 
-                     axisLabel: 'Genotypes',
-                     position: 'bottom',
-                     axisLabelPadding: 10,
-                     color: '#0066CC',
-                 },
-                 yaxis: {                                
-                     min: null,
-                     max: null, 
-                     axisLabel: 'Trait values',
-                     position: 'left',
-                     color: '#0066CC',                    
-                 },
-                 zoom: {
-                     interactive: true,
-                     amount: 1.5,
-                     trigger: 'dblclick',
-                 },
-                 pan: {
-                     interactive: false,                
-                 },                        
-             };
+            var options = { 
+                series: {
+                    lines: { 
+                        show: true 
+                    },
+                    points: { 
+                        show: true 
+                    },                
+                },              
+                grid: {
+                    show: true,
+                    clickable: true,
+                    hoverable: true,               
+                },
+                selection: {
+                    mode: 'xy',
+                    color: '#0066CC',
+                },
+                xaxis:{
+                    mode: 'categories',                 
+                    ticks: xAxisValues, 
+                    axisLabel: 'Genotypes',
+                    position: 'bottom',
+                    axisLabelPadding: 10,
+                    color: '#0066CC',
+                },
+                yaxis: {                                
+                    min: null,
+                    max: null, 
+                    axisLabel: 'Trait GEBVs',
+                    position: 'left',
+                    color: '#0066CC',                    
+                },
+                zoom: {
+                    interactive: true,
+                    amount: 1.5,
+                    trigger: 'dblclick',
+                },
+                pan: {
+                    interactive: false,                
+                },                        
+            };
                    
-          var plot = jQuery.plot('#gebvPlot2', plotData, options);
+            var plot = jQuery.plot('#gebvPlot2', plotData, options);
 
-          var overview = $.plot($("#gebvPlotOverview"), plotData, {
-                  series: {
-                      lines: { 
-                          show: true, 
-                          lineWidth: 2 
-                      },
-                      shadowSize: 0
-                  },
-                  xaxis: { 
-                      ticks: [], 
-                      mode: "categories", 
-                      label: 'Genotypes',
+            var overview = $.plot($("#gebvPlotOverview"), plotData, {
+                    series: {
+                        lines: { 
+                            show: true, 
+                            lineWidth: 2 
+                        },
+                        shadowSize: 0
+                    },
+                    xaxis: { 
+                        ticks: [], 
+                        mode: "categories", 
+                        label: 'Genotypes',
                     },                  
                     selection: { 
-                      mode: "xy", 
+                        mode: "xy", 
                     },
-                  colors: ["#cc0000", "#0066CC"],
+                    colors: ["#cc0000", "#0066CC"],
                 });
        
             jQuery("#gebvPlot2").bind("plotselected", function (event, ranges) {
