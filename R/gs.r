@@ -169,7 +169,7 @@ genoFile <- grep("genotype_data",
                  value = TRUE
                  )
 
-genoFile <- c("/home/tecle/Desktop/R data/Genomic Selection/barley_jl/cap123geno_sorted.csv")
+genoFile <- c("~/cxgn/sgn-home/isaak/GS/barley/cap123_geno_training.csv")
 
 genoData <- read.table(genoFile,
                        header = TRUE,
@@ -197,7 +197,7 @@ predictionPopGEBVsFile <- grep("prediction_pop_gebvs",
 print("prediction files")
 print(predictionFile)
 print(predictionPopGEBVsFile)
-predictionFile <- c("/home/tecle/Desktop/R data/Genomic Selection/barley_jl/cap123geno_prediction.csv")
+predictionFile <- c("~/cxgn/sgn-home/isaak/GS/barley/cap123geno_prediction.csv")
 predictionData <- c()
 
 
