@@ -169,12 +169,15 @@ genoFile <- grep("genotype_data",
                  value = TRUE
                  )
 
-genoFile <- c("~/cxgn/sgn-home/isaak/GS/barley/cap123_geno_training.csv")
+if (trait == 'FHB' || trait == 'DON')
+  {
+    genoFile <- c("~/cxgn/sgn-home/isaak/GS/barley/cap123_geno_training.txt")
+  }
 
 genoData <- read.table(genoFile,
                        header = TRUE,
                        row.names = 1,
-                       sep = ",",
+                       sep = "\t",
                        na.strings = c("NA", " ", "--", "-"),
                        dec = "."
                       )
@@ -194,14 +197,15 @@ predictionPopGEBVsFile <- grep("prediction_pop_gebvs",
                        fixed = FALSE,
                        value = TRUE
                        )
-print("prediction files")
-print(predictionFile)
-print(predictionPopGEBVsFile)
-predictionFile <- c("~/cxgn/sgn-home/isaak/GS/barley/cap123geno_prediction.csv")
+
+if (trait == 'FHB' || trait == 'DON')
+  {
+    predictionFile <- c("~/cxgn/sgn-home/isaak/GS/barley/cap123_geno_prediction.txt")
+  }
+
 predictionData <- c()
 
-
-if (exists("predictionFile") == TRUE)
+if (length(predictionFile) !=0 )
   {
     predictionData <- read.table(predictionFile,
                        header = TRUE,
@@ -252,7 +256,7 @@ if (sum(is.na(genoDataMatrix)) > 0)
 #change genotype coding to [-1, 0, 1], to use the A.mat )
 genoDataMatrix <- genoDataMatrix - 1
 
-if (exists("predictionData") == TRUE)
+if (length(predictionData) != 0)
   {
     predictionData <- predictionData - 1
 
@@ -264,7 +268,6 @@ if (exists("predictionData") == TRUE)
 markerGEBV <- mixed.solve(y = phenoTrait,
                           Z = genoDataMatrix
                          )
-#print(markerGEBV)
 
 ordered.markerGEBV2 <- data.matrix(markerGEBV$u)
 ordered.markerGEBV2 <- data.matrix(ordered.markerGEBV2 [order (-ordered.markerGEBV2[, 1]), ])
@@ -413,14 +416,16 @@ if (is.null(validationAll) == FALSE)
   }
 
 #predict GEBVs for selection population
-print(predictionData[1:10, 1:20])
-predictionData <- data.matrix(round(predictionData, digits = 0 ))
-print(predictionData[1:10, 1:20])
+if (length(predictionData) !=0 )
+  {
+    predictionData <- data.matrix(round(predictionData, digits = 0 ))
+    print(predictionData[1:10, 1:20])
+  }
 
 predictionPopResult <- c()
 predictionPopGEBVs  <- c()
 
-if(exists("predictionData") == TRUE)
+if(length(predictionData) != 0)
   {
     predictionPopResult <- kinship.BLUP(y = phenoTrait,
                                         G.train = genoDataMatrix,
