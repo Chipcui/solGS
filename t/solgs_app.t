@@ -111,6 +111,30 @@ cmp_ok( $size, '>=', 100,"got at least 0.1KB (file size: $size, $url) of data fr
 
 
 $mech->get_ok('/population/128', 'Got a population page');
+$mech->content_contains($_)
+      for (
+        'Population summary',
+        'Traits',
+        'Run GS',
+      );
+
+diag("Please wait... this may a few minutes..");
+my @traits= $mech->find_all_links( url_regex => qr/trait/ );
+my $no_traits = scalar(@traits);
+cmp_ok($no_traits, '>=', 1, "this population has $no_traits traits for GS analysis");
+
+diag("Please wait... this may take a few minutes..");
+$url = $traits[0]->url;
+$mech->get_ok($traits[0], "run GS for a trait ($url) of a training population");
+$mech->content_contains($_)
+      for (
+        'Population summary',
+        'Trait phenotype data',
+        'Predicted genomc estimated breeding values', 
+        'Top 10 genotypes',
+        'Marker Effects',
+        '10 folds cross-validation report',
+      );
 
 
 
