@@ -41,6 +41,8 @@ requires 'Scalar::Util';
 requires 'String::CRC';
 requires 'Storable';
 requires 'Try::Tiny';
+requires 'Test::WWW::Mechanize::Catalyst';
+requires 'Test::More';
 requires 'URI';
 requires 'URI::FromHash';
 requires 'YAML::Any';
