@@ -15,6 +15,7 @@ use List::Compare;
 use File::Temp qw / tempfile /;
 use File::Slurp;
 use JSON::Any;
+use List::MoreUtils qw / uniq /;
 use  Bio::Chado::NaturalDiversity::Reports;
 
 BEGIN { extends 'Catalyst::Controller' }
@@ -78,31 +79,7 @@ sub _filter_stock_rs {
             'me.stock_id' => { -in =>  \@r_stocks },
         }
         );
-    #filter for phenotyped stocks that have a scored genotype
-
-#             'type.name' => 'phenotyping experiment'
-#         } ,
-#         { join => {nd_experiment_stocks => { nd_experiment => 'type'  } } ,
-#           distinct => 1
-#        } );
-
- my $cnt =0;
-    
-  while (my $p = $rs->next) {
-
-         
-          print STDERR "\ngs stock phenotype: found one stock with phenotype\n\n";
-         # my $id = $p->stock_id;
-        #  my $name = $p->name;
-        #  print STDERR "\ngs stock phenotype: $id, $name\n\n";
-      
-       #   $cnt++;
-       #   last  if $cnt == 3;
-    
-    }  
    
-    
-    print STDERR "\n\nstarting genotype rs..\n\n";
 
     $rs = $rs->search(
         {
@@ -111,24 +88,6 @@ sub _filter_stock_rs {
         { join => {nd_experiment_stocks => { nd_experiment =>  'type'  } } ,
           distinct => 1
         } );
-
-
-     print STDERR "\ngs stock genotype: starting\n\n";
-    my $count =0;
-     
-  while (my $p = $rs->next) {
-
-         
-          print STDERR "\ngs stock genotype: found one stock with genotype\n\n";
-         # my $id = $p->stock_id;
-         # my $name = $p->name;
-        #  print STDERR "\ngs stock genotype: $id, $name\n\n";
-      
-         # $count++;
-         # last  if $count == 3;
-    
-    } 
- 
 
 
    #  # optional - filter by project name , project year, location
@@ -177,12 +136,7 @@ sub project_years {
     return $years_rs;
 }
 
-sub project_names {
-    my ($self, $c) = shift;
-    my $projects_rs =  $self->schema->resultset("Project::Project")->search(
-        {} );#->get_column('name');
-    return $projects_rs;
-}
+
 
 sub locations {
     my ($self, $c) = shift;
@@ -269,5 +223,76 @@ sub download_genotypes : Path('genotypes') Args(1) {
         $c->forward("View::Download::CSV");
     }
 }
+
+sub stock_projects_rs {
+    my ($self, $stock_rs) = @_;
+ 
+    my $project_rs = $stock_rs->search_related('nd_experiment_stocks')
+        ->search_related('nd_experiment')
+        ->search_related('nd_experiment_projects')
+        ->search_related('project', 
+                         {},
+                         { 
+                             distinct => 1,
+                         } 
+        );
+
+    return $project_rs;
+
+}
+
+
+sub project_subject_stocks_rs {
+    my ($self, $project_id) = @_;
+  
+    my $stock_rs =  $self->schema->resultset("Project::Project")
+        ->search({'me.project_id' => $project_id})
+        ->search_related('nd_experiment_projects')
+        ->search_related('nd_experiment')
+        ->search_related('nd_experiment_stocks')
+        ->search_related('stock')
+        ->search_related('stock_relationship_subjects')
+        ->search_related('subject', 
+                         {},
+                         { 
+                             '+select' => [ qw /me.project_id me.name/ ], 
+                             '+as'     => [ qw /project_id project_name/ ] 
+                         },
+                         {
+                             order_by => {-desc => [qw /me.name/ ]} 
+                         }
+        );
+
+    return $stock_rs;
+}
+
+sub stocks_object_rs {
+    my ($self, $stock_subj_rs) = @_;
+
+    my $stock_obj_rs = $stock_subj_rs
+        ->search_related('stock_relationship_subjects')
+        ->search_related('object', 
+                         {},       
+                         { 
+                             '+select' => [ qw /me.project_id me.name/ ], 
+                             '+as'     => [ qw /project_id project_name/ ]
+                         }
+        );
+    
+    return $stock_obj_rs;
+}
+
+sub map_subject_to_object {
+    my ($self, $c, $stock_id) = @_;
+
+    my $stock_obj_rs = $self->schema->resultset("Stock::Stock")
+        ->search({'me.stock_id' => $stock_id})
+        ->search_related('stock_relationship_subjects')
+        ->search_related('object');
+         
+    return $stock_obj_rs;
+}
+
+
 
 __PACKAGE__->meta->make_immutable;

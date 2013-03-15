@@ -26,10 +26,12 @@ my $cnt = 1;
 
 foreach (@$analyzed_traits)
 {    
-  my $rw_b = qq | <tr> | if $cnt == 1;
-  my $rw_e = qq | </tr> | if $cnt == 3;
-  my $row  = <<ROW;    
-                 $rw_b                     
+  if ($_) 
+    {
+      my $rw_b = qq | <tr> | if $cnt == 1;
+      my $rw_e = qq | </tr> | if $cnt == 3;
+      my $row  = <<ROW;    
+                   $rw_b                     
                    <td>
                      $_: <input type  = "text" 
                                 name  = $_
@@ -39,14 +41,15 @@ foreach (@$analyzed_traits)
                  $rw_e
 ROW
   
-  $cnt++;   
-  $cnt = 0 if $cnt == 3; 
-  $trait_rows .=  $row;
+      $cnt++;   
+      $cnt = 0 if $cnt == 3; 
+      $trait_rows .=  $row;
+    }
 }
 
 </%perl>
 
-<& /util/import_javascript.mas, classes => [ "solGS.rankGenotypes" ] &>
+<& /util/import_javascript.mas, classes => [ "solGS.rankGenotypes"] &>
 
  <&| /page/info_section.mas, 
      collapsible => 1, 
@@ -61,11 +64,11 @@ ROW
      <% $trait_rows %>
      <tr>      
        <td>
-         <input type  = "submit" 
-                value = "rank"
-                name  = "rank"
-                id    = "rank_genotypes"               
-                onclick="rankGenotypes.gebvWeights(<% $pop_id %>)" >
+         <input type    = "submit" 
+                value   = "rank"
+                name    = "rank"
+                id      = "rank_genotypes"               
+                onclick = "rankGenotypes.gebvWeights(<% $pop_id %>)" >
        </td>     
      </tr>
    </table>

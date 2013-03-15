@@ -5,6 +5,11 @@ $show_data => 1;
 $traits_form
 $all_traits_file
 $no_traits_selected
+$project_name
+$project_desc
+$stocks_no
+$markers_no
+$traits_no
 
 </%args>
 
@@ -14,8 +19,10 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 
 </%perl>
 
+<& /util/import_javascript.mas, classes => ["solGS.solGS"] &>
+
 <& /page/page_title.mas, 
-   title => "Genomic Selection Models for Population"
+   title => "Genomic Selection Models for Population $project_name"
 &>
 
 <&| /page/info_section.mas, 
@@ -25,7 +32,14 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
     subtitle    => $submit_new
   &>
 
- summary of population
+ <& /population/summary.mas,
+    project_id   => $pop_id,
+    project_name => $project_name,
+    project_desc => $project_desc,
+    stocks_no    => $stocks_no,
+    markers_no   => $markers_no,
+    traits_no    => $traits_no
+ &>
 
 </&>
 

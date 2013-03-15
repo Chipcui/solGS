@@ -16,9 +16,20 @@ Isaak Y Tecle (iyt2@cornell.edu)
 
 $form
 $message
+$result
+$pager
+$page_links
+$gs_traits_index
 
 </%args>
 
+<%perl>
+
+ my $current_page = $pager->current_page();
+ my $collapse = 1;
+ if ($current_page > 1) { $collapse = 0; }
+
+</%perl>
 
 <& /page/page_title.mas, title => "solGS: model build stage 1 of &#8734 " &>
 <&| /page/info_section.mas,
@@ -30,6 +41,27 @@ $message
 <p style="color:red">There is no phenotyped trait for <b>'<% $message %>'</b>.</p>
 %}
 
+<p style="text-align:center">Browse by traits: <b><% $gs_traits_index %> </b></p>
+<p>&nbsp</p>
+<p>&nbsp</p>
+
 <% $form %>
 
+<p>&nbsp</p>
+<p>&nbsp</p>
+
+</&>
+
+<&| /page/info_section.mas, 
+    collapsible => 1, 
+    collapsed   => $collapse,
+    title       => "Browse by projects",
+  &>
+
+<& /population/project_details_form.mas,
+   result     => $result,
+   pager      => $pager,
+   page_links => $page_links,
+&>
+   
 </&>
