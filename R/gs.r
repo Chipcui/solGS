@@ -74,7 +74,6 @@ blupFile <- grep(kinshipTrait,
                  )
 
 markerTrait <- paste("marker", trait, sep = "_")
-
 markerFile  <- grep(markerTrait,
                    outFiles,
                    ignore.case = TRUE,
@@ -82,12 +81,21 @@ markerFile  <- grep(markerTrait,
                    value = TRUE
                    )
 
-phenoFile <- grep("pheno",
+traitPhenoFile <- paste("phenotype_trait", trait, sep = "_")
+traitPhenoFile <- grep(traitPhenoFile,
+                       outFiles,
+                       ignore.case = TRUE,
+                       fixed = FALSE,
+                       value = TRUE
+                       )
+
+phenoFile <- grep("phenotype_data",
                   inFiles,
                   ignore.case = TRUE,
                   fixed = FALSE,
                   value = TRUE
                   )
+
 
 print(phenoFile)
 phenoData <- read.table(phenoFile,
@@ -98,6 +106,7 @@ phenoData <- read.table(phenoFile,
                         dec = "."
                         )
 
+print(phenoFile)
 
 dropColumns <- c("uniquename", "stock_name")
 phenoData   <- phenoData[,!(names(phenoData) %in% dropColumns)]
@@ -150,15 +159,20 @@ phenoTrait<-ddply(phenoTrait, "object_name", colwise(mean))
 row.names(phenoTrait) <- phenoTrait[, 1]
 phenoTrait[, 1] <- NULL
 
+traitPhenoData <- as.data.frame(round(phenoTrait, digits=2))
+
 #find genotype file name
-genoFile <- grep("geno",
+genoFile <- grep("genotype_data",
                  inFiles,
                  ignore.case = TRUE,                
                  fixed = FALSE,
                  value = TRUE
                  )
 
-#genoFile <- c("/home/tecle/Desktop/R data/Genomic Selection/barley_jl/cap123geno_sorted.csv")
+if (trait == 'FHB' || trait == 'DON')
+  {
+    genoFile <- c("~/cxgn/sgn-home/isaak/GS/barley/cap123_geno_training.txt")
+  }
 
 genoData <- read.table(genoFile,
                        header = TRUE,
@@ -170,6 +184,37 @@ genoData <- read.table(genoFile,
 
 genoData   <- data.matrix(genoData[order(row.names(genoData)), ])
 
+predictionFile <- grep("prediction_population",
+                       inFiles,
+                       ignore.case = TRUE,
+                       fixed = FALSE,
+                       value = TRUE
+                       )
+
+predictionPopGEBVsFile <- grep("prediction_pop_gebvs",
+                       outFiles,
+                       ignore.case = TRUE,
+                       fixed = FALSE,
+                       value = TRUE
+                       )
+
+if (trait == 'FHB' || trait == 'DON')
+  {
+    predictionFile <- c("~/cxgn/sgn-home/isaak/GS/barley/cap123_geno_prediction.txt")
+  }
+
+predictionData <- c()
+
+if (length(predictionFile) !=0 )
+  {
+    predictionData <- read.table(predictionFile,
+                       header = TRUE,
+                       row.names = 1,
+                       sep = ",",
+                       na.strings = c("NA", " ", "--", "-"),
+                       dec = "."
+                      )
+  }
 
 #add checks for all input data
 #create phenotype and genotype datasets with
@@ -211,13 +256,18 @@ if (sum(is.na(genoDataMatrix)) > 0)
 #change genotype coding to [-1, 0, 1], to use the A.mat )
 genoDataMatrix <- genoDataMatrix - 1
 
+if (length(predictionData) != 0)
+  {
+    predictionData <- predictionData - 1
+
+  }
+
 #use REML (default) to calculate variance components
 
 #calculate GEBV using marker effects (as random effects)
 markerGEBV <- mixed.solve(y = phenoTrait,
                           Z = genoDataMatrix
                          )
-#print(markerGEBV)
 
 ordered.markerGEBV2 <- data.matrix(markerGEBV$u)
 ordered.markerGEBV2 <- data.matrix(ordered.markerGEBV2 [order (-ordered.markerGEBV2[, 1]), ])
@@ -320,11 +370,12 @@ for (i in 1:10)
   
   result <- kinship.BLUP(y = phenoTrait[trG],
                          G.train = genoDataMatrix[trG, ],
-                         G.pred = genoDataMatrix[slG, ],
+                         G.pred = genoDataMatrix[slG, ],                      
                          mixed.method = "REML",
                          K.method = "RR"
                          )
-
+print("BLUP for prediction pop")
+#print(result)
   assign(kblup, result)
  
 #calculate cross-validation accuracy
@@ -362,6 +413,43 @@ if (is.null(validationAll) == FALSE)
      
     validationAll <- rbind(validationAll, validationMean)
     colnames(validationAll) <- c("Correlation")
+  }
+
+#predict GEBVs for selection population
+if (length(predictionData) !=0 )
+  {
+    predictionData <- data.matrix(round(predictionData, digits = 0 ))
+    print(predictionData[1:10, 1:20])
+  }
+
+predictionPopResult <- c()
+predictionPopGEBVs  <- c()
+
+if(length(predictionData) != 0)
+  {
+    predictionPopResult <- kinship.BLUP(y = phenoTrait,
+                                        G.train = genoDataMatrix,
+                                        G.pred = predictionData,
+                                        mixed.method = "REML",
+                                        K.method = "RR"
+                                        )
+
+    predictionPopGEBVs <- round(data.matrix(predictionPopResult$g.pred), digits = 2)
+    predictionPopGEBVs <- data.matrix(predictionPopGEBVs[order(-predictionPopGEBVs[, 1]), ])
+
+    colnames(predictionPopGEBVs) <- c(trait)    
+  }
+
+
+if(!is.null(predictionPopGEBVs) & length(predictionPopGEBVsFile) != 0)  
+  {
+    write.table(predictionPopGEBVs,
+                file = predictionPopGEBVsFile,
+                sep = "\t",
+                col.names = NA,
+                quote = FALSE,
+                append = FALSE
+                )
   }
 
 if(is.null(validationAll) == FALSE)
@@ -417,7 +505,18 @@ if(length(combinedGebvsFile) != 0 )
                   )
     }
   }
-  
+
+if(!is.null(traitPhenoData) & length(traitPhenoFile) != 0)  
+  {
+    write.table(traitPhenoData,
+                file = traitPhenoFile,
+                sep = "\t",
+                col.names = NA,
+                quote = FALSE,
+                append = FALSE
+                )
+  }
+
 #should also send notification to analysis owner
 to      <- c("<iyt2@cornell.edu>")
 subject <- paste(trait, ' GS analysis done', sep = ':')

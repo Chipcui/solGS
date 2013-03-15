@@ -31,7 +31,7 @@ $gs_traits_index
 
 </%perl>
 
-<& /page/page_title.mas, title => "solGS: model build stage 1 of &#8734 " &>
+<& /page/page_title.mas, title => "solGS: start building your model " &>
 <&| /page/info_section.mas,
   title => "Search for a trait ",
 &>
@@ -55,7 +55,7 @@ $gs_traits_index
 <&| /page/info_section.mas, 
     collapsible => 1, 
     collapsed   => $collapse,
-    title       => "Browse by projects",
+    title       => "Select a training population",
   &>
 
 <& /population/project_details_form.mas,

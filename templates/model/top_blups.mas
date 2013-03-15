@@ -2,7 +2,7 @@
 
 =head1 NAME
  
-/mode/top_blups.mas - displays genotypes with the top blups
+/mode/top_blups.mas - displays a plot of the gebvs of a trait for all genotypes; displays top 10 genotypes in tablar form with download function for the entire genotypes set. 
 
 =AUTHOR
 
@@ -16,6 +16,8 @@ Isaak Y Tecle (iyt2@cornell.edu)
 
 $top_blups
 $blups_download_url
+$pop_id
+$trait_id
 
 </%args>
 
@@ -25,7 +27,21 @@ $blups_download_url
   collapsed   => 0, 
   title       => "Predicted genomc estimated breeding values (GEBVs) - based on kinship" 
 &>
- 
+
+
+
+<div id="gebvPlot2"> 
+  <input type="hidden" name="population_id" value="<% $pop_id %>" /> 
+  <input type="hidden" name="trait_id" value="<% $trait_id %>" /> 
+</div> 
+
+<button id="gebvzoom-reset">Reset zoom</button>
+<br/>
+<br/>
+<div id="gebvPlotOverview"> 
+</div>
+<br/>
+<br/>
 <i>Top 10 genotypes</i>:
 
 <& /page/columnar_table.mas,

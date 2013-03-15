@@ -14,6 +14,7 @@ $project_desc
 $stocks_no
 $markers_no
 $traits_no
+$trait_id
 
 </%args>
 
@@ -22,6 +23,16 @@ $traits_no
 my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 
 </%perl>
+
+  <& /util/import_javascript.mas, classes => ["solGS.phenotypeDataFlot", "solGS.traitGebvFlot", 
+                                              "flot.flot", "flot.categories", 
+                                              "flot.tooltip", "flot.selection", "flot.navigate", 
+                                              "flot.axisLabels"
+                                             ] 
+  &>
+
+<link rel="stylesheet" href="/static/jqplot.css" type="text/css" />
+<link rel="stylesheet" href="/static/flot.css" type="text/css" />
 
 <& /page/page_title.mas, 
    title => "Genomic Selection Model for $trait_abbr in $project_name"
@@ -45,12 +56,27 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
  
 </&>
 
+<&| /page/info_section.mas, 
+    collapsible => 1, 
+    collapsed   => 0, 
+    title       => "Trait phenotype data"
+&> 
+  
+<& /population/trait_phenotype_data.mas,
+   pop_id   => $pop_id,
+   trait_id => $trait_id,
+ &>
+
+</&>
+
 % if ($show_data) 
 %{
 
 <& /model/top_blups.mas, 
    top_blups          => $top_blups,
-   blups_download_url => $blups_download_url
+   blups_download_url => $blups_download_url,
+   pop_id             => $pop_id,
+  trait_id            => $trait_id
 &>
 
 <& /model/marker_effects.mas, 
@@ -74,3 +100,5 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 <p>This is private data.</p>
 </&>
 %}
+
+

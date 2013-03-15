@@ -11,17 +11,18 @@ use Catalyst::Runtime 5.80;
 #                 application's home directory
 # Static::Simple: will serve static files from the application's root
 #                 directory
+#  
 
 use Catalyst qw/
     -Debug
     ConfigLoader
     Static::Simple       
-     +SGN::Role::Site::Config
-     +SGN::Role::Site::DBConnector
-     +SGN::Role::Site::DBIC
-     +SGN::Role::Site::Exceptions
-     +SGN::Role::Site::Files
-     +SGN::Role::Site::Mason    
+     +solGS::Role::Site::Config
+     +solGS::Role::Site::DBConnector
+     +solGS::Role::Site::DBIC
+     +solGS::Role::Site::Exceptions    
+     +solGS::Role::Site::Mason 
+     +solGS::Role::Site::Files
 /;
 
 extends 'Catalyst';

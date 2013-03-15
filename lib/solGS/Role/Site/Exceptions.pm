@@ -5,7 +5,7 @@ exception handling
 
 =cut
 
-package SGN::Role::Site::Exceptions;
+package solGS::Role::Site::Exceptions;
 use Moose::Role;
 use namespace::autoclean;
 
@@ -13,7 +13,7 @@ use List::MoreUtils qw/ any part /;
 use Scalar::Util qw/ blessed /;
 use Try::Tiny;
 
-use SGN::Exception;
+use solGS::Exception;
 
 requires 'finalize_error', 'error', 'stash', 'view', 'res' ;
 
@@ -52,7 +52,7 @@ sub throw {
             $args{is_server_error} = 0;
             $args{is_client_error} = 0;
         }
-        my $exception = SGN::Exception->new( %args );
+        my $exception = solGS::Exception->new( %args );
         if( $exception->is_server_error ) {
             die $exception;
         } else {
@@ -144,7 +144,7 @@ sub _error_objects {
 sub _coerce_to_exception {
     my ( $self, $thing ) = @_;
     return $thing if  blessed($thing) && $thing->isa('SGN::Exception');
-    return SGN::Exception->new( message => "$thing" );
+    return solGS::Exception->new( message => "$thing" );
 }
 
 

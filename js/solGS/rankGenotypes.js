@@ -11,9 +11,8 @@ JSAN.use('Prototype');
 JSAN.use('jquery.blockUI');
 
 var rankGenotypes = {
- gebvWeights: function( pop_id )
- {
-      
+    gebvWeights: function( pop_id, prediction_pop_id )
+ {     
         var rel_form = document.getElementById('rel_gebv_form');
         var all = rel_form.getElementsByTagName('input');
         var params, validate;
@@ -52,7 +51,7 @@ var rankGenotypes = {
         }
       
         if (params && validate) {
-            this.sendArguments(params, legend, pop_id );
+            this.sendArguments(params, legend, pop_id, prediction_pop_id);
         }//else {
             // params = false;
             //  window.location = '/traits/all/population/' + pop_id;
@@ -84,7 +83,7 @@ var rankGenotypes = {
      }
  },
 
- sumElements: function(elements) {
+    sumElements: function(elements) {
         var sum = 0;
         for(var i=0; i<elements.length; i++) {            
             if(!isNaN(elements[i])) {
@@ -94,14 +93,22 @@ var rankGenotypes = {
         return sum;
     },
 
- sendArguments: function(params, legend, pop_id) {
+    sendArguments: function(params, legend, pop_id, prediction_pop_id) {
        
         if(params) {
                                  
             jQuery.blockUI.defaults.applyPlatformOpacityRules = false;
             jQuery.blockUI({message: 'Please wait..'});
             
-            var action = '/traits/all/population/' + pop_id;
+            var action;
+           
+            if (prediction_pop_id && isNaN(prediction_pop_id) == true) {
+                  
+                    action = '/traits/all/population/' + pop_id;
+            }else{
+                action = '/traits/all/population/' + pop_id +  '/' + prediction_pop_id;
+            }
+
             jQuery.ajax({
                     type: 'POST',
                         dataType: "json",
@@ -109,30 +116,36 @@ var rankGenotypes = {
                         data: params,
                         success: function(res){                       
                         var suc = res.status;
-                        var genos = new Hash();
-                        genos = res.genotypes;
-                        var download_link = res.link;
+                        var table;
+                        if (suc == 'success' ) {
+                            var genos = new Hash();
+                            genos = res.genotypes;
+                            var download_link = res.link;
                           
-                        var table = '<table  style="padding: 1px; width:75%;">';
-                        table += '<tr><th>Genotypes</th><th>Weighted Mean</th></tr>';
+                            table = '<table  style="padding: 1px; width:75%;">';
+                            table += '<tr><th>Genotypes</th><th>Weighted Mean</th></tr>';
                        
-                        var sorted = []; 
-                        for (var geno in genos) {
-                            sorted.push([geno, genos[geno]]);
-                            sorted = sorted.sort(function(a, b) {return b[1] - a[1]});
-                        }
+                            var sorted = []; 
+                            for (var geno in genos) {
+                                sorted.push([geno, genos[geno]]);
+                                sorted = sorted.sort(function(a, b) {return b[1] - a[1]});
+                            }
 
-                        for (var i=0; i<sorted.length; i++) {
-                            table += '<tr class="columnar_table bgcoloralt1">';
-                            table += '<td>' 
-                                + sorted[i][0] + '</td>' + '<td>' 
-                                + sorted[i][1] + '</td>';
-                            table += '</tr>';                          
-                         }
+                            for (var i=0; i<sorted.length; i++) {
+                                table += '<tr class="columnar_table bgcoloralt1">';
+                                table += '<td>' 
+                                      + sorted[i][0] + '</td>' + '<td>' 
+                                      + sorted[i][1] + '</td>';
+                                table += '</tr>';                          
+                            }
                         
-                        table += '</table>';                    
-                        table += '<br>' + download_link;
-                        table += '<br>' + legend + '<br/><br/>';  
+                            table += '</table>';                    
+                            table += '<br>' + download_link;
+                            table += '<br>' + legend + '<br/><br/>';
+                        }
+                        else {
+                            table = 'Ranking the genotypes failed..Please report the problem.';
+                        }
                         
                         jQuery('#top_genotypes').append(table).show();                       
                         jQuery.unblockUI();                   

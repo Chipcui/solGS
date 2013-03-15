@@ -17,26 +17,37 @@ Isaak Y Tecle (iyt2@cornell.edu)
 $trait_pages
 $analyzed_traits
 $pop_id
+$model_data
+$download_prediction
+$prediction_pop_id
+$list_of_prediction_pops
 
 </%args>
 
-<&| /page/info_section.mas, 
-    collapsible => 1, 
-    collapsed   => 0, 
-    title       => "GS output"
-  &>     
-  
-  <& /page/columnar_table.mas,        
-     data         => $trait_pages,
-     __alt_freq   => 1,
-     __align      => "l",
-     __tableattrs => 'style="padding: 1px"',    
-  &>
- 
-</&>
+<%perl>
 
-<& rank_genotypes.mas, 
-   analyzed_traits => $analyzed_traits,
-   pop_id          => $pop_id
+</%perl>
+
+
+<& /model/model_summary.mas, 
+     model_data => $model_data
+&>
+% if ($download_prediction eq 'N/A')
+%{
+
+  <& rank_genotypes.mas, 
+     analyzed_traits   => $analyzed_traits,
+     pop_id            => $pop_id,
+     prediction_pop_id => $prediction_pop_id    
+  &>
+
+%}
+
+<& /population/selection_populations.mas, 
+   download_prediction     => $download_prediction,
+   analyzed_traits         => $analyzed_traits,
+   pop_id                  => $pop_id,
+   prediction_pop_id       => $prediction_pop_id,
+   list_of_prediction_pops => $list_of_prediction_pops
 &>
 
