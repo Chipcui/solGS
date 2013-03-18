@@ -1,6 +1,6 @@
 =head1 NAME
 
-SGN::Role::Site::Exceptions - Moose role for Catalyst-based site
+solGS::Role::Site::Exceptions - Moose role for Catalyst-based site
 exception handling
 
 =cut
@@ -143,7 +143,7 @@ sub _error_objects {
 
 sub _coerce_to_exception {
     my ( $self, $thing ) = @_;
-    return $thing if  blessed($thing) && $thing->isa('SGN::Exception');
+    return $thing if  blessed($thing) && $thing->isa('solGS::Exception');
     return solGS::Exception->new( message => "$thing" );
 }
 
@@ -159,6 +159,7 @@ sub _set_exception_response {
         exception        => \@exceptions,
         show_dev_message => !$self->get_conf('production_server'),
         contact_email    => $self->config->{feedback_email},
+        project_name     => $self->config->{project_name},
     });
 
     $self->res->content_type('text/html');
