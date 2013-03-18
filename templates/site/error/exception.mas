@@ -1,8 +1,8 @@
 <%args>
  $exception
  $show_dev_message => 0
- $project_name => ''
- $contact_email => ''
+ $project_name
+ $contact_email
 </%args>
 
 % $exception = [ $exception ] unless ref $exception eq 'ARRAY';
@@ -27,13 +27,9 @@
 % }
 
 % if( $e->is_client_error || $e->is_server_error and $contact_email ) {
-
-    Feel free to contact us at <a href="mailto:<% $contact_email %>">
-    <% $contact_email %></a>, if the problem persists, and
+    If the problem persists, please contact us at <a href="mailto:<% $contact_email %>"><% $contact_email %>.</a>
 %   if( $e->is_server_error ) {
-      we will keep you informed of our progress in resolving it.
-%   } else {
-      we will work with you to resolve it.
+      We will keep you informed of our progress in resolving it.
 %   }
    </p>
 
