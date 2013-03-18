@@ -15,6 +15,8 @@ requires 'Catalyst::Plugin::Static::Simple';
 requires 'Catalyst::Action::RenderView';
 requires 'Catalyst::Controller::HTML::FormFu';
 requires 'CatalystX::GlobalContext' ;
+requires 'Catalyst::Exception::Basic';
+requires 'Catalyst::Exception';
 requires 'Cache::File';
 requires 'Carp';
 requires 'Cwd';
