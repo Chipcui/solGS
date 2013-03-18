@@ -1955,9 +1955,15 @@ sub run_r_script {
         { 
             $err .= "\n=== R output ===\n".file($r_out_temp)->slurp."\n=== end R output ===\n" 
         };
+       
         
-        $c->throw($err);
-    };
+        $c->throw(is_client_error   => 1,
+                  title             => 'R Script Error',
+                  public_message    => "There is a problem running rrblup on this dataset!",	     
+                  notify            => 1, 
+                  developer_message => $err,
+            );
+    }
 
 }
   
