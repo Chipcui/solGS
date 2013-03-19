@@ -20,7 +20,7 @@ $trait_id
 
 <%perl>
 
-my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
+#my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
 
 </%perl>
 
@@ -31,7 +31,7 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
                                              ] 
   &>
 
-<link rel="stylesheet" href="/static/jqplot.css" type="text/css" />
+
 <link rel="stylesheet" href="/static/flot.css" type="text/css" />
 
 <& /page/page_title.mas, 
@@ -42,7 +42,6 @@ my $submit_new = qq | <a href="/submit/intro">Submit GS population</a> |;
   collapsible => 1, 
   collapsed   => 0, 
   title       => "Population summary",
-  subtitle    => $submit_new
   &>
 
  <& summary.mas,
