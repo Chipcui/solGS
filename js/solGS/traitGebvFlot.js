@@ -99,7 +99,8 @@ jQuery(window).load( function() {
                 },
                 xaxis:{
                     mode: 'categories',                 
-                    ticks: xAxisValues, 
+                    ticks: xAxisValues,
+                    tickColor: '#ffffff',
                     axisLabel: 'Genotypes',
                     position: 'bottom',
                     axisLabelPadding: 10,

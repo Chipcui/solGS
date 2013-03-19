@@ -96,7 +96,8 @@ jQuery(window).load( function() {
                     color: '#0066CC',
                 },
                 xaxis:{
-                    mode: 'categories',                 
+                    mode: 'categories',
+                    tickColor: '#ffffff',
                     ticks: xAxisPhenoValues, 
                     axisLabel: 'Genotypes',
                     position: 'bottom',
