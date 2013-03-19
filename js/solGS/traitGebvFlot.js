@@ -179,27 +179,46 @@ jQuery(window).load( function() {
                         padding: '2px'              
                     }).appendTo("body").show();                
              };
-
+             
+             var zoomHelp = function (lt, tp) {
+                 var help_txt = 'To zoom in, select an area on the plot' + 
+                                ' and release or just double click at any' +
+                                ' point on the plot.';
+                 
+                 jQuery('<div id="tooltip_zoom">' + help_txt  + '</div>').css({ 
+                         position: 'absolute',
+                         display: 'none',
+                         'font-weight': 'bold',
+                         top: tp + 35,
+                         left: lt + 30, 
+                         border: '1px solid #C9BE62',
+                         padding: '2px'              
+                    }).appendTo("body").show(); 
+             }; 
+ 
             //calls the tooltip display function and binds the 'plotover' event to
             //the plot
             var previousPoint = null;
             var useTooltip = jQuery("#gebvPlot2").bind("plothover", function (event, pos, item) {            
                     if (item) {
-                        if (previousPoint != item.dataIndex) {
+                        if (previousPoint != item.dataIndex) {                            
                             previousPoint = item.dataIndex;
-                   
-                            jQuery("#tooltip").remove();
                             
+                            jQuery("#tooltip").remove();
+                            jQuery("#tooltip_zoom").remove();
+ 
                             var x = item.datapoint[0];
                             var y = item.datapoint[1].toFixed(2);
                             var content = xAxisTickValues[x][1] + ', ' + y;
-                            
-                            showTooltip(item.pageX, item.pageY, content);                    
+                  
+                            showTooltip(item.pageX, item.pageY, content);
+                            zoomHelp(item.pageX, item.pageY);
                         }
                     }
                     else {
                         jQuery("#tooltip").remove();
-                        previousPoint = null;            
+                        jQuery("#tooltip_zoom").remove();                   
+                        previousPoint = null;                      
                     }          
                 });
             
