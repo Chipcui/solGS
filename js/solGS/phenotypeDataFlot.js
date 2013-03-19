@@ -178,6 +178,22 @@ jQuery(window).load( function() {
                     }).appendTo("body").show();                
              };
 
+             var zoomHelp = function (lt, tp) {
+                 var help_txt = 'To zoom in, select an area on the plot' + 
+                                ' and release or double click at any' +
+                                ' point on the plot.';
+                 
+                 jQuery('<div id="tooltipZoomPheno">' + help_txt  + '</div>').css({ 
+                         position: 'absolute',
+                         display: 'none',
+                         'font-weight': 'bold',
+                         top: tp + 35,
+                         left: lt + 30, 
+                         border: '1px solid #C9BE62',
+                         padding: '2px'              
+                    }).appendTo("body").show(); 
+             }; 
+
             //calls the tooltip display function and binds the 'plotover' event to
             //the plot
             var previousPoint = null;
@@ -187,16 +203,20 @@ jQuery(window).load( function() {
                             previousPoint = item.dataIndex;
                    
                             jQuery("#phenotooltip").remove();
-                            
+                            jQuery("#tooltipZoomPheno").remove();
+
                             var x = item.datapoint[0];
                             var y = item.datapoint[1].toFixed(2);
                             var content = xAxisTickPhenoValues[x][1] + ', ' + y;
                             
-                            showTooltipPheno(item.pageX, item.pageY, content);                    
+                            showTooltipPheno(item.pageX, item.pageY, content); 
+                            zoomHelp(item.pageX, item.pageY);
                         }
                     }
                     else {
                         jQuery("#phenotooltip").remove();
+                        jQuery("#tooltipZoomPheno").remove();
+
                         previousPoint = null;            
                     }          
                 });           
