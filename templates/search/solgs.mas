@@ -31,6 +31,8 @@ $gs_traits_index
 
 </%perl>
 
+<& /util/import_javascript.mas, classes => ["solGS.solGS"] &>
+
 <& /page/page_title.mas, title => "solGS: start building your model " &>
 <&| /page/info_section.mas,
   title => "Search for a trait ",
