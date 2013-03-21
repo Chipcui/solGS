@@ -16,7 +16,7 @@ use Try::Tiny;
 use List::MoreUtils qw /uniq/;
 use Scalar::Util 'weaken';
 use CatalystX::GlobalContext ();
-
+use Statistics::Descriptive;
 use CXGN::Login;
 use CXGN::People::Person;
 use CXGN::Tools::Run;
@@ -1301,9 +1301,15 @@ sub phenotype_graph :Path('/phenotype/graph') Args(0) {
     my $trait_name = $c->model('solGS')->trait_name($c, $trait_id);
     my $trait_abbr = $self->abbreviate_term($c, $trait_name);
     
+    $c->stash->{pop_id} = $pop_id;
+    $c->stash->{trait_abbr} = $trait_abbr;
+     $c->stash->{trait_id} = $trait_id;
+
     $self->trait_phenotype_file($c, $pop_id, $trait_abbr);
     my $trait_pheno_file = $c->{stash}->{trait_phenotype_file};
     my $trait_data = $self->convert_to_arrayref($c, $trait_pheno_file);
+
+    $self->trait_phenotype_stat($c);
 
     my $ret->{status} = 'failed';
     
@@ -1317,6 +1323,37 @@ sub phenotype_graph :Path('/phenotype/graph') Args(0) {
         
     $c->res->content_type('application/json');
     $c->res->body($ret);
+
+}
+
+#generates descriptive stat for a trait phenotype data
+sub trait_phenotype_stat {
+    my ($self, $c) = @_;
+    my $trait_abbr = $c->stash->{trait_abbr};
+    my $pop_id = $c->stash->{pop_id};
+
+    $self->trait_phenotype_file($c, $pop_id, $trait_abbr);
+    my $trait_pheno_file = $c->{stash}->{trait_phenotype_file};
+    my $trait_data = $self->convert_to_arrayref($c, $trait_pheno_file);
+
+    my @pheno_data;
+    
+    foreach (@$trait_data) 
+    {
+        unless (!$_->[0]) {
+            push @pheno_data, $_->[1]; 
+        }
+    }
+
+    my $stat = Statistics::Descriptive::Full->new();
+    $stat->add_data(@pheno_data);
+    
+    my $min  = $stat->min; 
+    my $max  = $stat->max; 
+    my $mean = $stat->mean;
+    my $std  = $stat->standard_deviation;
+    my $cnt  = $stat->count;
+
 
 }
 
