@@ -40,6 +40,7 @@ requires 'Moose::Role';
 requires 'namespace::autoclean';
 requires 'Path::Class';
 requires 'Scalar::Util';
+requires 'Statistics::Descriptive';
 requires 'String::CRC';
 requires 'Storable';
 requires 'Try::Tiny';
