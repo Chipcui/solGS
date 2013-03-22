@@ -16,6 +16,7 @@ Isaak Y Tecle (iyt2@cornell.edu)
 
 $pop_id
 $trait_id
+$descriptive_stat
 
 </%args>
 
@@ -30,10 +31,22 @@ $trait_id
  <input type="hidden" name="trait_id" value="<% $trait_id %>" /> 
 
 </div>
+
 <button id="phenozoom-reset">Reset zoom</button>
 <br/>
 <br/>
+<h1 style="text-align:center">Overview</h1>
 <div id="phenoPlotOverview"> 
 </div>
+ 
+<& /page/columnar_table.mas,
+   headings     => [ '',  ''],
+   data         => $descriptive_stat,
+   __alt_freq   => 2,
+   __alt_width  => 1,
+   __alt_offset => 3,
+   __align      => 'l',
+&>
+
 <br/>
-<br/>
+
