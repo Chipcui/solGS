@@ -17,6 +17,7 @@ use List::MoreUtils qw /uniq/;
 use Scalar::Util 'weaken';
 use CatalystX::GlobalContext ();
 use Statistics::Descriptive;
+use Math::Round::Var;
 use CXGN::Login;
 use CXGN::People::Person;
 use CXGN::Tools::Run;
@@ -391,6 +392,9 @@ sub trait :Path('/trait') Args(3) {
         $self->get_rrblup_output($c);
         $self->gs_files($c);
 
+        $self->get_trait_name($c, $trait_id);
+        $self->trait_phenotype_stat($c);
+        
         $c->stash->{template} = "/population/trait.mas";
     }
     else 
@@ -1309,8 +1313,6 @@ sub phenotype_graph :Path('/phenotype/graph') Args(0) {
     my $trait_pheno_file = $c->{stash}->{trait_phenotype_file};
     my $trait_data = $self->convert_to_arrayref($c, $trait_pheno_file);
 
-    $self->trait_phenotype_stat($c);
-
     my $ret->{status} = 'failed';
     
     if (@$trait_data) 
@@ -1336,8 +1338,7 @@ sub trait_phenotype_stat {
     my $trait_pheno_file = $c->{stash}->{trait_phenotype_file};
     my $trait_data = $self->convert_to_arrayref($c, $trait_pheno_file);
 
-    my @pheno_data;
-    
+    my @pheno_data;   
     foreach (@$trait_data) 
     {
         unless (!$_->[0]) {
@@ -1353,8 +1354,20 @@ sub trait_phenotype_stat {
     my $mean = $stat->mean;
     my $std  = $stat->standard_deviation;
     my $cnt  = $stat->count;
+    
+    my $round = Math::Round::Var->new(0.01);
+    $std  = $round->round($std);
+    $mean = $round->round($mean);
 
-
+    my @desc_stat =  ( [ 'No. of genotypes', $cnt ], 
+                       [ 'Minimum', $min ], 
+                       [ 'Maximum', $max ],
+                       [ 'Mean', $mean ],
+                       [ 'Standard deviation', $std ]
+        );
+   
+    $c->stash->{descriptive_stat} = \@desc_stat;
+    
 }
 
 #sends an array of trait gebv data to an ajax request
