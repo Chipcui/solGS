@@ -35,6 +35,7 @@ requires 'JSON::Any';
 requires 'JSON';
 requires 'List::Compare';
 requires 'List::MoreUtils';
+requires 'Math::Round::Var';
 requires 'Moose';
 requires 'Moose::Role';
 requires 'namespace::autoclean';
