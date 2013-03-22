@@ -15,6 +15,7 @@ $stocks_no
 $markers_no
 $traits_no
 $trait_id
+$descriptive_stat
 
 </%args>
 
@@ -62,8 +63,9 @@ $trait_id
 &> 
   
 <& /population/trait_phenotype_data.mas,
-   pop_id   => $pop_id,
-   trait_id => $trait_id,
+   pop_id           => $pop_id,
+   trait_id         => $trait_id,
+   descriptive_stat => $descriptive_stat,
  &>
 
 </&>
