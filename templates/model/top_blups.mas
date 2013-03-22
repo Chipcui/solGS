@@ -38,6 +38,7 @@ $trait_id
 <button id="gebvzoom-reset">Reset zoom</button>
 <br/>
 <br/>
+<h1 style="text-align:center">Overview</h1>
 <div id="gebvPlotOverview"> 
 </div>
 <br/>
