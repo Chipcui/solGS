@@ -96,8 +96,6 @@ phenoFile <- grep("phenotype_data",
                   value = TRUE
                   )
 
-
-print(phenoFile)
 phenoData <- read.table(phenoFile,
                         header = TRUE,
                         row.names = NULL,
@@ -105,8 +103,6 @@ phenoData <- read.table(phenoFile,
                         na.strings = c("NA", " ", "--", "-"),
                         dec = "."
                         )
-
-print(phenoFile)
 
 dropColumns <- c("uniquename", "stock_name")
 phenoData   <- phenoData[,!(names(phenoData) %in% dropColumns)]
@@ -152,14 +148,15 @@ dropColumns  <- c("stock_id")
 phenoTrait   <- phenoTrait[,!(names(phenoTrait) %in% dropColumns)]
 phenoTrait   <- phenoTrait[order(row.names(phenoTrait)), ]
 phenoTrait   <- data.frame(phenoTrait)
-
+print('phenotyped lines before averaging')
+print(length(row.names(phenoTrait)))
 phenoTrait<-ddply(phenoTrait, "object_name", colwise(mean))
+print('phenotyped lines after averaging')
+print(length(row.names(phenoTrait)))
 
 #make stock_names row names
 row.names(phenoTrait) <- phenoTrait[, 1]
 phenoTrait[, 1] <- NULL
-
-traitPhenoData <- as.data.frame(round(phenoTrait, digits=2))
 
 #find genotype file name
 genoFile <- grep("genotype_data",
@@ -219,11 +216,29 @@ if (length(predictionFile) !=0 )
 #add checks for all input data
 #create phenotype and genotype datasets with
 #common stocks only
+print('phenotyped lines')
+print(length(row.names(phenoTrait)))
+print('genotyped lines')
+print(length(row.names(genoData)))
 
+#extract observation lines with both
+#phenotype and genotype data only.
 commonObs <- intersect(row.names(phenoTrait), row.names(genoData))
+commonObs<-data.frame(commonObs)
+rownames(commonObs)<-commonObs[, 1]
 
-genoData<-genoData[(rownames(genoData) %in% commonObs), ]
-phenoTrait<-phenoTrait[(rownames(phenoTrait) %in% commonObs), ]
+#drop observation lines without genotype data
+phenoTrait <- merge(data.frame(phenoTrait), commonObs, by=0, all=FALSE)
+rownames(phenoTrait) <-phenoTrait[,1]
+phenoTrait[, 1] <- NULL
+phenoTrait[, 2] <- NULL
+
+#drop observation lines without phenotype data
+genoData <- merge(data.frame(genoData), commonObs, by=0, all=FALSE)
+rownames(genoData) <- genoData[, 1]
+genoData[, 1] <- NULL
+
+traitPhenoData <- as.data.frame(round(phenoTrait, digits=2))
 
 #if (length(genotypesDiff) > 0)
 #  stop("Genotypes in the phenotype and genotype datasets don't match.")
