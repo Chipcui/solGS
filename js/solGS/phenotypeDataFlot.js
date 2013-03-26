@@ -161,7 +161,8 @@ jQuery(window).load( function() {
         
             //reset zooming. Need to figure out zooming out
             jQuery("#phenozoom-reset").click(function (e) { 
-                   jQuery.plot("#phenoPlot", plotPhenoData, optionsPheno);
+                    //jQuery.plot("#phenoPlot", plotPhenoData, optionsPheno);
+                    location.reload();
                     // plot.zoomOut();
                 });
             

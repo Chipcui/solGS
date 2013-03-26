@@ -163,7 +163,8 @@ jQuery(window).load( function() {
         
             //reset zooming. Need to figure out zooming out
             jQuery("#gebvzoom-reset").click(function (e) { 
-                    var plot = jQuery.plot("#gebvPlot2", plotData, options);
+                    // var plot = jQuery.plot("#gebvPlot2", plotData, options);
+                    location.reload();
                     // plot.zoomOut();
                 });
             
