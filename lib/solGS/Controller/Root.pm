@@ -156,8 +156,9 @@ sub projects_links {
         my $pr_desc     = $projects->{$pr_id}{project_desc};
         my $pr_year     = $projects->{$pr_id}{project_year};
         my $pr_location = $projects->{$pr_id}{project_location};
-
-        my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
+        
+        my $checkbox;
+       # my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
         push @projects_pages, [ $checkbox, qq|<a href="/population/$pr_id" onclick="solGS.waitPage()">$pr_name</a>|, 
                                $pr_desc, $pr_location, $pr_year
         ];
