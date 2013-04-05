@@ -12,6 +12,7 @@ $pager
 $page_links
 $query
 $trait_id
+$trait_name
 
 </%args>
 
@@ -25,7 +26,7 @@ $trait_id
 % { 
 
 <&| /page/info_section.mas,
-      title => 'GS training populations',
+      title => "select a training population to calculate GEBVs for $trait_name",
 &>
 
 <& /population/project_details_form.mas,
