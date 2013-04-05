@@ -186,8 +186,8 @@ sub show_search_result_pops : Path('/search/result/populations') Args(1) {
         my $pr_desc     = $projects->{$pr_id}{project_desc};
         my $pr_year     = $projects->{$pr_id}{project_year};
         my $pr_location = $projects->{$pr_id}{project_location};
-
-        my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
+        my $checkbox;
+       # my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
         push @projects_list, [ $checkbox, qq|<a href="/trait/$trait_id/population/$pr_id" onclick="solGS.waitPage()">$pr_name</a>|, 
                                $pr_desc, $pr_location, $pr_year
         ];
@@ -266,8 +266,8 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
         my $id   = $row->cvterm_id;
         my $name = $row->name;
         my $def  = $row->definition;
-        my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
-       
+        #my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
+        my $checkbox;
         push @rows, [ $checkbox, qq |<a href="/search/result/populations/$id">$name</a>|, $def];      
     }
 
