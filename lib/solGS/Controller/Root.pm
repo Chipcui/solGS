@@ -156,9 +156,8 @@ sub projects_links {
         my $pr_desc     = $projects->{$pr_id}{project_desc};
         my $pr_year     = $projects->{$pr_id}{project_year};
         my $pr_location = $projects->{$pr_id}{project_location};
-        
-        my $checkbox;
-       # my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
+               
+        my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
         push @projects_pages, [ $checkbox, qq|<a href="/population/$pr_id" onclick="solGS.waitPage()">$pr_name</a>|, 
                                $pr_desc, $pr_location, $pr_year
         ];
@@ -187,7 +186,7 @@ sub show_search_result_pops : Path('/search/result/populations') Args(1) {
         my $pr_year     = $projects->{$pr_id}{project_year};
         my $pr_location = $projects->{$pr_id}{project_location};
 
-        my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
+        my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id"  onclick="getPopIds()" /> </form> |;
         push @projects_list, [ $checkbox, qq|<a href="/trait/$trait_id/population/$pr_id" onclick="solGS.waitPage()">$pr_name</a>|, 
                                $pr_desc, $pr_location, $pr_year
         ];
@@ -285,7 +284,7 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
         my $project_rs = $c->model('solGS')->all_projects($c);
         $self->projects_links($c, $project_rs);
         my $projects = $c->stash->{projects_pages};
-        
+       
         my $form = $c->stash->{form};
         $c->stash(template   => '/search/solgs.mas',
                   form       => $form,
