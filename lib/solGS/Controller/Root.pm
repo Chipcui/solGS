@@ -20,7 +20,7 @@ use Statistics::Descriptive;
 use Math::Round::Var;
 #use CXGN::Login;
 #use CXGN::People::Person;
-#use CXGN::Tools::Run;
+use CXGN::Tools::Run;
 use JSON;
 
 BEGIN { extends 'Catalyst::Controller::HTML::FormFu' }
