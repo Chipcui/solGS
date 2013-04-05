@@ -33,7 +33,7 @@ $gs_traits_index
 
 <& /util/import_javascript.mas, classes => ["solGS.solGS"] &>
 
-<& /page/page_title.mas, title => "solGS: start building your model " &>
+<& /page/page_title.mas, title => "solGS: start building a GS model by searching for a trait or selecting a training population" &>
 <&| /page/info_section.mas,
   title => "Search for a trait ",
 &>
