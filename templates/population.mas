@@ -22,7 +22,7 @@ $traits_no
 <& /util/import_javascript.mas, classes => ["solGS.solGS"] &>
 
 <& /page/page_title.mas, 
-   title => "Genomic Selection Models for Population $project_name"
+   title => "Select any combination of traits from training population \"$project_name\" to build a GS model and predict GEBVs for."
 &>
 
 <&| /page/info_section.mas, 
