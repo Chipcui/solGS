@@ -11,12 +11,15 @@ JSAN.use("Prototype");
 var popIds = [];
 
 
+var getCookieName =  function (trId) {
+    return 'trait_' + trId + '_populations';
+};
 
 var getPopIds =  function() {
     jQuery("input:checkbox[name='project']").change(function() {
             
-            var trId = traitId(); 
-            var cookieName = 'trait_' + trId + '_populations';
+            var trId = getTraitId(); 
+            var cookieName = getCookieName(trId);
             
             if (jQuery(this).attr('checked')) {
               
@@ -42,7 +45,9 @@ var getPopIds =  function() {
                    if (cookieArrayData instanceof Array) {
                        alert('cookie is an array');
                    }
-                   alert('tr id '+ trId + ' cookie: '+ cookieArrayData + ' len:' + popIds.length + 'id: '+popId+' ids: '+ popIds);
+                   alert('tr id '+ trId + ' cookie: '+ cookieArrayData + 
+                         ' len:' + popIds.length + 'id: '+popId+' ids: '
+                         + popIds);
                 }
                 else {
                     indexPopId = jQuery.inArray(popId, popIds);
@@ -75,22 +80,49 @@ var getPopIds =  function() {
                 cookieArrayData = cookieArrayData.unique();
                 jQuery.cookie(cookieName, cookieArrayData);
           
-             }
-         
-          
-           jQuery('#select_done').click(function() {
-                   // alert(popIds);
-                });
-
-           
-            
-
+             }          
         });
     };
-    
 
- Array.prototype.unique =
-  function() {
+
+var selectedPops = function () {
+            var trId       = getTraitId();
+            var cookieName = getCookieName(trId);
+            var cookieData = jQuery.cookie(cookieName);
+            var cookieArrayData = [];
+
+            if (cookieData) {
+                cookieArrayData = cookieData.split(",");
+                cookieArrayData = cookieArrayData.unique();
+            }
+            
+            alert('submited pops: ' +  cookieArrayData);
+            if( cookieArrayData.length > 0 ) {
+            
+                var action = "/trait/trId/combine/populations";
+                jQuery.ajax({  
+                        type: 'POST',
+                        dataType: "json",
+                        url: action,
+                        data: {'selections': {trId:cookieArrayData}},
+                        success: function(res){                       
+                              var suc = res.status;
+                          }
+                    });
+            }
+            else {
+                alert('No populations were selected.' +
+                      'Please make your selections.'
+                      );
+
+            }
+
+};
+ 
+
+ 
+Array.prototype.unique =
+    function() {
     var a = [];
     var l = this.length;
     for(var i=0; i<l; i++) {
@@ -104,7 +136,8 @@ var getPopIds =  function() {
     return a;
   };
 
-var traitId = function () {
+
+var getTraitId = function () {
    var id = jQuery("input[name='trait_id']").val();
    return id;
 };
