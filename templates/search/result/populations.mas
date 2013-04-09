@@ -41,7 +41,7 @@ $trait_id
 </div>
 
 <div id="select_done">
-<input type="submit" name="submit" value="Done Selecting!" />
+<input type="button" id="done_selecting" name="done_selecting" value="Done!" onclick="selectedPops();"/>
 </div>
 
 </&>
