@@ -99,12 +99,13 @@ var selectedPops = function () {
             alert('submited pops: ' +  cookieArrayData);
             if( cookieArrayData.length > 0 ) {
             
-                var action = "/trait/trId/combine/populations";
+                var action = "/combine/populations/trait/" + trId;
+                var pops = trId + "=" + cookieArrayData;
                 jQuery.ajax({  
                         type: 'POST',
                         dataType: "json",
                         url: action,
-                        data: {'selections': {trId:cookieArrayData}},
+                        data: pops,
                         success: function(res){                       
                               var suc = res.status;
                           }
