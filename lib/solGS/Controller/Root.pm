@@ -1296,6 +1296,63 @@ sub all_traits_output :Regex('^traits/all/population/([\d]+)(?:/([\d+]+))?') {
 }
 
 
+sub combine_populations :Path('/combine/populations/trait') Args(1) {
+    my ($self, $c, $trait_id) = @_;
+   
+    my (@pop_ids, $ids);
+    
+    if ($trait_id =~ /\d+/)
+    {
+        $ids = $c->req->param("$trait_id");
+        @pop_ids = split(/,/, $ids);
+    } 
+    else 
+    {
+        $c->throw(is_client_error   => 1,
+                  public_message    => "Trait id argument is not a number!",	     
+                  notify            => 1, 
+            );
+    }
+
+    $c->stash->{trait_combine_populations} = \@pop_ids;
+
+    $self->multi_pops_phenotype_data($c, \@pop_ids);
+    $self->multi_pops_genotype_data($c, \@pop_ids);
+   
+
+}
+
+
+sub multi_pops_phenotype_data {
+    my ($self, $c, $pop_ids) = @_;
+    
+    if (@$pop_ids)
+    {
+        foreach (@$pop_ids)        
+        {
+            $c->stash->{pop_id} = $_;
+            $self->phenotype_file($c);
+        }
+    }
+
+}
+
+
+sub multi_pops_genotype_data {
+    my ($self, $c, $pop_ids) = @_;
+    
+    if (@$pop_ids)
+    {
+        foreach (@$pop_ids)        
+        {
+            $c->stash->{pop_id} = $_;
+            $self->genotype_file($c);
+        }
+    }
+
+}
+
+
 sub phenotype_graph :Path('/phenotype/graph') Args(0) {
     my ($self, $c) = @_;
 
@@ -1305,9 +1362,9 @@ sub phenotype_graph :Path('/phenotype/graph') Args(0) {
     my $trait_name = $c->model('solGS')->trait_name($c, $trait_id);
     my $trait_abbr = $self->abbreviate_term($c, $trait_name);
     
-    $c->stash->{pop_id} = $pop_id;
+    $c->stash->{pop_id}     = $pop_id;
     $c->stash->{trait_abbr} = $trait_abbr;
-     $c->stash->{trait_id} = $trait_id;
+    $c->stash->{trait_id}   = $trait_id;
 
     $self->trait_phenotype_file($c, $pop_id, $trait_abbr);
     my $trait_pheno_file = $c->{stash}->{trait_phenotype_file};
@@ -1327,6 +1384,7 @@ sub phenotype_graph :Path('/phenotype/graph') Args(0) {
     $c->res->body($ret);
 
 }
+
 
 #generates descriptive stat for a trait phenotype data
 sub trait_phenotype_stat {
