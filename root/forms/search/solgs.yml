@@ -10,10 +10,13 @@ elements:
      elements:
        - type: Text
          name: search_term
-         size: 40
+         size: 40        
          constraints:
-            - type: Required
-              message: enter search term                
+           - type: Length
+             min: 3
+             message: Search term must be longer than 3 characters
+           - type: Required          
+             message: enter search term                
        - type: Submit
          name: search
          value: Search
