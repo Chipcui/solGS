@@ -50,6 +50,7 @@ requires 'Test::More';
 requires 'URI';
 requires 'URI::FromHash';
 requires 'YAML::Any';
+requires 'YAML::XS';
 
 requires 'Config::General'; # This should reflect the config file format you've chosen
                  # See Catalyst::Plugin::ConfigLoader for supported formats
