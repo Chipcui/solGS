@@ -144,6 +144,7 @@ sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
 
 }
 
+
 sub projects_links {
     my ($self, $c, $pr_rs) = @_;
 
@@ -260,7 +261,7 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
   
     my @rows;
     my $result = $c->model('solGS')->search_trait($c, $query);
- 
+   
     while (my $row = $result->next)
     {
         my $id   = $row->cvterm_id;
@@ -282,17 +283,21 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
     }
     else
     {
+        $self->gs_traits_index($c);
+        my $gs_traits_index = $c->stash->{gs_traits_index};
+        
         my $project_rs = $c->model('solGS')->all_projects($c);
         $self->projects_links($c, $project_rs);
         my $projects = $c->stash->{projects_pages};
         
         my $form = $c->stash->{form};
-        $c->stash(template   => '/search/solgs.mas',
-                  form       => $form,
-                  message    => $query, 
-                  result     => $projects,
-                  pager      => $project_rs->pager,
-                  page_links => sub {uri ( query => {  page => shift } ) }
+        $c->stash(template        => '/search/solgs.mas',
+                  form            => $form,
+                  message         => $query,
+                  gs_traits_index => $gs_traits_index,
+                  result          => $projects,
+                  pager           => $project_rs->pager,
+                  page_links      => sub {uri ( query => {  page => shift } ) }
             );
     }
 
