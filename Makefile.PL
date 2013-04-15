@@ -16,6 +16,9 @@ requires 'Catalyst::Action::RenderView';
 requires 'Catalyst::Controller::HTML::FormFu';
 requires 'CatalystX::GlobalContext' ;
 requires 'Catalyst::Exception::Basic';
+requires 'Catalyst::View::Download::CSV';
+requires 'Catalyst::View::Download::Plain';
+requires 'Catalyst::View::HTML::Mason';
 requires 'Catalyst::Exception';
 requires 'Cache::File';
 requires 'Carp';
@@ -50,6 +53,7 @@ requires 'Test::More';
 requires 'URI';
 requires 'URI::FromHash';
 requires 'YAML::Any';
+requires 'YAML::XS';
 
 requires 'Config::General'; # This should reflect the config file format you've chosen
                  # See Catalyst::Plugin::ConfigLoader for supported formats

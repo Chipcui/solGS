@@ -155,9 +155,11 @@ print('phenotyped lines after averaging')
 print(length(row.names(phenoTrait)))
 
 #make stock_names row names
+#print(phenoTrait)
 row.names(phenoTrait) <- phenoTrait[, 1]
 phenoTrait[, 1] <- NULL
-
+#print(phenoTrait)
+#traitPhenoData <- as.data.frame(round(phenoTrait, digits=2)) 
 #find genotype file name
 genoFile <- grep("genotype_data",
                  inFiles,
@@ -227,17 +229,19 @@ commonObs <- intersect(row.names(phenoTrait), row.names(genoData))
 commonObs<-data.frame(commonObs)
 rownames(commonObs)<-commonObs[, 1]
 
+#include in the genotype dataset only observation lines
+#with phenotype data
+genoData<-genoData[(rownames(genoData) %in% rownames(commonObs)), ]
+#print(genoData[1:10, 1:10])
+
 #drop observation lines without genotype data
 phenoTrait <- merge(data.frame(phenoTrait), commonObs, by=0, all=FALSE)
 rownames(phenoTrait) <-phenoTrait[,1]
 phenoTrait[, 1] <- NULL
+print(phenoTrait)
 phenoTrait[, 2] <- NULL
 
-#drop observation lines without phenotype data
-genoData <- merge(data.frame(genoData), commonObs, by=0, all=FALSE)
-rownames(genoData) <- genoData[, 1]
-genoData[, 1] <- NULL
-
+#a set of only observation lines with genotype data
 traitPhenoData <- as.data.frame(round(phenoTrait, digits=2))
 
 #if (length(genotypesDiff) > 0)
@@ -274,7 +278,6 @@ genoDataMatrix <- genoDataMatrix - 1
 if (length(predictionData) != 0)
   {
     predictionData <- predictionData - 1
-
   }
 
 #use REML (default) to calculate variance components
@@ -295,7 +298,6 @@ colnames(ordered.markerGEBV2) <- c("Marker Effects")
 #additive relationship model
 #calculate the inner products for
 #genotypes (realized relationship matrix)
-
 genocrsprd <- tcrossprod(genoDataMatrix)
 
 #construct an identity matrix for genotypes
@@ -309,15 +311,14 @@ iGEBV <- mixed.solve(y = phenoTrait,
 #correlation between breeding values based on
 #marker effects and relationship matrix
 corGEBVs <- cor(genoDataMatrix %*% markerGEBV$u, iGEBV$u)
-#print(corGEBVs)
 
 iGEBVu <- iGEBV$u
 #iGEBVu<-iGEBVu[order(-ans$u), ]
 iGEBV <- data.matrix(iGEBVu)
 
-ordered.iGEBV <- as.data.frame(iGEBV [order(-iGEBV[, 1]), ] )
+ordered.iGEBV <- as.data.frame(iGEBV[order(-iGEBV[, 1]), ] )
 
-ordered.iGEBV <- round(data.matrix(ordered.iGEBV),
+ordered.iGEBV <- round(ordered.iGEBV,
                        digits = 3
                        )
 

@@ -33,14 +33,14 @@ $gs_traits_index
 
 <& /util/import_javascript.mas, classes => ["solGS.solGS"] &>
 
-<& /page/page_title.mas, title => "solGS: start building your model " &>
+<& /page/page_title.mas, title => "solGS: start building a GS model by searching for a trait or selecting a training population" &>
 <&| /page/info_section.mas,
   title => "Search for a trait ",
 &>
 
 %if ($message)
 %{
-<p style="color:red">There is no phenotyped trait for <b>'<% $message %>'</b>.</p>
+<p style="color:red">There is no phenotype data for <b>'<% $message %>'</b>.</p>
 %}
 
 <p style="text-align:center">Browse by traits: <b><% $gs_traits_index %> </b></p>

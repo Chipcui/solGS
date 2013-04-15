@@ -26,11 +26,11 @@ $list_of_prediction_pops
 <&| /page/info_section.mas, 
     collapsible => 1, 
     collapsed   => 0, 
-    title       => "Prediction populations",
+    title       => "Select a prediction population to apply the model on",
 &>
 
 <& /page/columnar_table.mas,
-     headings    => ['',  'Selection Population', 'Description', 'Generation', 'Year', 'Download GEBVs' ],
+     headings    => ['',  'Prediction Population', 'Description', 'Generation', 'Year', 'Download GEBVs' ],
      data        => $list_of_prediction_pops,
     __alt_freq   => 2,
     __alt_width  => 1,

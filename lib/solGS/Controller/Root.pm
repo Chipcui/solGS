@@ -18,8 +18,8 @@ use Scalar::Util 'weaken';
 use CatalystX::GlobalContext ();
 use Statistics::Descriptive;
 use Math::Round::Var;
-use CXGN::Login;
-use CXGN::People::Person;
+#use CXGN::Login;
+#use CXGN::People::Person;
 use CXGN::Tools::Run;
 use JSON;
 
@@ -144,6 +144,7 @@ sub search : Path('/search/solgs') Args() FormConfig('search/solgs.yml') {
 
 }
 
+
 sub projects_links {
     my ($self, $c, $pr_rs) = @_;
 
@@ -186,7 +187,9 @@ sub show_search_result_pops : Path('/search/result/populations') Args(1) {
         my $pr_year     = $projects->{$pr_id}{project_year};
         my $pr_location = $projects->{$pr_id}{project_location};
 
-        my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id"  onclick="getPopIds()" /> </form> |;
+        my $checkbox;
+       # my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
+
         push @projects_list, [ $checkbox, qq|<a href="/trait/$trait_id/population/$pr_id" onclick="solGS.waitPage()">$pr_name</a>|, 
                                $pr_desc, $pr_location, $pr_year
         ];
@@ -259,14 +262,14 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
   
     my @rows;
     my $result = $c->model('solGS')->search_trait($c, $query);
- 
+   
     while (my $row = $result->next)
     {
         my $id   = $row->cvterm_id;
         my $name = $row->name;
         my $def  = $row->definition;
-        my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
-       
+        #my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
+        my $checkbox;
         push @rows, [ $checkbox, qq |<a href="/search/result/populations/$id">$name</a>|, $def];      
     }
 
@@ -281,17 +284,21 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
     }
     else
     {
+        $self->gs_traits_index($c);
+        my $gs_traits_index = $c->stash->{gs_traits_index};
+        
         my $project_rs = $c->model('solGS')->all_projects($c);
         $self->projects_links($c, $project_rs);
         my $projects = $c->stash->{projects_pages};
        
         my $form = $c->stash->{form};
-        $c->stash(template   => '/search/solgs.mas',
-                  form       => $form,
-                  message    => $query, 
-                  result     => $projects,
-                  pager      => $project_rs->pager,
-                  page_links => sub {uri ( query => {  page => shift } ) }
+        $c->stash(template        => '/search/solgs.mas',
+                  form            => $form,
+                  message         => $query,
+                  gs_traits_index => $gs_traits_index,
+                  result          => $projects,
+                  pager           => $project_rs->pager,
+                  page_links      => sub {uri ( query => {  page => shift } ) }
             );
     }
 
@@ -2066,8 +2073,8 @@ sub run_r_script {
        
         
         $c->throw(is_client_error   => 1,
-                  title             => 'R Script Error',
-                  public_message    => "There is a problem running rrblup on this dataset!",	     
+                  title             => "$r_script Script Error",
+                  public_message    => "There is a problem running $r_script on this dataset!",	     
                   notify            => 1, 
                   developer_message => $err,
             );
@@ -2164,18 +2171,18 @@ sub auto : Private {
     $self->get_solgs_dirs($c);
     # gluecode for logins
     #
-    unless( $c->config->{'disable_login'} ) {
-        my $dbh = $c->dbc->dbh;
-        if ( my $sp_person_id = CXGN::Login->new( $dbh )->has_session ) {
+#  #   unless( $c->config->{'disable_login'} ) {
+   #      my $dbh = $c->dbc->dbh;
+   #      if ( my $sp_person_id = CXGN::Login->new( $dbh )->has_session ) {
 
-            my $sp_person = CXGN::People::Person->new( $dbh, $sp_person_id);
+   #          my $sp_person = CXGN::People::Person->new( $dbh, $sp_person_id);
 
-            $c->authenticate({
-                username => $sp_person->get_username(),
-                password => $sp_person->get_password(),
-            });
-        }
-   }
+   #          $c->authenticate({
+   #              username => $sp_person->get_username(),
+   #              password => $sp_person->get_password(),
+   #          });
+   #      }
+   # }
 
     return 1;
 }
