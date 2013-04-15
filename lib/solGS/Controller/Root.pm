@@ -14,7 +14,7 @@ use File::Basename;
 use Cache::File;
 use Try::Tiny;
 use List::MoreUtils qw /uniq/;
-use Scalar::Util 'weaken';
+use Scalar::Util qw /weaken reftype/;
 use CatalystX::GlobalContext ();
 use Statistics::Descriptive;
 use Math::Round::Var;
@@ -187,8 +187,7 @@ sub show_search_result_pops : Path('/search/result/populations') Args(1) {
         my $pr_year     = $projects->{$pr_id}{project_year};
         my $pr_location = $projects->{$pr_id}{project_location};
 
-        my $checkbox;
-       # my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" /> </form> |;
+        my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" onclick="getPopIds()"/> </form> |;
 
         push @projects_list, [ $checkbox, qq|<a href="/trait/$trait_id/population/$pr_id" onclick="solGS.waitPage()">$pr_name</a>|, 
                                $pr_desc, $pr_location, $pr_year
@@ -268,7 +267,7 @@ sub show_search_result_traits : Path('/search/result/traits') Args(1)  FormConfi
         my $id   = $row->cvterm_id;
         my $name = $row->name;
         my $def  = $row->definition;
-        #my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" /> </form> |;
+        #my $checkbox = qq |<form> <input type="checkbox" name="trait" value="$name" onclick="getPopIds()"/> </form> |;
         my $checkbox;
         push @rows, [ $checkbox, qq |<a href="/search/result/populations/$id">$name</a>|, $def];      
     }
@@ -1308,6 +1307,8 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
    
     my (@pop_ids, $ids);
     
+    print STDERR "\n\ncombine pops trait id: $trait_id\n\n";
+    
     if ($trait_id =~ /\d+/)
     {
         $ids = $c->req->param("$trait_id");
@@ -1325,8 +1326,72 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
 
     $self->multi_pops_phenotype_data($c, \@pop_ids);
     $self->multi_pops_genotype_data($c, \@pop_ids);
-   
+    
+}
 
+
+sub multi_pops_pheno_files {
+    my ($self, $c, $pop_ids) = @_;
+ 
+    my $dir = $c->stash->{solgs_cache_dir};
+    my $files;
+    
+    if (defined reftype($pop_ids) && reftype($pop_ids) eq 'ARRAY')
+    {
+        foreach my $pop_id (@$pop_ids) 
+        {
+            my $exp = "phenotype_data_${pop_id}\.txt";
+            my $file = $self->grep_file($dir, $exp);
+            $files .= catfile($dir, $file);
+            $files .= "\t" unless (@$pop_ids[-1] eq $pop_id);    
+        }
+        $c->stash->{multi_pops_pheno_files} = $files;
+    }
+    else 
+    {
+        my $exp = "phenotype_data_${pop_ids}\.txt";
+        my $file = $self->grep_file($dir, $exp);
+    }
+ 
+}
+
+
+sub multi_pops_geno_files {
+    my ($self, $c, $pop_ids) = @_;
+ 
+    my $dir = $c->stash->{solgs_cache_dir};
+    my $files;
+    
+    if (defined reftype($pop_ids) && reftype($pop_ids) eq 'ARRAY')
+    {
+        foreach my $pop_id (@$pop_ids) 
+        {
+            my $exp = "genotype_data_${pop_id}\.txt";
+            my $file = $self->grep_file($dir, $exp);
+            $files .= catfile($dir, $file);
+            $files .= "\t" unless (@$pop_ids[-1] eq $pop_id);    
+        }
+        $c->stash->{multi_pops_geno_files} = $files;
+    }
+    else 
+    {
+        my $exp = "genotype_data_${pop_ids}\.txt";
+        my $file = $self->grep_file($dir, $exp);
+    }
+  
+}
+
+
+sub grep_file {
+    my ($self, $dir, $exp) = @_;
+
+    opendir my $dh, $dir 
+        or die "can't open $dir: $!\n";
+
+    my ($file)   = grep(/$exp/, readdir($dh));
+    close $dh;
+    
+    return $file;
 }
 
 
@@ -1341,6 +1406,8 @@ sub multi_pops_phenotype_data {
             $self->phenotype_file($c);
         }
     }
+   
+    $self->multi_pops_pheno_files($c, $pop_ids);
 
 }
 
@@ -1356,6 +1423,8 @@ sub multi_pops_genotype_data {
             $self->genotype_file($c);
         }
     }
+
+  $self->multi_pops_geno_files($c, $pop_ids);
 
 }
 
