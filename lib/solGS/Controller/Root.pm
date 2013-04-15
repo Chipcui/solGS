@@ -856,16 +856,10 @@ sub get_gebv_files_of_traits {
     unless ($pred_gebv_files->[0])
     {
         foreach my $tr (@$traits) 
-        {         
-            opendir my $dh, $dir 
-                or die "can't open $dir: $!\n";
- 
-            my ($file)   = grep(/gebv_kinship_${tr}_${pop_id}/, readdir($dh));
-
-            $gebv_files .= catfile($dir, $file);
+        {    
+            my $exp = "gebv_kinship_${tr}_${pop_id}"; 
+            $gebv_files .= $self->grep_file($dir, $exp);
             $gebv_files .= "\t" unless (@$traits[-1] eq $tr);
-    
-            closedir $dh;  
         }
     }
     
@@ -1052,15 +1046,10 @@ sub trait_phenotype_file {
     my ($self, $c, $pop_id, $trait) = @_;
 
     my $dir = $c->stash->{solgs_cache_dir};
-    
-    opendir my $dh, $dir or die "can't open $dir: $!\n";
- 
-    my ($file)   = grep(/phenotype_trait_${trait}_${pop_id}/, readdir($dh));
-    my $trait_pheno_file .= catfile($dir, $file);
-       
-    closedir $dh; 
+    my $exp = "phenotype_trait_${trait}_${pop_id}";
+    my $file = $self->grep_file($dir, $exp);
 
-    $c->stash->{trait_phenotype_file} = $trait_pheno_file;
+    $c->stash->{trait_phenotype_file} = $file;
 
 }
 
@@ -1341,8 +1330,7 @@ sub multi_pops_pheno_files {
         foreach my $pop_id (@$pop_ids) 
         {
             my $exp = "phenotype_data_${pop_id}\.txt";
-            my $file = $self->grep_file($dir, $exp);
-            $files .= catfile($dir, $file);
+            $files .= $self->grep_file($dir, $exp);          
             $files .= "\t" unless (@$pop_ids[-1] eq $pop_id);    
         }
         $c->stash->{multi_pops_pheno_files} = $files;
@@ -1367,8 +1355,7 @@ sub multi_pops_geno_files {
         foreach my $pop_id (@$pop_ids) 
         {
             my $exp = "genotype_data_${pop_id}\.txt";
-            my $file = $self->grep_file($dir, $exp);
-            $files .= catfile($dir, $file);
+            $files .= $self->grep_file($dir, $exp);        
             $files .= "\t" unless (@$pop_ids[-1] eq $pop_id);    
         }
         $c->stash->{multi_pops_geno_files} = $files;
@@ -1390,7 +1377,9 @@ sub grep_file {
 
     my ($file)   = grep(/$exp/, readdir($dh));
     close $dh;
-    
+
+    $file = catfile($dir, $file);
+   
     return $file;
 }
 
