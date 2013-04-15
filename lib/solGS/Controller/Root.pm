@@ -2014,8 +2014,8 @@ sub run_r_script {
        
         
         $c->throw(is_client_error   => 1,
-                  title             => 'R Script Error',
-                  public_message    => "There is a problem running rrblup on this dataset!",	     
+                  title             => "$r_script Script Error",
+                  public_message    => "There is a problem running $r_script on this dataset!",	     
                   notify            => 1, 
                   developer_message => $err,
             );
