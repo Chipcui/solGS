@@ -1266,13 +1266,13 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
     my ($self, $c, $trait_id) = @_;
    
     my (@pop_ids, $ids);
-    
-    print STDERR "\n\ncombine pops trait id: $trait_id\n\n";
-    
+   
     if ($trait_id =~ /\d+/)
     {
         $ids = $c->req->param("$trait_id");
         @pop_ids = split(/,/, $ids);
+
+        $c->stash->{trait_id} = $trait_id;
     } 
     else 
     {
@@ -1293,6 +1293,7 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
 sub multi_pops_pheno_files {
     my ($self, $c, $pop_ids) = @_;
  
+    my $trait_id = $c->stash->{trait_id};
     my $dir = $c->stash->{solgs_cache_dir};
     my $files;
     
@@ -1309,8 +1310,12 @@ sub multi_pops_pheno_files {
     else 
     {
         my $exp = "phenotype_data_${pop_ids}\.txt";
-        my $file = $self->grep_file($dir, $exp);
+        $files = $self->grep_file($dir, $exp);
     }
+
+    my $name = "trait_${trait_id}_multi_pheno_files";
+    my $tempfile = $self->create_tempfile($c, $name);
+    write_file($tempfile, $files);
  
 }
 
@@ -1318,6 +1323,7 @@ sub multi_pops_pheno_files {
 sub multi_pops_geno_files {
     my ($self, $c, $pop_ids) = @_;
  
+    my $trait_id = $c->stash->{trait_id};
     my $dir = $c->stash->{solgs_cache_dir};
     my $files;
     
@@ -1334,9 +1340,13 @@ sub multi_pops_geno_files {
     else 
     {
         my $exp = "genotype_data_${pop_ids}\.txt";
-        my $file = $self->grep_file($dir, $exp);
+        $files = $self->grep_file($dir, $exp);
     }
-  
+
+    my $name = "trait_${trait_id}_multi_geno_files";
+    my $tempfile = $self->create_tempfile($c, $name);
+    write_file($tempfile, $files);
+    
 }
 
 
@@ -1346,7 +1356,7 @@ sub create_tempfile {
     my ($fh, $file) = tempfile("$name-XXXXX", 
                                DIR => $c->stash->{solgs_tempfiles_dir}
         );
-        
+    
     $fh->close; 
     
     return $file;
@@ -1382,6 +1392,7 @@ sub multi_pops_phenotype_data {
     }
    
     $self->multi_pops_pheno_files($c, $pop_ids);
+    
 
 }
 
