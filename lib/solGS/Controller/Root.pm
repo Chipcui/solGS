@@ -448,13 +448,9 @@ sub input_files {
                             $prediction_population_file
         );
 
-    my $tmp_dir         = $c->stash->{solgs_tempfiles_dir};
-    my ($fh, $tempfile) = tempfile("input_files_${pop_id}-XXXXX", 
-                                   DIR => $tmp_dir
-        );
-
-    $fh->print($input_files);
-   
+    my $name = "input_files_${pop_id}"; 
+    my $tempfile = $self->create_tempfile($c, $name); 
+    write_file($tempfile, $input_files);
     $c->stash->{input_files} = $tempfile;
   
 }
@@ -491,13 +487,9 @@ sub output_files {
                           $pred_pop_gebvs_file
         );
                           
-    my $tmp_dir = $c->stash->{solgs_tempfiles_dir};
-
-    my ($fh, $tempfile) = tempfile("output_files_${trait}_$pop_id-XXXXX", 
-                                   DIR => $tmp_dir
-        );
-
-    $fh->print($file_list);
+    my $name = "output_files_${trait}_$pop_id"; 
+    my $tempfile = $self->create_tempfile($c, $name); 
+    write_file($tempfile, $file_list);
     
     $c->stash->{output_files} = $tempfile;
 
@@ -865,13 +857,9 @@ sub get_gebv_files_of_traits {
     
     my $pred_file_suffix;
     $pred_file_suffix = '_' . $pred_pop_id  if $pred_pop_id; 
-     
-    my ($fh, $file) = tempfile("gebv_files_of_traits_${pop_id}${pred_file_suffix}-XXXXX",
-                               DIR => $c->stash->{solgs_tempfiles_dir}
-        );
-    $fh->close;
-
     
+    my $name = "gebv_files_of_traits_${pop_id}${pred_file_suffix}";
+    my $file = $self->create_tempfile($c, $name);
     write_file($file, $gebv_files);
    
     $c->stash->{gebv_files_of_traits} = $file;
@@ -898,10 +886,8 @@ sub gebv_rel_weights {
     my $pred_file_suffix;
     $pred_file_suffix = '_' . $pred_pop_id  if $pred_pop_id; 
     
-    my ($fh, $file) =  tempfile("rel_weights_${pop_id}${pred_file_suffix}-XXXXX",
-                                DIR => $c->stash->{solgs_tempfiles_dir}
-        );
-
+    my $name = "rel_weights_${pop_id}${pred_file_suffix}";
+    my $file = $self->create_tempfile($c, $name);
     write_file($file, $rel_wts);
     
     $c->stash->{rel_weights_file} = $file;
@@ -917,10 +903,8 @@ sub ranked_genotypes_file {
     my $pred_file_suffix;
     $pred_file_suffix = '_' . $pred_pop_id  if $pred_pop_id;
   
-    my ($fh, $file) =  tempfile("ranked_genotypes_${pop_id}${pred_file_suffix}-XXXXX",
-                                DIR => $c->stash->{solgs_tempfiles_dir}
-        );
-
+    my $name = "ranked_genotypes_${pop_id}${pred_file_suffix}";
+    my $file = $self->create_tempfile($c, $name);
     $c->stash->{ranked_genotypes_file} = $file;
    
 }
@@ -934,13 +918,12 @@ sub mean_gebvs_file {
     my $pred_file_suffix;
     $pred_file_suffix = '_' . $pred_pop_id  if $pred_pop_id;
 
-    my ($fh, $file) =  tempfile("genotypes_mean_gebv_${pop_id}${pred_file_suffix}-XXXXX",
-                                DIR => $c->stash->{solgs_tempfiles_dir}
-        );
-
+    my $name = "genotypes_mean_gebv_${pop_id}${pred_file_suffix}";
+    my $file = $self->create_tempfile($c, $name);
     $c->stash->{genotypes_mean_gebv_file} = $file;
    
 }
+
 
 sub download_ranked_genotypes :Path('/download/ranked/genotypes/pop') Args(2) {
     my ($self, $c, $pop_id, $genotypes_file) = @_;   
@@ -983,19 +966,13 @@ sub rank_genotypes : Private {
     my $pred_file_suffix;
     $pred_file_suffix = '_' . $pred_pop_id  if $pred_pop_id;
     
-    my ($fh_o, $output_file) = tempfile("output_rank_genotypes_${pop_id}${pred_file_suffix}-XXXXX",
-                                        DIR => $c->stash->{solgs_tempfiles_dir}
-        );
-    $fh_o->close;
-
+    my $name = "output_rank_genotypes_${pop_id}${pred_file_suffix}";
+    my $output_file = $self->create_tempfile($c, $name);
     write_file($output_file, $output_files);
     $c->stash->{output_files} = $output_file;
     
-    my ($fh_i, $input_file) = tempfile("input_rank_genotypes_${pop_id}${pred_file_suffix}-XXXXX",
-                                       DIR => $c->stash->{solgs_tempfiles_dir}
-        );
-    $fh_i->close;
-
+    $name = "input_rank_genotypes_${pop_id}${pred_file_suffix}";
+    my $input_file = $self->create_tempfile($c, $name);
     write_file($input_file, $input_files);
     $c->stash->{input_files} = $input_file;
 
@@ -1140,20 +1117,14 @@ sub traits_to_analyze :Regex('^analyze/traits/population/([\d]+)(?:/([\d+]+))?')
 
         $self->combined_gebvs_file($c, $identifier);
         
-        my $tmp_dir     = $c->stash->{solgs_tempfiles_dir}; 
-        my ($fh, $file) = tempfile("selected_traits_pop_${pop_id}-XXXXX", 
-                                   DIR => $tmp_dir
-            );
-
-        $fh->print($traits);
-        $fh->close;
-
-        my ($fh2, $file2) = tempfile("trait_${single_trait_id}_pop_${pop_id}-XXXXX", 
-                                     DIR => $tmp_dir
-                );
-        $fh2->close;
-  
+        my $name = "selected_traits_pop_${pop_id}";
+        my $file = $self->create_tempfile($c, $name);
+        write_file($file, $traits);
         $c->stash->{selected_traits_file} = $file;
+
+        $name = "trait_${single_trait_id}_pop_${pop_id}";
+        my $file2 = $self->create_tempfile($c, $name);
+       
         $c->stash->{trait_file} = $file2;
         $c->forward('get_rrblup_output');
   
@@ -1366,6 +1337,20 @@ sub multi_pops_geno_files {
         my $file = $self->grep_file($dir, $exp);
     }
   
+}
+
+
+sub create_tempfile {
+    my ($self, $c, $name) = @_;
+
+    my ($fh, $file) = tempfile("$name-XXXXX", 
+                               DIR => $c->stash->{solgs_tempfiles_dir}
+        );
+        
+    $fh->close; 
+    
+    return $file;
+
 }
 
 
@@ -2020,14 +2005,10 @@ sub run_rrblup_trait {
     my $trait_abbr = $c->stash->{trait_abbr};
 
     my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
-    $c->stash->{trait_id}   = $trait_id ; 
+    $c->stash->{trait_id} = $trait_id; 
                                 
-    my ($fh, $file) = tempfile("trait_${trait_id}_pop_${pop_id}-XXXXX", 
-                               DIR => $c->stash->{solgs_tempfiles_dir}
-        );
-        
-    $fh->close;   
-
+    my $name = "trait_${trait_id}_pop_${pop_id}"; 
+    my $file = $self->create_tempfile($c, $name);    
     $c->stash->{trait_file} = $file;       
     write_file($file, $trait_abbr);
 
