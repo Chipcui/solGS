@@ -16,14 +16,15 @@ $selected_pops_details
 <& /page/page_title.mas,
     title => "Confirm" ,
 &>
-  
-
 
 <& /population/project_details_form.mas,
    result     => $selected_pops_details,
 &>
 
-
+<div id="confirm">
+  <br />
+  <input type="button" id="confirm" name="confirm" value="Confirm" onclick="confirmPops();"/>
+</div>
 
 
 
