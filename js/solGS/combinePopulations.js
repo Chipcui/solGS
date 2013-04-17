@@ -20,7 +20,7 @@ var getPopIds =  function() {
             
             var trId = getTraitId(); 
             var cookieName = getCookieName(trId);
-            
+            // alert('trait id: ' + trId);
             if (jQuery(this).attr('checked')) {
               
                 var popId;
@@ -99,16 +99,25 @@ var selectedPops = function () {
             alert('submited pops: ' +  cookieArrayData);
             if( cookieArrayData.length > 0 ) {
             
-                var action = "/combine/populations/trait/" + trId;
-                var pops = trId + "=" + cookieArrayData;
+                var action = "/search/result/populations/" + trId;
+                var selectedPops = trId + "=" + cookieArrayData + '&' + 'combine=confirm';
                 jQuery.ajax({  
                         type: 'POST',
                         dataType: "json",
                         url: action,
-                        data: pops,
+                        data: selectedPops,
                         success: function(res){                       
                               var suc = res.status;
-                          }
+                              if (suc == 'success') {
+                                  var confirmPops = res.populations;
+                                  var url = '/combine/populations/trait/confirm/' + trId;
+                                  var form = jQuery('<form action="' + url + '" method="post">' +
+                                                    '<input type="text" name="populations" value="' + confirmPops + '" />' +
+                                                    '</form>');
+                                  jQuery('body').append(form);
+                                  jQuery(form).submit();
+                              }
+                        }
                     });
             }
             else {
