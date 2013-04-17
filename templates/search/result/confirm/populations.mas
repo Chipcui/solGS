@@ -1,0 +1,30 @@
+<%doc>
+
+confirmation form of selected populations (and some metadata) before combining their dataset.
+
+</%doc>
+
+<%args>
+
+$selected_pops_details
+
+</%args>
+
+
+<& /util/import_javascript.mas, classes => ["solGS.solGS", "solGS.combinePopulations", "jquery.cookie"] &>
+
+<& /page/page_title.mas,
+    title => "Confirm" ,
+&>
+  
+
+
+<& /population/project_details_form.mas,
+   result     => $selected_pops_details,
+&>
+
+
+
+
+
+
