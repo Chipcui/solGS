@@ -19,6 +19,7 @@ requires 'Catalyst::Exception::Basic';
 requires 'Catalyst::View::Download::CSV';
 requires 'Catalyst::View::Download::Plain';
 requires 'Catalyst::View::HTML::Mason';
+requires 'Catalyst::View::JavaScript::Minifier::XS'
 requires 'Catalyst::Exception';
 requires 'Cache::File';
 requires 'Carp';
