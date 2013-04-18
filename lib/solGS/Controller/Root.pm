@@ -171,46 +171,71 @@ sub projects_links {
 
 sub show_search_result_pops : Path('/search/result/populations') Args(1) {
     my ($self, $c, $trait_id) = @_;
-     
-    my $projects_rs = $c->model('solGS')->search_populations($c, $trait_id);
-    my $trait       = $c->model('solGS')->trait_name($c, $trait_id);
     
-    $self->get_projects_details($c, $projects_rs);
-    my $projects = $c->stash->{projects_details};
-     
-    my @projects_list;
-   
-    foreach my $pr_id (keys %$projects) 
+    my $combine = $c->req->param('combine');
+    
+    if ($combine) 
     {
-        my $pr_name     = $projects->{$pr_id}{project_name};
-        my $pr_desc     = $projects->{$pr_id}{project_desc};
-        my $pr_year     = $projects->{$pr_id}{project_year};
-        my $pr_location = $projects->{$pr_id}{project_location};
-
-        my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" onclick="getPopIds()"/> </form> |;
-
-        push @projects_list, [ $checkbox, qq|<a href="/trait/$trait_id/population/$pr_id" onclick="solGS.waitPage()">$pr_name</a>|, 
-                               $pr_desc, $pr_location, $pr_year
-        ];
-    }
-
-    my $form;
-    if ($projects_rs)
-    {
-        $self->get_trait_name($c, $trait_id);
        
-        $c->stash(template   => '/search/result/populations.mas',
-                  result     => \@projects_list,
-                  form       => $form,
-                  trait_id   => $trait_id,
-                  query      => $trait,
-                  pager      => $projects_rs->pager,
-                  page_links => sub {uri ( query => { trait => $trait, page => shift } ) }
-            );
+        my $ids = $c->req->param("$trait_id");
+        my @pop_ids = split(/,/, $ids);        
+        if (!@pop_ids) {@pop_ids = $ids;}
+
+        my $ret->{status} = 'failed';
+        if (@pop_ids) 
+        {
+            $ret->{status} = 'success';
+            $ret->{populations} = \@pop_ids;
+        }
+               
+        $ret = to_json($ret);
+        
+        $c->res->content_type('application/json');
+        $c->res->body($ret);
+
     }
-    else
+    else 
     {
-        $c->res->redirect('/search/solgs');     
+        my $projects_rs = $c->model('solGS')->search_populations($c, $trait_id);
+        my $trait       = $c->model('solGS')->trait_name($c, $trait_id);
+    
+        $self->get_projects_details($c, $projects_rs);
+        my $projects = $c->stash->{projects_details};
+        
+        my @projects_list;
+   
+        foreach my $pr_id (keys %$projects) 
+        {
+            my $pr_name     = $projects->{$pr_id}{project_name};
+            my $pr_desc     = $projects->{$pr_id}{project_desc};
+            my $pr_year     = $projects->{$pr_id}{project_year};
+            my $pr_location = $projects->{$pr_id}{project_location};
+
+            my $checkbox = qq |<form> <input type="checkbox" name="project" value="$pr_id" onclick="getPopIds()"/> </form> |;
+
+            push @projects_list, [ $checkbox, qq|<a href="/trait/$trait_id/population/$pr_id" onclick="solGS.waitPage()">$pr_name</a>|, 
+                               $pr_desc, $pr_location, $pr_year
+            ];
+        }
+
+        my $form;
+        if ($projects_rs)
+        {
+            $self->get_trait_name($c, $trait_id);
+       
+            $c->stash(template   => '/search/result/populations.mas',
+                      result     => \@projects_list,
+                      form       => $form,
+                      trait_id   => $trait_id,
+                      query      => $trait,
+                      pager      => $projects_rs->pager,
+                      page_links => sub {uri ( query => { trait => $trait, page => shift } ) }
+                );
+        }
+        else
+        {
+            $c->res->redirect('/search/solgs');     
+        }
     }
 
 }
@@ -1262,6 +1287,48 @@ sub all_traits_output :Regex('^traits/all/population/([\d]+)(?:/([\d+]+))?') {
 }
 
 
+sub combine_populations_confrim  :Path('/combine/populations/trait/confirm') Args(1) {
+    my ($self, $c, $trait_id) = @_;
+   
+    my (@pop_ids, $ids);
+   
+    if ($trait_id =~ /\d+/)
+    {
+        $ids = $c->req->param('populations');
+        @pop_ids = split(/,/, $ids);        
+        if (!@pop_ids) {@pop_ids = $ids;}
+
+        $c->stash->{trait_id} = $trait_id;
+    } 
+
+    my $pop_links;
+    my @selected_pops_details;
+
+    foreach my $pop_id (@pop_ids) {
+    
+    my $pop_rs = $c->model('solGS')->project_details($c, $pop_id);
+    my $pop_details = $self->get_projects_details($c, $pop_rs);
+
+  
+    my $pop_name     = $pop_details->{$pop_id}{project_name};
+    my $pop_desc     = $pop_details->{$pop_id}{project_desc};
+    my $pop_year     = $pop_details->{$pop_id}{project_year};
+    my $pop_location = $pop_details->{$pop_id}{project_location};
+               
+    my $checkbox = qq |<form> <input type="checkbox" checked="checked" name="project" value="$pop_id" /> </form> |;
+    push @selected_pops_details, [ $checkbox, qq|<a href="/population/$pop_id" onclick="solGS.waitPage()">$pop_name</a>|, 
+                               $pop_desc, $pop_location, $pop_year
+    ];
+  
+    }
+    
+    $c->stash->{selected_pops_details} = \@selected_pops_details;    
+    $c->stash->{template} = '/search/result/confirm/populations.mas';
+
+}
+
+
+
 sub combine_populations :Path('/combine/populations/trait') Args(1) {
     my ($self, $c, $trait_id) = @_;
    
@@ -1286,7 +1353,7 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
 
     $self->multi_pops_phenotype_data($c, \@pop_ids);
     $self->multi_pops_genotype_data($c, \@pop_ids);
-    
+   
 }
 
 
