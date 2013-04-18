@@ -7,6 +7,7 @@ confirmation form of selected populations (and some metadata) before combining t
 <%args>
 
 $selected_pops_details
+$trait_id
 
 </%args>
 
@@ -24,6 +25,7 @@ $selected_pops_details
 <div id="confirm">
   <br />
   <input type="button" id="confirm" name="confirm" value="Confirm" onclick="confirmPops();"/>
+  <input type="hidden" id="trait_id" name="trait_id" value= "<% $trait_id %>" />
 </div>
 
 
