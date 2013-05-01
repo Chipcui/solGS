@@ -112,7 +112,7 @@ var selectedPops = function () {
                                   var confirmPops = res.populations;
                                   var url = '/combine/populations/trait/confirm/' + trId;
                                   var form = jQuery('<form action="' + url + '" method="post">' +
-                                                    '<input type="text" name="confirm_populations" value="' + confirmPops + '" />' +
+                                                    '<input type="hidden" name="confirm_populations" value="' + confirmPops + '" />' +
                                                     '</form>'
                                                     );
                                   jQuery('body').append(form);
