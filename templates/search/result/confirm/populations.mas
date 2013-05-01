@@ -24,7 +24,7 @@ $trait_id
 
 <div id="confirm">
   <br />
-  <input type="button" id="confirm" name="confirm" value="Confirm" onclick="confirmPops();"/>
+  <input type="button" id="confirm" name="confirm" value="Confirm" onclick="confirmSelections();"/>
   <input type="hidden" id="trait_id" name="trait_id" value= "<% $trait_id %>" />
 </div>
 
