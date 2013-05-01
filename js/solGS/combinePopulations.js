@@ -112,8 +112,9 @@ var selectedPops = function () {
                                   var confirmPops = res.populations;
                                   var url = '/combine/populations/trait/confirm/' + trId;
                                   var form = jQuery('<form action="' + url + '" method="post">' +
-                                                    '<input type="text" name="populations" value="' + confirmPops + '" />' +
-                                                    '</form>');
+                                                    '<input type="text" name="confirm_populations" value="' + confirmPops + '" />' +
+                                                    '</form>'
+                                                    );
                                   jQuery('body').append(form);
                                   jQuery(form).submit();
                               }
@@ -129,6 +130,31 @@ var selectedPops = function () {
 
 };
  
+
+var confirmSelections =  function() {
+    var trId = getTraitId();
+    var selections = [];
+    jQuery("input:checkbox[name='project']:checked").each( function() {
+            selections.push(jQuery(this).val());
+
+        });
+     
+    var action = "/combine/populations/trait/" + trId;
+    var selectedPops = trId + "=" + selections + '&' + 'combine=combine';
+    jQuery.ajax({  
+            type: 'POST',
+                dataType: "json",
+                url: action,
+                data: selectedPops,
+                success: function(res){                       
+                var suc = res.status;
+                if (suc == 'success') {
+                    //alert('combined pops');
+                }
+            }
+        });
+   
+    };
 
  
 Array.prototype.unique =
