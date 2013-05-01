@@ -1294,7 +1294,7 @@ sub combine_populations_confrim  :Path('/combine/populations/trait/confirm') Arg
    
     if ($trait_id =~ /\d+/)
     {
-        $ids = $c->req->param('populations');
+        $ids = $c->req->param('confirm_populations');
         @pop_ids = split(/,/, $ids);        
         if (!@pop_ids) {@pop_ids = $ids;}
 
@@ -1340,14 +1340,9 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
         @pop_ids = split(/,/, $ids);
 
         $c->stash->{trait_id} = $trait_id;
+         print STDERR "\n\n pops: $ids\n\n";
     } 
-    else 
-    {
-        $c->throw(is_client_error   => 1,
-                  public_message    => "Trait id argument is not a number!",	     
-                  notify            => 1, 
-            );
-    }
+   
 
     $c->stash->{trait_combine_populations} = \@pop_ids;
 
