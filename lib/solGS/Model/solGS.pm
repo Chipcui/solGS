@@ -8,6 +8,7 @@ use File::Path qw / mkpath /;
 use File::Spec::Functions;
 use List::MoreUtils qw / uniq /;
 use JSON::Any;
+use Math::Round::Var;
 
 extends 'Catalyst::Model';
 
@@ -306,12 +307,16 @@ sub stock_genotype_values {
 
     my @markers = keys %$values;
     my $m_c = scalar(@markers); my $v_c = scalar(values %$values);
-    print STDERR "count markers and values: $m_c\t$v_c\n"; 
+    
+    my $round =  Math::Round::Var->new(0);
+    
     foreach my $marker (keys %$values) 
     {
-        $geno_values .= $values->{$marker};
+        my $genotype =  $values->{$marker};
+        $geno_values .= $genotype =~ /\d+/g ? $round->round($genotype) : $genotype;       
         $geno_values .= "\t" unless $marker eq $markers[-1];
-    }    
+    }
+    
     $geno_values .= "\n";        
 
     return $geno_values;
