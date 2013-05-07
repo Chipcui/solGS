@@ -2171,7 +2171,7 @@ sub r_combine_populations  {
     die "\nCan't call combine populations R script without output files." if !$output_files;    
     
     $c->stash->{input_files}  = $tempfile_input;
-    $c->stash->{output_files} = $tempfile_input;
+    $c->stash->{output_files} = $tempfile_output;
     $c->stash->{r_temp_file}  = "combine-pops-${trait_id}";
     $c->stash->{r_script}     = 'R/combine_populations.r';
     
