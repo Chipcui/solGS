@@ -2130,6 +2130,55 @@ sub run_rrblup  {
     $self->run_r_script($c);
 }
 
+
+sub r_combine_populations  {
+    my ($self, $c) = @_;
+       
+    my $trait_id     = $c->stash->{trait_id};
+    my $trait_name   = $c->stash->{trait_abbr};
+    my $trait_info   = $trait_id . "\t" . $trait_name;
+    
+    my $trait_file  = $self->create_tempfile($c, "trait_${trait_id}_info");
+    write_file($trait_file, $trait_info);
+
+    my $pheno_files = $c->stash->{multi_pops_pheno_files};
+    my $geno_files  = $c->stash->{multi_pops_geno_files};
+        
+    my $input_files = join ("\t",
+                            $pheno_files,
+                            $geno_files,
+                            $trait_file,
+   
+        );
+
+    my $combined_pops_pheno_file = $self->create_tempfile($c, "trait_${trait_id}_combined_pheno_data");
+    my $combined_pops_geno_file  = $self->create_tempfile($c, "trait_${trait_id}_combined_geno_data");
+    
+    my $output_files = join ("\t", 
+                             $combined_pops_pheno_file,
+                             $combined_pops_geno_file,
+        );
+                             
+     
+    my $tempfile_input = $self->create_tempfile($c, "input_files_${trait_id}_combine"); 
+    write_file($tempfile, $input_files);
+
+    my $tempfile_output = $self->create_tempfile($c, "output_files_${trait_id}_combine"); 
+    write_file($tempfile, $output_files);
+        
+    die "\nCan't call combine populations R script without a trait id." if !$trait_id;
+    die "\nCan't call combine populations R script without input files." if !$input_files;
+    die "\nCan't call combine populations R script without output files." if !$output_files;    
+    
+    $c->stash->{input_files}  = $tempfile_input;
+    $c->stash->{output_files} = $tempfile_input;
+    $c->stash->{r_temp_file}  = "combine-pops-${trait_id}";
+    $c->stash->{r_script}     = 'R/combine_populations.r';
+    
+    $self->run_r_script($c);
+}
+
+
 sub run_r_script {
     my ($self, $c) = @_;
     
