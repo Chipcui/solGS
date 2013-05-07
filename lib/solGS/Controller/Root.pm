@@ -2161,10 +2161,10 @@ sub r_combine_populations  {
                              
      
     my $tempfile_input = $self->create_tempfile($c, "input_files_${trait_id}_combine"); 
-    write_file($tempfile, $input_files);
+    write_file($tempfile_input, $input_files);
 
     my $tempfile_output = $self->create_tempfile($c, "output_files_${trait_id}_combine"); 
-    write_file($tempfile, $output_files);
+    write_file($tempfile_output, $output_files);
         
     die "\nCan't call combine populations R script without a trait id." if !$trait_id;
     die "\nCan't call combine populations R script without input files." if !$input_files;
