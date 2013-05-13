@@ -8,6 +8,7 @@ use Module::Install::Catalyst; # Complain loudly if you don't have
 
 name 'solGS';
 all_from 'lib/solGS.pm';
+requires 'Algorithm::Combinatorics'; 
 requires 'Bio::Chado::Schema' => '0.20000';
 requires 'Catalyst::Runtime' => '5.80032';
 requires 'Catalyst::Plugin::ConfigLoader';
