@@ -1341,6 +1341,8 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
 
         $c->stash->{trait_id} = $trait_id;
          print STDERR "\n\n pops: $ids\n\n";
+        
+        $self->get_trait_name($c, $trait_id);
     } 
    
 
@@ -1348,6 +1350,8 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
 
     $self->multi_pops_phenotype_data($c, \@pop_ids);
     $self->multi_pops_genotype_data($c, \@pop_ids);
+
+    $self->r_combine_populations($c);
    
 }
 
@@ -2135,8 +2139,8 @@ sub r_combine_populations  {
     my ($self, $c) = @_;
        
     my $trait_id     = $c->stash->{trait_id};
-    my $trait_name   = $c->stash->{trait_abbr};
-    my $trait_info   = $trait_id . "\t" . $trait_name;
+    my $trait_abbr   = $c->stash->{trait_abbr};
+    my $trait_info   = $trait_id . "\t" . $trait_abbr;
     
     my $trait_file  = $self->create_tempfile($c, "trait_${trait_id}_info");
     write_file($trait_file, $trait_info);
