@@ -897,17 +897,17 @@ sub gebv_rel_weights {
     
     my $pop_id      = $c->stash->{pop_id};
   
-    my $rel_wts = "\t" . 'relative_weight' . "\n";
+    my $rel_wts = "trait" . 'relative_weight' . "\n";
     foreach my $tr (keys %$params)
     {      
         my $wt = $params->{$tr};
         unless ($tr eq 'rank')
         {
             $rel_wts .= $tr . "\t" . $wt;
-            $rel_wts .= "\n" unless( (keys %$params)[-1] eq $tr);
+            $rel_wts .= "\n";#unless( (keys %$params)[-1] eq $tr);
         }
     }
-
+  
     my $pred_file_suffix;
     $pred_file_suffix = '_' . $pred_pop_id  if $pred_pop_id; 
     
@@ -1210,7 +1210,7 @@ sub all_traits_output :Regex('^traits/all/population/([\d]+)(?:/([\d+]+))?') {
 
          my $trait_id   = $c->model('solGS')->get_trait_id($c, $trait_name);
          my $trait_abbr = $c->stash->{trait_abbr}; 
-         
+        
          my $dir = $c->stash->{solgs_cache_dir};
          opendir my $dh, $dir or die "can't open $dir: $!\n";
     
@@ -1266,7 +1266,7 @@ sub all_traits_output :Regex('^traits/all/population/([\d]+)(?:/([\d+]+))?') {
          $c->forward('rank_genotypes', [$pred_pop_id]);
          
          my $geno = $self->tohtml_genotypes($c);
-         
+        
          my $link = $c->stash->{ranked_genotypes_download_url};
          
          my $ret->{status} = 'failed';

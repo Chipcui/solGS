@@ -209,7 +209,7 @@ if (length(predictionFile) !=0 )
     predictionData <- read.table(predictionFile,
                        header = TRUE,
                        row.names = 1,
-                       sep = ",",
+                       sep = "\t",
                        na.strings = c("NA", " ", "--", "-"),
                        dec = "."
                       )
@@ -453,7 +453,9 @@ if(length(predictionData) != 0)
     predictionPopGEBVs <- round(data.matrix(predictionPopResult$g.pred), digits = 2)
     predictionPopGEBVs <- data.matrix(predictionPopGEBVs[order(-predictionPopGEBVs[, 1]), ])
 
-    colnames(predictionPopGEBVs) <- c(trait)    
+   
+    colnames(predictionPopGEBVs) <- c(trait)
+  
   }
 
 

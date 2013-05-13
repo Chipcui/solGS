@@ -32,7 +32,7 @@ my $mech = Test::WWW::Mechanize::Catalyst->new;
 #$mech->{catalyst_debug} = 0;
 #$mech->{catalyst_info} = 0;
 #$mech->get_ok($solgs_server_name, 'homepage loaded');
-$mech->get_ok('/', 'homepage loaded');
+#$mech->get_ok('/', 'homepage loaded');
 $mech->get_ok('/search', 'search page');
 $mech->content_contains('Search for a trait', 'search trait section');
 $mech->content_contains('Browse by traits', 'traits index');
@@ -51,7 +51,7 @@ my @traits_pop= $mech->find_all_links( url_regex => qr/search\/result\/populatio
 $mech->links_ok( \@traits_pop, 'links to search page for populations evaluated for a trait work.' );
 $mech->get_ok($traits_pop[0], 'a link to populations evaluated for a trait  search page works');
 $mech->get_ok($traits_pop[0], $traits_pop[0]->url);
-$mech->content_contains('GS training populations', 'training populations section');
+$mech->content_contains('select a training population to calculate GEBV', 'list of training populations for a trait section');
 
 # diag('Please wait..this may take a few minutes..');
 # my @training_pops = $mech->find_all_links(url_regex=> qr/trait\/70682\/population/);
@@ -64,7 +64,7 @@ $mech->content_contains('GS training populations', 'training populations section
 #               failing because of the type of its dataset.");
 # }
 
-$mech->get_ok('/trait/70682/population/128', 'a training population page');
+$mech->get_ok('/trait/70700/population/128', 'a training population page');
 $mech->content_contains($_)
       for (
         'Population summary',
