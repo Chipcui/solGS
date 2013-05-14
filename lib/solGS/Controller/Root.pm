@@ -1,5 +1,4 @@
 package solGS::Controller::Root;
-
 use Moose;
 use namespace::autoclean;
 
@@ -18,6 +17,7 @@ use Scalar::Util qw /weaken reftype/;
 use CatalystX::GlobalContext ();
 use Statistics::Descriptive;
 use Math::Round::Var;
+use Algorithm::Combinatorics qw /combinations/;
 #use CXGN::Login;
 #use CXGN::People::Person;
 use CXGN::Tools::Run;
@@ -1351,10 +1351,59 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
     $self->multi_pops_phenotype_data($c, \@pop_ids);
     $self->multi_pops_genotype_data($c, \@pop_ids);
 
-    $self->r_combine_populations($c);
+    my $geno_files = $c->stash->{multi_pops_geno_files};
+    my @g_files = split(/\t/, $geno_files);
+
+    my $same =  $self->compare_genotyping_platforms(\@g_files);
+
+    if ($same) 
+    {
+        $self->r_combine_populations($c);
+    }
+    else 
+    {
+        $c->stash->{genotyping_platforms} = ' No match';
+         print STDERR "\ngenotyping platforms don't match..\n";
+    }
    
 }
 
+
+sub compare_genotyping_platforms {
+    my ($self, $g_files) = @_;
+ 
+    my $combinations = combinations($g_files, 2);
+    while (my $pair = $combinations->next)
+    {        
+        open my $first_file, "<", $pair->[0] or die "cannot open genotype file:$!\n";
+        my $first_markers = <$first_file>;
+        $first_file->close;
+
+        open my $sec_file, "<", $pair->[1] or die "cannot open genotype file:$!\n";
+        my $sec_markers = <$sec_file>;
+        $sec_file->close;
+
+        my @first_geno_markers = split(/\t/, $first_markers);
+        my @sec_geno_markers = split(/\t/, $sec_markers);
+
+         my $f_cnt = scalar(@first_geno_markers);
+        my $sec_cnt = scalar(@sec_geno_markers);
+        if (@first_geno_markers ~~ @sec_geno_markers) 
+        {     
+            print STDERR "\ngenotyping platforms match: $f_cnt vs $sec_cnt\n";
+            return 1;
+        } 
+        else
+        {
+            print STDERR "\ngenotyping platforms don't match: $f_cnt vs $sec_cnt\n";
+            return 0;
+        }
+
+       
+    }
+  
+      
+}
 
 sub multi_pops_pheno_files {
     my ($self, $c, $pop_ids) = @_;
