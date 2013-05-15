@@ -62,14 +62,24 @@ allPhenoFiles <- grep("phenotype_data",
                   fixed = FALSE,
                   value = TRUE
                   )
-
 print(allPhenoFiles)
 
-popsSize     <- length(allPhenoFiles)
-popIds       <- c()
-combinedPops <- c()
+allGenoFiles <- grep("genotype_data",
+                  inFiles,
+                  ignore.case = TRUE,
+                  fixed = FALSE,
+                  value = TRUE
+                  )
 
-for (i in 1:popsSize)
+
+print(allGenoFiles)
+
+popsPhenoSize     <- length(allPhenoFiles)
+popsGenoSize      <- length(allGenoFiles)
+popIds            <- c()
+combinedPhenoPops <- c()
+
+for (i in 1:popsPhenoSize)
   {
     popId <- str_extract(allPhenoFiles[[i]], "\\d+")
     popIds <- append(popIds, popId)
@@ -111,8 +121,7 @@ for (i in 1:popsSize)
         
         print('phenotyped lines after averaging')
         print(length(row.names(phenoTrait)))
-
-      
+   
         row.names(phenoTrait) <- phenoTrait[, 1]
         phenoTrait[, 1] <- NULL
 
@@ -141,22 +150,65 @@ for (i in 1:popsSize)
     if (i == 1 )
       {
         print('no need to combine, yet')       
-        combinedPops <- phenoTrait
+        combinedPhenoPops <- phenoTrait
         
       } else {
       print('combining...') 
-      combinedPops <- merge(combinedPops, phenoTrait,
+      combinedPhenoPops <- merge(combinedPhenoPops, phenoTrait,
                             by = 0,
                             all=TRUE,
                             )
 
-      rownames(combinedPops) <- combinedPops[, 1]
-      combinedPops$Row.names <- NULL
+      rownames(combinedPhenoPops) <- combinedPhenoPops[, 1]
+      combinedPhenoPops$Row.names <- NULL
       
     }   
 }
 
-print(combinedPops)
+markersList <- c()
+
+for (i in 1:popsGenoSize)
+  {
+    popId <- str_extract(allGenoFiles[[i]], "\\d+")
+    popIds <- append(popIds, popId)
+
+    print(popId)
+    genoData <- read.table(allGenoFiles[[i]],
+                            header = TRUE,
+                            row.names = 1,
+                            sep = "\t",
+                            na.strings = c("NA", " ", "--", "-"),
+                            dec = "."
+                           )
+    print ('geno data')
+    print (genoData[1:10, 1:10])
+    popMarkers <- colnames(genoData)
+    print(length(popMarkers))
+    print(popMarkers)
+  
+    if (sum(is.na(genoData)) > 0)
+      {
+        print("sum of geno missing values")
+        print(sum(is.na(genoData)))
+
+        genoDataMatrix <-kNNImpute(genoDataMatrix, 10)
+        genoDataMatrix <-as.data.frame(genoDataMatrix)
+
+        #extract columns with imputed values
+        genoDataMatrix <- subset(genoDataMatrix,
+                                select = grep("^x", names(genoDataMatrix))
+                                )
+
+        #remove prefix 'x.' from imputed columns
+        names(genoDataMatrix) <- sub("x.", "", names(genoDataMatrix))
+
+        genoDataMatrix <- round(genoDataMatrix, digits = 0)
+        genoDataMatrix <- data.matrix(genoDataMatrix)
+      }
+ 
+  }
+
+#print(combinedPhenoPops)
 
 
 q(save = "no", runLast = FALSE)
