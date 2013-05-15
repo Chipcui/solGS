@@ -1354,17 +1354,29 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
     my $geno_files = $c->stash->{multi_pops_geno_files};
     my @g_files = split(/\t/, $geno_files);
 
-    my $same =  $self->compare_genotyping_platforms(\@g_files);
-
-    if ($same) 
+    if (scalar(@g_files) > 1)
     {
-        $self->r_combine_populations($c);
+        my $same =  $self->compare_genotyping_platforms(\@g_files);
+        if ($same) 
+        {
+            $self->r_combine_populations($c);
+        }
+        else 
+        {
+            $c->stash->{genotyping_platforms} = ' No match';
+            print STDERR "\ngenotyping platforms don't match..\n";
+        }
     }
     else 
     {
-        $c->stash->{genotyping_platforms} = ' No match';
-         print STDERR "\ngenotyping platforms don't match..\n";
+        #
+        print STDERR "Only one population was selected. Running gs model based on the single population dataset $pop_ids[0] : $pop_ids[1]\n";
+        #run gs model based on a single population
+        my $pop_id = $pop_ids[0];
+        $c->res->redirect("/trait/$trait_id/population/$pop_id");
+        $c->detach;
     }
+   
    
 }
 
