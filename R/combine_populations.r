@@ -29,6 +29,19 @@ outFiles <- scan(outFile,
                  what = "character"
                  )
 print(outFiles)
+combinedGenoFile <- grep("combined_geno_data",
+                         outFiles,
+                         ignore.case = TRUE,
+                         fixed = FALSE,
+                         value = TRUE
+                         )
+
+combinedPhenoFile <- grep("combined_pheno_data",
+                          outFiles,
+                          ignore.case = TRUE,
+                          fixed = FALSE,
+                          value = TRUE
+                          )
 
 inFiles <- scan(inFile,
                 what = "character"
@@ -108,7 +121,7 @@ for (i in 1:popsPhenoSize)
                                              is.na(phenoTrait[, traitName]),
                                              mean(phenoTrait[, traitName], na.rm =TRUE)
                                             )
-         
+        
        #calculate mean of reps/plots of the same accession and
        #create new df with the accession means
         phenoTrait$stock_id <- NULL
@@ -125,6 +138,7 @@ for (i in 1:popsPhenoSize)
         row.names(phenoTrait) <- phenoTrait[, 1]
         phenoTrait[, 1] <- NULL
 
+        phenoTrait <- round(phenoTrait, digits = 2)
 
       } else {
       print ('No missing data')
@@ -141,6 +155,9 @@ for (i in 1:popsPhenoSize)
 
       row.names(phenoTrait) <- phenoTrait[, 1]
       phenoTrait[, 1] <- NULL
+
+      phenoTrait <- round(phenoTrait, digits = 2)
+      print(phenoTrait)
 
     }
 
@@ -165,8 +182,20 @@ for (i in 1:popsPhenoSize)
     }   
 }
 
-markersList <- c()
+#fill in missing data in combined phenotype dataset
+#using row means
+naIndices <- which(is.na(combinedPhenoPops), arr.ind=TRUE)
+print(naIndices)
+print(length(rownames(naIndices)))
 
+combinedPhenoPops <- as.matrix(combinedPhenoPops)
+combinedPhenoPops[naIndices] <- rowMeans(combinedPhenoPops, na.rm=TRUE)[naIndices[,1]]
+message("combined total number of stocks in phenotype dataset (before averaging): ", length(rownames(combinedPhenoPops)))
+#combinedPhenoPops<-ddply(combinedPhenoPops, by=0, colwise(mean))
+message("combined total number of stocks in phenotype dataset (after averaging): ", length(rownames(combinedPhenoPops)))
+combinedPhenoPops <- as.data.frame(combinedPhenoPops)
+markersList <- c()
+combinedGenoPops <- c()
 for (i in 1:popsGenoSize)
   {
     popId <- str_extract(allGenoFiles[[i]], "\\d+")
@@ -180,35 +209,72 @@ for (i in 1:popsGenoSize)
                             na.strings = c("NA", " ", "--", "-"),
                             dec = "."
                            )
-    print ('geno data')
-    print (genoData[1:10, 1:10])
+    
     popMarkers <- colnames(genoData)
-    print(length(popMarkers))
-    print(popMarkers)
+    message("No of markers from population ", popId, ": ", length(popMarkers))
+    #print(popMarkers)
   
     if (sum(is.na(genoData)) > 0)
       {
         print("sum of geno missing values")
         print(sum(is.na(genoData)))
 
-        genoDataMatrix <-kNNImpute(genoDataMatrix, 10)
-        genoDataMatrix <-as.data.frame(genoDataMatrix)
+        print ('geno data')
+        print (genoData[1:10, 1:5])
+        
+        #impute missing genotypes
+        genoData <-kNNImpute(genoData, 10)
+        genoData <-as.data.frame(genoData)
 
         #extract columns with imputed values
-        genoDataMatrix <- subset(genoDataMatrix,
-                                select = grep("^x", names(genoDataMatrix))
+        genoData <- subset(genoData,
+                                select = grep("^x", names(genoData))
                                 )
 
         #remove prefix 'x.' from imputed columns
-        names(genoDataMatrix) <- sub("x.", "", names(genoDataMatrix))
+        names(genoData) <- sub(".x|x.", "", names(genoData))
 
-        genoDataMatrix <- round(genoDataMatrix, digits = 0)
-        genoDataMatrix <- data.matrix(genoDataMatrix)
+        genoData <- round(genoData, digits = 0)
+
+        message("total number of stocks for pop ", popId,": ", length(rownames(genoData)))
       }
+
+    if (i == 1 )
+      {
+        print('no need to combine, yet')       
+        combinedGenoPops <- genoData
+        
+      } else {
+        print('combining genotype datasets...') 
+        combinedGenoPops <-rbind(combinedGenoPops, genoData)
+      }   
+    
  
   }
+message("combined total number of stocks in genotype dataset: ", length(rownames(combinedGenoPops)))
+#discard duplicate clones
+combinedGenoPops <- unique(combinedGenoPops)
+message("combined unique number of stocks in genotype dataset: ", length(rownames(combinedGenoPops)))
 
-#print(combinedPhenoPops)
+message("writing data into files...")
+if(length(combinedPhenoFile) != 0 )
+  {
+      write.table(combinedPhenoPops,
+                  file = combinedPhenoFile,
+                  sep = "\t",
+                  quote = FALSE,
+                  col.names = NA,
+                  )
+  }
 
+if(length(combinedGenoFile) != 0 )
+  {
+      write.table(combinedGenoPops,
+                  file = combinedGenoFile,
+                  sep = "\t",
+                  quote = FALSE,
+                  col.names = NA,
+                  )
+  }
 
 q(save = "no", runLast = FALSE)
