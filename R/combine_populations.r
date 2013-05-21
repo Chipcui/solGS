@@ -63,8 +63,6 @@ print(trait)
 traitInfo<-strsplit(trait, "\t");
 traitId<-traitInfo[[1]]
 traitName<-traitInfo[[2]]
-print(traitId)
-print(traitName)
 
 #extract trait phenotype data from all populations
 #and combine them into one dataset
@@ -157,7 +155,6 @@ for (i in 1:popsPhenoSize)
       phenoTrait[, 1] <- NULL
 
       phenoTrait <- round(phenoTrait, digits = 2)
-      print(phenoTrait)
 
     }
 
@@ -185,15 +182,23 @@ for (i in 1:popsPhenoSize)
 #fill in missing data in combined phenotype dataset
 #using row means
 naIndices <- which(is.na(combinedPhenoPops), arr.ind=TRUE)
-print(naIndices)
-print(length(rownames(naIndices)))
-
 combinedPhenoPops <- as.matrix(combinedPhenoPops)
 combinedPhenoPops[naIndices] <- rowMeans(combinedPhenoPops, na.rm=TRUE)[naIndices[,1]]
+combinedPhenoPops <- as.data.frame(combinedPhenoPops)
 message("combined total number of stocks in phenotype dataset (before averaging): ", length(rownames(combinedPhenoPops)))
 #combinedPhenoPops<-ddply(combinedPhenoPops, by=0, colwise(mean))
-message("combined total number of stocks in phenotype dataset (after averaging): ", length(rownames(combinedPhenoPops)))
-combinedPhenoPops <- as.data.frame(combinedPhenoPops)
+#message("combined total number of stocks in phenotype dataset (after averaging): ", length(rownames(combinedPhenoPops)))
+
+combinedPhenoPops$Average<-round(apply(combinedPhenoPops,
+                                       1,
+                                       function(x)
+                                       { mean(x) }
+                                       ),
+                                 digits = 2
+                                 )
+
+print(combinedPhenoPops[1:30, ])
+
 markersList <- c()
 combinedGenoPops <- c()
 for (i in 1:popsGenoSize)
@@ -219,9 +224,6 @@ for (i in 1:popsGenoSize)
         print("sum of geno missing values")
         print(sum(is.na(genoData)))
 
-        print ('geno data')
-        print (genoData[1:10, 1:5])
-        
         #impute missing genotypes
         genoData <-kNNImpute(genoData, 10)
         genoData <-as.data.frame(genoData)
@@ -232,10 +234,10 @@ for (i in 1:popsGenoSize)
                                 )
 
         #remove prefix 'x.' from imputed columns
-        names(genoData) <- sub(".x|x.", "", names(genoData))
+        print(genoData[1:50, 1:4])
+        names(genoData) <- sub("x.", "", names(genoData))
 
         genoData <- round(genoData, digits = 0)
-
         message("total number of stocks for pop ", popId,": ", length(rownames(genoData)))
       }
 
