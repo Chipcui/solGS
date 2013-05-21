@@ -1803,15 +1803,7 @@ sub analyzed_traits {
 
     $c->stash->{analyzed_traits} = \@traits;
     $c->stash->{analyzed_traits_files} = \@traits_files;
-   #  my @files  = map { $_ =~ /($pop_id)/ ? $_ : 0 } 
-#                  grep { /gebv_kinship_[a-zA-Z0-9]/ && -f "$dir/$_" } 
-#                  readdir($dh);   
-#     closedir $dh;                     
-    
-#     my @traits = map { s/gebv|kinship|_|($pop_id)//g ? $_ : 0} @files;
-  
-#     $c->stash->{analyzed_traits} = \@traits;
-#     $c->stash->{analyzed_traits_files} = \@files;
+   
 }
 
 
