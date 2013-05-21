@@ -1360,6 +1360,17 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
         if ($same) 
         {
             $self->r_combine_populations($c);
+            my $combined_pops_pheno_file = $c->stash->{trait_combined_pheno_file};
+            my $combined_pops_geno_file  = $c->stash->{trait_combined_geno_file};
+            
+            if (-s $combined_pops_pheno_file > 1 && -s $combined_pops_geno_file > 1) 
+            {
+                my $tr_abbr = $c->stash->{trait_abbr};  
+                print STDERR "\nThere are combined phenotype and genotype datasets for trait $tr_abbr\n";
+                $c->stash->{data_set_type} = 'combined populations';                
+             #   $self->get_rrblup_output($c);          
+            }
+            
         }
         else 
         {
@@ -2081,6 +2092,8 @@ sub get_rrblup_output :Private{
     my $pop_id      = $c->stash->{pop_id};
     my $trait_abbr  = $c->stash->{trait_abbr};
     my $trait_name  = $c->stash->{trait_name};
+    
+    my $data_set_type = $c->stash->{data_set_type};
 
     my ($traits_file, @traits, @trait_pages);
     my $prediction_id = $c->stash->{prediction_pop_id};
@@ -2228,6 +2241,9 @@ sub r_combine_populations  {
     my $combined_pops_pheno_file = $self->create_tempfile($c, "trait_${trait_id}_combined_pheno_data");
     my $combined_pops_geno_file  = $self->create_tempfile($c, "trait_${trait_id}_combined_geno_data");
     
+    $c->stash->{trait_combined_pheno_file} = $combined_pops_pheno_file;
+    $c->stash->{trait_combined_geno_file}  = $combined_pops_geno_file;
+
     my $output_files = join ("\t", 
                              $combined_pops_pheno_file,
                              $combined_pops_geno_file,
@@ -2250,6 +2266,9 @@ sub r_combine_populations  {
     $c->stash->{r_script}     = 'R/combine_populations.r';
     
     $self->run_r_script($c);
+
+    
+
 }
 
 
