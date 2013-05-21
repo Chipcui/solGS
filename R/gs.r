@@ -5,7 +5,6 @@ options(echo = FALSE)
 
 library(rrBLUP)
 library(plyr)
-#library(sendmailR)
 library(mail)
 library(imputation)
 
@@ -142,8 +141,7 @@ print(length(row.names(phenoTrait)))
 #print(phenoTrait)
 row.names(phenoTrait) <- phenoTrait[, 1]
 phenoTrait[, 1] <- NULL
-#print(phenoTrait)
-#traitPhenoData <- as.data.frame(round(phenoTrait, digits=2)) 
+
 #find genotype file name
 genoFile <- grep("genotype_data",
                  inFiles,
@@ -349,9 +347,6 @@ genotypeGroups <- rep(1:10, reps) [- (nrow(phenoTrait) %% 10)]
 
 set.seed(4567)                                   
 genotypeGroups <- genotypeGroups[order (runif(nrow(phenoTrait))) ]                     
-
-##convert genotype values from [1,2] to [0,1]
-genoDataMatrix <- genoDataMatrix - 1
 
 validationAll <- c()
 
