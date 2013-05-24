@@ -29,14 +29,14 @@ outFiles <- scan(outFile,
                  what = "character"
                  )
 print(outFiles)
-combinedGenoFile <- grep("combined_geno_data",
+combinedGenoFile <- grep("genotype_data",
                          outFiles,
                          ignore.case = TRUE,
                          fixed = FALSE,
                          value = TRUE
                          )
 
-combinedPhenoFile <- grep("combined_pheno_data",
+combinedPhenoFile <- grep("phenotype_data",
                           outFiles,
                           ignore.case = TRUE,
                           fixed = FALSE,
