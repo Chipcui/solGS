@@ -378,9 +378,13 @@ sub project_description {
     $self->genotype_file($c);
     my $geno_file  = $c->stash->{genotype_file};
     my @geno_lines = read_file($geno_file);
-    my $stocks_no  = scalar(@geno_lines) - 1;
     my $markers_no = scalar(split ('\t', $geno_lines[0])) - 1;
 
+    $self->trait_phenodata_file($c);
+    my $trait_pheno_file  = $c->stash->{trait_phenodata_file};
+    my @trait_pheno_lines = read_file($trait_pheno_file);
+    my $stocks_no         = scalar(@trait_pheno_lines) - 1;
+   
     $self->phenotype_file($c);
     my $pheno_file = $c->stash->{phenotype_file};
     my @phe_lines  = read_file($pheno_file);   
@@ -526,11 +530,29 @@ sub gebv_marker_file {
    
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
+
+    my $data_set_type = $c->stash->{data_set_type};
+    my $combo_pops = $c->stash->{trait_combo_pops};
+    $combo_pops    = join('', split(/,/, $combo_pops));
+    my $combo_identifier = crc($combo_pops);
     
-    my $cache_data = {key       => 'gebv_marker_' . $pop_id . '_'.  $trait,
+    my $cache_data;
+
+    if ($data_set_type =~ /combined populations/)
+    {
+        $cache_data = {key       => 'gebv_marker_combined_pops_'.  $trait . '_' . $combo_identifier,
+                       file      => 'gebv_marker_'. $trait . '_combined_pops_' . $combo_identifier,
+                       stash_key => 'gebv_marker_file'
+        };
+    }
+    else
+    {
+    
+       $cache_data = {key       => 'gebv_marker_' . $pop_id . '_'.  $trait,
                       file      => 'gebv_marker_' . $trait . '_' . $pop_id,
                       stash_key => 'gebv_marker_file'
-    };
+       };
+    }
 
     $self->cache_file($c, $cache_data);
 
@@ -542,14 +564,30 @@ sub trait_phenodata_file {
    
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
+    my $data_set_type = $c->stash->{data_set_type};
+
+    my $combo_pops = $c->stash->{trait_combo_pops};
+    $combo_pops    = join('', split(/,/, $combo_pops));
+    my $combo_identifier = crc($combo_pops);
     
-    my $cache_data = {key       => 'phenotype_' . $pop_id . '_'.  $trait,
-                      file      => 'phenotype_trait_' . $trait . '_' . $pop_id,
-                      stash_key => 'trait_phenodata_file'
-    };
+    my $cache_data;
+
+    if ($data_set_type =~ /combined populations/)
+    {
+        $cache_data = {key       => 'phenotype_trait_combined_pops_'.  $trait . "_". $combo_identifier,
+                       file      => 'phenotype_trait_'. $trait . '_combined_pops_' . $combo_identifier,
+                       stash_key => 'trait_phenodata_file'
+        };
+    }
+    else 
+    {
+        $cache_data = {key       => 'phenotype_' . $pop_id . '_'.  $trait,
+                       file      => 'phenotype_trait_' . $trait . '_' . $pop_id,
+                       stash_key => 'trait_phenodata_file'
+        };
+    }
 
     $self->cache_file($c, $cache_data);
-
 }
 
 
@@ -558,11 +596,30 @@ sub gebv_kinship_file {
 
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
- 
-    my $cache_data = {key       => 'gebv_kinship_' . $pop_id . '_'.  $trait,
-                      file      => 'gebv_kinship_' . $trait . '_' . $pop_id,
-                      stash_key => 'gebv_kinship_file'
-    };
+    my $data_set_type = $c->stash->{data_set_type};
+    
+    my $combo_pops = $c->stash->{trait_combo_pops};
+    $combo_pops    = join('', split(/,/, $combo_pops));
+    my $combo_identifier = crc($combo_pops);
+    
+    my $cache_data;
+
+    if ($data_set_type =~ /combined populations/)
+    {
+        $cache_data = {key       => 'gebv_kinship_combined_pops_'.  $combo_identifier . "_" . $trait,
+                       file      => 'gebv_kinship_'. $trait .  '_combined_pops_' . $combo_identifier,
+                       stash_key => 'gebv_kinship_file'
+
+        };
+    }
+    else 
+    {
+    
+        $cache_data = {key       => 'gebv_kinship_' . $pop_id . '_'.  $trait,
+                       file      => 'gebv_kinship_' . $trait . '_' . $pop_id,
+                       stash_key => 'gebv_kinship_file'
+        };
+    }
 
     $self->cache_file($c, $cache_data);
 
@@ -673,11 +730,30 @@ sub validation_file {
 
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
+     
+    my $data_set_type = $c->stash->{data_set_type};
+   
+    my $combo_pops = $c->stash->{trait_combo_pops};
+    $combo_pops    = join('', split(/,/, $combo_pops));
+    my $combo_identifier = crc($combo_pops);
     
-    my $cache_data = {key       => 'cross_validation_' . $pop_id . '_' . $trait, 
-                      file      => 'cross_validation_' . $trait . '_' . $pop_id,
-                      stash_key => 'validation_file'
-    };
+    my $cache_data;
+
+    if ($data_set_type =~ /combined populations/)
+    {
+        $cache_data = {key       => 'cross_validation_combined_pops_'.  $trait . "_${combo_identifier}",
+                       file      => 'cross_validation_'. $trait . '_combined_pops_' . $combo_identifier,
+                       stash_key => 'validation_file'
+        };
+    }
+    else
+    {
+
+        $cache_data = {key       => 'cross_validation_' . $pop_id . '_' . $trait, 
+                       file      => 'cross_validation_' . $trait . '_' . $pop_id,
+                       stash_key => 'validation_file'
+        };
+    }
 
     $self->cache_file($c, $cache_data);
 }
@@ -1147,7 +1223,7 @@ sub traits_to_analyze :Regex('^analyze/traits/population/([\d]+)(?:/([\d+]+))?')
         write_file($file, $traits);
         $c->stash->{selected_traits_file} = $file;
 
-        $name = "trait_${single_trait_id}_pop_${pop_id}";
+        $name = "trait_info_${single_trait_id}_pop_${pop_id}";
         my $file2 = $self->create_tempfile($c, $name);
        
         $c->stash->{trait_file} = $file2;
@@ -1328,7 +1404,6 @@ sub combine_populations_confrim  :Path('/combine/populations/trait/confirm') Arg
 }
 
 
-
 sub combine_populations :Path('/combine/populations/trait') Args(1) {
     my ($self, $c, $trait_id) = @_;
    
@@ -1339,6 +1414,7 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
         $ids = $c->req->param("$trait_id");
         @pop_ids = split(/,/, $ids);
 
+        $c->stash->{trait_combo_pops} = $ids;
         $c->stash->{trait_id} = $trait_id;
          print STDERR "\n\n pops: $ids\n\n";
         
@@ -1368,7 +1444,7 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
                 my $tr_abbr = $c->stash->{trait_abbr};  
                 print STDERR "\nThere are combined phenotype and genotype datasets for trait $tr_abbr\n";
                 $c->stash->{data_set_type} = 'combined populations';                
-             #   $self->get_rrblup_output($c);          
+                $self->get_rrblup_output($c);          
             }
             
         }
@@ -1420,13 +1496,11 @@ sub compare_genotyping_platforms {
         {
             print STDERR "\ngenotyping platforms don't match: $f_cnt vs $sec_cnt\n";
             return 0;
-        }
-
-       
+        }       
     }
-  
       
 }
+
 
 sub multi_pops_pheno_files {
     my ($self, $c, $pop_ids) = @_;
@@ -2009,6 +2083,7 @@ sub phenotype_file {
 
 }
 
+
 sub format_phenotype_dataset {
     my ($self, $c, $data) = @_;
     
@@ -2157,62 +2232,146 @@ sub get_rrblup_output :Private{
 
 }
 
+
 sub run_rrblup_trait {
     my ($self, $c, $trait_abbr) = @_;
     
     my $pop_id     = $c->stash->{pop_id};
     my $trait_name = $c->stash->{trait_name};
     my $trait_abbr = $c->stash->{trait_abbr};
+    my $data_set_type = $c->stash->{data_set_type};
 
     my $trait_id = $c->model('solGS')->get_trait_id($c, $trait_name);
     $c->stash->{trait_id} = $trait_id; 
                                 
-    my $name = "trait_${trait_id}_pop_${pop_id}"; 
-    my $file = $self->create_tempfile($c, $name);    
-    $c->stash->{trait_file} = $file;       
-    write_file($file, $trait_abbr);
+  
+    if ($data_set_type =~ /combined populations/i) 
+    {
+        
+       #  my $name = "trait_${trait_id}_combined_pops";
 
-    my $pred_id = $c->stash->{prediction_pop_id};
+#         my $file = $self->create_tempfile($c, $name);    
+#         $c->stash->{trait_file} = $file;       
+#         write_file($file, $trait_abbr);
 
-    $self->output_files($c);
+        my $pred_id = $c->stash->{prediction_pop_id};
 
-    if ($c->stash->{prediction_pop_id})
-    {       
-        $self->input_files($c);            
         $self->output_files($c);
-        $self->run_rrblup($c); 
+
+        my $combined_pops_pheno_file = $c->stash->{trait_combined_pheno_file};
+        my $combined_pops_geno_file  = $c->stash->{trait_combined_geno_file};
+              
+        my $trait_info   = $trait_id . "\t" . $trait_abbr;     
+        my $trait_file  = $self->create_tempfile($c, "trait_info_${trait_id}");
+        write_file($trait_file, $trait_info);
+
+        my $dataset_file  = $self->create_tempfile($c, "dataset_info_${trait_id}");
+        write_file($dataset_file, $data_set_type);
+
+        my $input_files = join("\t",
+                                   $c->stash->{trait_combined_pheno_file},
+                                   $c->stash->{trait_combined_geno_file},
+                                   $trait_file,
+                                   $dataset_file
+            );
+
+        my $input_file = $self->create_tempfile($c, "input_files_combo_${trait_abbr}");
+        write_file($input_file, $input_files);
+
+        if ($c->stash->{prediction_pop_id})
+        {       
+            $c->stash->{input_files} = $input_file;
+            $self->output_files($c);
+            $self->run_rrblup($c); 
+        }
+        else
+        {       
+            if (-s $c->stash->{gebv_kinship_file} == 0 ||
+                -s $c->stash->{gebv_marker_file}  == 0 ||
+                -s $c->stash->{validation_file}   == 0       
+                )
+            {  
+                $c->stash->{input_files} = $input_file;
+                $self->output_files($c);
+                $self->run_rrblup($c); 
+       
+            }
+        }        
     }
-    else
-    {       
-        if (-s $c->stash->{gebv_kinship_file} == 0 ||
-            -s $c->stash->{gebv_marker_file}  == 0 ||
-            -s $c->stash->{validation_file}   == 0       
-            )
-        {  
+    else 
+    {
+        my $name  = "trait_info_${trait_id}_pop_${pop_id}"; 
+    
+        my $trait_info = $trait_id . "\t" . $trait_abbr;
+        my $file = $self->create_tempfile($c, $name);    
+        $c->stash->{trait_file} = $file;       
+        write_file($file, $trait_info);
+
+        my $pred_id = $c->stash->{prediction_pop_id};
+
+        $self->output_files($c);
+
+    
+        if ($c->stash->{prediction_pop_id})
+        {       
             $self->input_files($c);            
             $self->output_files($c);
             $self->run_rrblup($c); 
+        }
+        else
+        {       
+            if (-s $c->stash->{gebv_kinship_file} == 0 ||
+                -s $c->stash->{gebv_marker_file}  == 0 ||
+                -s $c->stash->{validation_file}   == 0       
+                )
+            {  
+                $self->input_files($c);            
+                $self->output_files($c);
+                $self->run_rrblup($c); 
        
+            }
         }
     }
+
 }
+
 
 sub run_rrblup  {
     my ($self, $c) = @_;
    
     #get all input files & arguments for rrblup, 
     #run rrblup and save output in solgs user dir
-    my $pop_id       = $c->stash->{pop_id};
-    my $trait_id     = $c->stash->{trait_id};
-    my $input_files  = $c->stash->{input_files};
-    my $output_files = $c->stash->{output_files};
-    
+    my $pop_id        = $c->stash->{pop_id};
+    my $trait_id      = $c->stash->{trait_id};
+    my $input_files   = $c->stash->{input_files};
+    my $output_files  = $c->stash->{output_files};
+    my $data_set_type = $c->stash->{data_set_type};
+
+    if ($data_set_type !~ /combined populations/)
+    {
+        die "\nCan't run rrblup without a population id." if !$pop_id;   
+
+    }
+
     die "\nCan't run rrblup without a trait id." if !$trait_id;
-    die "\nCan't run rrblup without a population id." if !$pop_id;
+   
     die "\nCan't run rrblup without input files." if !$input_files;
     die "\nCan't run rrblup without output files." if !$output_files;    
     
-    $c->stash->{r_temp_file} = "gs-rrblup-${trait_id}-${pop_id}";
+    if ($data_set_type !~ /combined populations/)
+    {
+       
+        $c->stash->{r_temp_file} = "gs-rrblup-${trait_id}-${pop_id}";
+    }
+    else
+    {
+        my $combo_pops = $c->stash->{trait_combo_pops};
+        $combo_pops    = join('', split(/,/, $combo_pops));
+        my $combo_identifier = crc($combo_pops);
+
+        $c->stash->{r_temp_file} = "gs-rrblup-combo-${trait_id}-${combo_identifier}"; 
+    }
+   
     $c->stash->{r_script}    = 'R/gs.r';
     $self->run_r_script($c);
 }
@@ -2225,7 +2384,7 @@ sub r_combine_populations  {
     my $trait_abbr   = $c->stash->{trait_abbr};
     my $trait_info   = $trait_id . "\t" . $trait_abbr;
     
-    my $trait_file  = $self->create_tempfile($c, "trait_${trait_id}_info");
+    my $trait_file  = $self->create_tempfile($c, "trait_info_${trait_id}");
     write_file($trait_file, $trait_info);
 
     my $pheno_files = $c->stash->{multi_pops_pheno_files};
@@ -2238,8 +2397,8 @@ sub r_combine_populations  {
    
         );
 
-    my $combined_pops_pheno_file = $self->create_tempfile($c, "trait_${trait_id}_combined_pheno_data");
-    my $combined_pops_geno_file  = $self->create_tempfile($c, "trait_${trait_id}_combined_geno_data");
+    my $combined_pops_pheno_file = $self->create_tempfile($c, "phenotype_data_trait_${trait_id}_combined");
+    my $combined_pops_geno_file  = $self->create_tempfile($c, "genotype_data_trait_${trait_id}_combined");
     
     $c->stash->{trait_combined_pheno_file} = $combined_pops_pheno_file;
     $c->stash->{trait_combined_geno_file}  = $combined_pops_geno_file;
