@@ -77,6 +77,7 @@ sub details_form : Path('/form/population/details') Args(0) FormConfig('populati
     }
 }
 
+
 sub phenotype_form : Path('/form/population/phenotype') Args(0) FormConfig('population/phenotype.yml') {
     my ($self, $c) = @_;
     my $form = $c->stash->{form};
@@ -380,6 +381,7 @@ sub project_description {
     my @geno_lines = read_file($geno_file);
     my $markers_no = scalar(split ('\t', $geno_lines[0])) - 1;
 
+    $c->stash->{pop_id} = $pr_id;
     $self->trait_phenodata_file($c);
     my $trait_pheno_file  = $c->stash->{trait_phenodata_file};
     my @trait_pheno_lines = read_file($trait_pheno_file);
