@@ -381,12 +381,12 @@ sub project_description {
     my @geno_lines = read_file($geno_file);
     my $markers_no = scalar(split ('\t', $geno_lines[0])) - 1;
 
-    $c->stash->{pop_id} = $pr_id;
     $self->trait_phenodata_file($c);
     my $trait_pheno_file  = $c->stash->{trait_phenodata_file};
-    my @trait_pheno_lines = read_file($trait_pheno_file);
-    my $stocks_no         = scalar(@trait_pheno_lines) - 1;
-   
+    my @trait_pheno_lines = read_file($trait_pheno_file) if $trait_pheno_file;
+
+    my $stocks_no = @trait_pheno_lines ? scalar(@trait_pheno_lines) - 1 : scalar(@geno_lines) - 1;
+
     $self->phenotype_file($c);
     my $pheno_file = $c->stash->{phenotype_file};
     my @phe_lines  = read_file($pheno_file);   
@@ -543,7 +543,7 @@ sub gebv_marker_file {
     if ($data_set_type =~ /combined populations/)
     {
         $cache_data = {key       => 'gebv_marker_combined_pops_'.  $trait . '_' . $combo_identifier,
-                       file      => 'gebv_marker_'. $trait . '_combined_pops_' . $combo_identifier,
+                       file      => 'gebv_marker_'. $trait . '_' . $combo_identifier . '_combined_pops',
                        stash_key => 'gebv_marker_file'
         };
     }
@@ -577,7 +577,7 @@ sub trait_phenodata_file {
     if ($data_set_type =~ /combined populations/)
     {
         $cache_data = {key       => 'phenotype_trait_combined_pops_'.  $trait . "_". $combo_identifier,
-                       file      => 'phenotype_trait_'. $trait . '_combined_pops_' . $combo_identifier,
+                       file      => 'phenotype_trait_'. $trait . '_' . $combo_identifier. '_combined_pops',
                        stash_key => 'trait_phenodata_file'
         };
     }
@@ -609,7 +609,7 @@ sub gebv_kinship_file {
     if ($data_set_type =~ /combined populations/)
     {
         $cache_data = {key       => 'gebv_kinship_combined_pops_'.  $combo_identifier . "_" . $trait,
-                       file      => 'gebv_kinship_'. $trait .  '_combined_pops_' . $combo_identifier,
+                       file      => 'gebv_kinship_'. $trait . '_'  . $combo_identifier. '_combined_pops',
                        stash_key => 'gebv_kinship_file'
 
         };
@@ -744,7 +744,7 @@ sub validation_file {
     if ($data_set_type =~ /combined populations/)
     {
         $cache_data = {key       => 'cross_validation_combined_pops_'.  $trait . "_${combo_identifier}",
-                       file      => 'cross_validation_'. $trait . '_combined_pops_' . $combo_identifier,
+                       file      => 'cross_validation_'. $trait . '_' . $combo_identifier . '_combined_pops' ,
                        stash_key => 'validation_file'
         };
     }
