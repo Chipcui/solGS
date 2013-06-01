@@ -13,7 +13,7 @@ Isaak Y Tecle (iyt2@cornell.edu)
 <%args>
 
 $accuracy_report
-$validation_download_url
+$validation_download_url => ''
 
 </%args>
 
