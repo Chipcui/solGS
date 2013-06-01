@@ -429,7 +429,6 @@ sub trait :Path('/trait') Args(3) {
         $self->get_rrblup_output($c);
         $self->gs_files($c);
 
-        $self->get_trait_name($c, $trait_id);
         $self->trait_phenotype_stat($c);
         
         $c->stash->{template} = "/population/trait.mas";
@@ -534,14 +533,13 @@ sub gebv_marker_file {
     my $trait  = $c->stash->{trait_abbr};
 
     my $data_set_type = $c->stash->{data_set_type};
-    my $combo_pops = $c->stash->{trait_combo_pops};
-    $combo_pops    = join('', split(/,/, $combo_pops));
-    my $combo_identifier = crc($combo_pops);
-    
+       
     my $cache_data;
 
     if ($data_set_type =~ /combined populations/)
     {
+        my $combo_identifier = $c->stash->{combo_pops_id}; 
+
         $cache_data = {key       => 'gebv_marker_combined_pops_'.  $trait . '_' . $combo_identifier,
                        file      => 'gebv_marker_'. $trait . '_' . $combo_identifier . '_combined_pops',
                        stash_key => 'gebv_marker_file'
@@ -566,16 +564,15 @@ sub trait_phenodata_file {
    
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
+    
     my $data_set_type = $c->stash->{data_set_type};
-
-    my $combo_pops = $c->stash->{trait_combo_pops};
-    $combo_pops    = join('', split(/,/, $combo_pops));
-    my $combo_identifier = crc($combo_pops);
     
     my $cache_data;
 
     if ($data_set_type =~ /combined populations/)
     {
+        my $combo_identifier = $c->stash->{combo_pops_id}; 
+
         $cache_data = {key       => 'phenotype_trait_combined_pops_'.  $trait . "_". $combo_identifier,
                        file      => 'phenotype_trait_'. $trait . '_' . $combo_identifier. '_combined_pops',
                        stash_key => 'trait_phenodata_file'
@@ -599,15 +596,12 @@ sub gebv_kinship_file {
     my $pop_id = $c->stash->{pop_id};
     my $trait  = $c->stash->{trait_abbr};
     my $data_set_type = $c->stash->{data_set_type};
-    
-    my $combo_pops = $c->stash->{trait_combo_pops};
-    $combo_pops    = join('', split(/,/, $combo_pops));
-    my $combo_identifier = crc($combo_pops);
-    
+        
     my $cache_data;
 
     if ($data_set_type =~ /combined populations/)
     {
+        my $combo_identifier = $c->stash->{combo_pops_id};
         $cache_data = {key       => 'gebv_kinship_combined_pops_'.  $combo_identifier . "_" . $trait,
                        file      => 'gebv_kinship_'. $trait . '_'  . $combo_identifier. '_combined_pops',
                        stash_key => 'gebv_kinship_file'
@@ -640,11 +634,11 @@ sub download_blups :Path('/download/blups/pop') Args(3) {
     my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
  
     $self->get_trait_name($c, $trait_id);
-    $c->stash->{pop_id} = $pop_id;
-
-    $self->output_files($c);
-    $self->blups_file($c);
-    my $blups_file = $c->stash->{blups};
+    my $trait_abbr = $c->stash->{trait_abbr};
+   
+    my $dir = $c->stash->{solgs_cache_dir};
+    my $blup_exp = "gebv_kinship_${trait_abbr}_${pop_id}";
+    my $blups_file = $self->grep_file($dir, $blup_exp);
 
     unless (!-e $blups_file || -s $blups_file == 0) 
     {
@@ -661,11 +655,13 @@ sub download_marker_effects :Path('/download/marker/pop') Args(3) {
     my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
  
     $self->get_trait_name($c, $trait_id);
-    $c->stash->{pop_id} = $pop_id;
+    my $trait_abbr = $c->stash->{trait_abbr};
+  
+    my $dir = $c->stash->{solgs_cache_dir};
+    my $marker_exp = "gebv_marker_${trait_abbr}_${pop_id}";
+    my $markers_file = $self->grep_file($dir, $marker_exp);
 
-    $self->gebv_marker_file($c);
-    my $markers_file = $c->stash->{gebv_marker_file};
-
+    print STDERR "\nmarkers file: $markers_file :\t $marker_exp\n";
     unless (!-e $markers_file || -s $markers_file == 0) 
     {
         my @effects =  map { [ split(/\t/) ] }  read_file($markers_file);
@@ -679,8 +675,18 @@ sub download_marker_effects :Path('/download/marker/pop') Args(3) {
 
 sub download_urls {
     my ($self, $c) = @_;
+    my $data_set_type = $c->stash->{data_set_type};
+    my $pop_id;
     
-    my $pop_id         = $c->stash->{pop_id};
+    if ($data_set_type =~ /combined populations/)
+    {
+        $pop_id         = $c->stash->{combo_pops_id};
+    }
+    else 
+    {
+        $pop_id         = $c->stash->{pop_id};  
+    }
+    
     my $trait_id       = $c->stash->{trait_id};
     my $ranked_genos_file = $c->stash->{genotypes_mean_gebv_file};
     if ($ranked_genos_file) 
@@ -734,15 +740,12 @@ sub validation_file {
     my $trait  = $c->stash->{trait_abbr};
      
     my $data_set_type = $c->stash->{data_set_type};
-   
-    my $combo_pops = $c->stash->{trait_combo_pops};
-    $combo_pops    = join('', split(/,/, $combo_pops));
-    my $combo_identifier = crc($combo_pops);
-    
+       
     my $cache_data;
 
-    if ($data_set_type =~ /combined populations/)
+    if ($data_set_type =~ /combined populations/) 
     {
+        my $combo_identifier = $c->stash->{combo_pops_id};
         $cache_data = {key       => 'cross_validation_combined_pops_'.  $trait . "_${combo_identifier}",
                        file      => 'cross_validation_'. $trait . '_' . $combo_identifier . '_combined_pops' ,
                        stash_key => 'validation_file'
@@ -780,10 +783,11 @@ sub download_validation :Path('/download/validation/pop') Args(3) {
     my ($self, $c, $pop_id, $trait, $trait_id) = @_;   
  
     $self->get_trait_name($c, $trait_id);
-    $c->stash->{pop_id} = $pop_id;
+    my $trait_abbr = $c->stash->{trait_abbr};
 
-    $self->validation_file($c);
-    my $validation_file = $c->stash->{validation_file};
+    my $dir = $c->stash->{solgs_cache_dir};
+    my $val_exp = "cross_validation_${trait_abbr}_${pop_id}";
+    my $validation_file = $self->grep_file($dir, $val_exp);
 
     unless (!-e $validation_file || -s $validation_file == 0) 
     {
@@ -1128,7 +1132,7 @@ sub trait_phenotype_file {
     my $dir = $c->stash->{solgs_cache_dir};
     my $exp = "phenotype_trait_${trait}_${pop_id}";
     my $file = $self->grep_file($dir, $exp);
-
+    print STDERR "\n trait pheno file: $file\n";
     $c->stash->{trait_phenotype_file} = $file;
 
 }
@@ -1418,11 +1422,12 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
 
         $c->stash->{trait_combo_pops} = $ids;
         $c->stash->{trait_id} = $trait_id;
-         print STDERR "\n\n pops: $ids\n\n";
         
         $self->get_trait_name($c, $trait_id);
     } 
    
+    my $combo_pops_id =  crc(join('', split(/,/, $ids)));
+    $c->stash->{combo_pops_id} = $combo_pops_id;
 
     $c->stash->{trait_combine_populations} = \@pop_ids;
 
@@ -1432,29 +1437,45 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
     my $geno_files = $c->stash->{multi_pops_geno_files};
     my @g_files = split(/\t/, $geno_files);
 
+    my $analysis_result;
     if (scalar(@g_files) > 1)
     {
         my $same =  $self->compare_genotyping_platforms(\@g_files);
+        
         if ($same) 
         {
-            $self->r_combine_populations($c);
+
+            $self->cache_combined_pops_data($c);
+
             my $combined_pops_pheno_file = $c->stash->{trait_combined_pheno_file};
             my $combined_pops_geno_file  = $c->stash->{trait_combined_geno_file};
-            
+             
+            unless (-s $combined_pops_geno_file  && -s $combined_pops_pheno_file ) 
+            {
+                $self->r_combine_populations($c);
+                
+                $combined_pops_pheno_file = $c->stash->{trait_combined_pheno_file};
+                $combined_pops_geno_file  = $c->stash->{trait_combined_geno_file};
+            }
+                       
             if (-s $combined_pops_pheno_file > 1 && -s $combined_pops_geno_file > 1) 
             {
-                my $tr_abbr = $c->stash->{trait_abbr};  
-                print STDERR "\nThere are combined phenotype and genotype datasets for trait $tr_abbr\n";
-                $c->stash->{data_set_type} = 'combined populations';                
-                $self->get_rrblup_output($c);          
-            }
+                  my $tr_abbr = $c->stash->{trait_abbr};  
+                  print STDERR "\nThere are combined phenotype and genotype datasets for trait $tr_abbr\n";
+                  $c->stash->{data_set_type} = 'combined populations';                
+                  $self->get_rrblup_output($c); 
+                  $analysis_result = $c->stash->{combo_pops_analysis_result};
+                  print STDERR "\ncombo analysis: $analysis_result\n";
+              }
             
         }
         else 
         {
             $c->stash->{genotyping_platforms} = ' No match';
+            $analysis_result = 0;
             print STDERR "\ngenotyping platforms don't match..\n";
         }
+
     }
     else 
     {
@@ -1465,8 +1486,95 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
         $c->res->redirect("/trait/$trait_id/population/$pop_id");
         $c->detach;
     }
+    
+    my $ret->{status}     = $analysis_result;
+    $ret->{pop_ids}       = $ids;
+    $ret->{combo_pops_id} = $combo_pops_id;       
+    
+    $ret = to_json($ret);
+    
+    $c->res->content_type('application/json');
+    $c->res->body($ret);
    
-   
+}
+
+
+sub display_combined_pops_result :Path('/model/combined/populations') Args(3){
+    my ($self, $c, $combo_pops_id, $trait_key, $trait_id) = @_;
+    
+    $c->stash->{data_set_type} = 'combined populations';
+    $c->stash->{combo_pops_id} = $combo_pops_id;
+    
+    my $pops_ids = $c->req->param('combined_populations');
+    $c->stash->{trait_combo_pops} = $pops_ids;
+
+    $self->get_trait_name($c, $trait_id);
+
+    $self->trait_phenotype_stat($c);
+    
+    $self->validation_file($c);
+    $self->model_accuracy($c);
+    $self->gebv_kinship_file($c);
+    $self->blups_file($c);
+    $self->download_urls($c);
+    $self->gebv_marker_file($c);
+    $self->top_markers($c);
+    $self->combined_pops_summary($c);
+
+    $c->stash->{template} = '/combined/populations/trait.mas';
+}
+
+
+sub combined_pops_summary {
+    my ($self, $c) = @_;
+    
+    my $pops_list = $c->stash->{trait_combo_pops};
+
+    my @pops = split(/,/, $pops_list);
+    
+    my $desc = 'This training population is a combination of ';
+    
+    foreach (@pops)
+    {  
+        my $pr_rs = $c->model('solGS')->project_details($c, $_);
+
+        while (my $row = $pr_rs->next)
+        {
+         
+            my $pr_id   = $row->id;
+            my $pr_name = $row->name;
+            $desc .= qq | <a href="/population/$pr_id">$pr_name </a>|; 
+            $desc .= $_ == $pops[-1] ? '.' : ' and ';
+        }         
+    }
+
+    my $trait_abbr = $c->stash->{trait_abbr};
+    my $trait_id = $c->stash->{trait_id};
+    my $combo_pops_id = $c->stash->{combo_pops_id};
+
+    my $dir = $c->{stash}->{solgs_cache_dir};
+
+    my $geno_exp  = "genotype_data_trait_${trait_id}_${combo_pops_id}";
+    my $geno_file = $self->grep_file($dir, $geno_exp);  
+  
+    my @geno_lines = read_file($geno_file);
+    my $markers_no = scalar(split ('\t', $geno_lines[0])) - 1;
+
+    my $pheno_exp = "phenotype_trait_${trait_abbr}_${combo_pops_id}_combined";
+    my $trait_pheno_file = $self->grep_file($dir, $pheno_exp);  
+    
+    my @trait_pheno_lines = read_file($trait_pheno_file);
+    my $stocks_no =  scalar(@trait_pheno_lines) - 1;
+
+    my $training_pop = "Training population $combo_pops_id";
+
+    $c->stash(markers_no   => $markers_no,
+              stocks_no    => $stocks_no,
+              project_desc => $desc,
+              project_name => $training_pop,
+        );
+
+
 }
 
 
@@ -1487,7 +1595,7 @@ sub compare_genotyping_platforms {
         my @first_geno_markers = split(/\t/, $first_markers);
         my @sec_geno_markers = split(/\t/, $sec_markers);
 
-         my $f_cnt = scalar(@first_geno_markers);
+        my $f_cnt = scalar(@first_geno_markers);
         my $sec_cnt = scalar(@sec_geno_markers);
         if (@first_geno_markers ~~ @sec_geno_markers) 
         {     
@@ -1501,6 +1609,29 @@ sub compare_genotyping_platforms {
         }       
     }
       
+}
+
+
+sub cache_combined_pops_data {
+    my ($self, $c) = @_;
+
+    my $trait_id = $c->stash->{trait_id};
+    my $combo_pops_id = $c->stash->{combo_pops_id};
+
+    my  $cache_pheno_data = {key       => "phenotype_data_trait_${trait_id}_${combo_pops_id}_combined",
+                             file      => "phenotype_data_trait_${trait_id}_${combo_pops_id}_combined",
+                             stash_key => 'trait_combined_pheno_file'
+    };
+      
+    my  $cache_geno_data = {key       => "genotype_data_trait_${trait_id}_${combo_pops_id}_combined",
+                            file      => "genotype_data_trait_${trait_id}_${combo_pops_id}_combined",
+                            stash_key => 'trait_combined_geno_file'
+    };
+
+    
+    $self->cache_file($c, $cache_pheno_data);
+    $self->cache_file($c, $cache_geno_data);
+
 }
 
 
@@ -1584,11 +1715,10 @@ sub grep_file {
     opendir my $dh, $dir 
         or die "can't open $dir: $!\n";
 
-    my ($file)   = grep(/$exp/, readdir($dh));
+    my ($file)  = grep { /$exp/ && -f "$dir/$_" }  readdir($dh);
     close $dh;
-
-    $file = catfile($dir, $file);
    
+    $file = catfile($dir, $file);
     return $file;
 }
 
@@ -1631,18 +1761,20 @@ sub multi_pops_genotype_data {
 sub phenotype_graph :Path('/phenotype/graph') Args(0) {
     my ($self, $c) = @_;
 
-    my $pop_id   = $c->req->param('pop_id');
-    my $trait_id = $c->req->param('trait_id');
+    my $pop_id        = $c->req->param('pop_id');
+    my $trait_id      = $c->req->param('trait_id');
+    my $combo_pops_id = $c->req->param('combo_pops_id');
 
-    my $trait_name = $c->model('solGS')->trait_name($c, $trait_id);
-    my $trait_abbr = $self->abbreviate_term($c, $trait_name);
-    
-    $c->stash->{pop_id}     = $pop_id;
-    $c->stash->{trait_abbr} = $trait_abbr;
-    $c->stash->{trait_id}   = $trait_id;
+    $self->get_trait_name($c, $trait_id);
 
-    $self->trait_phenotype_file($c, $pop_id, $trait_abbr);
-    my $trait_pheno_file = $c->{stash}->{trait_phenotype_file};
+    $c->stash->{pop_id}        = $pop_id;
+    $c->stash->{combo_pops_id} = $combo_pops_id;
+
+    $c->stash->{data_set_type} = 'combined populations' if $combo_pops_id;
+  
+    $self->trait_phenodata_file($c);
+
+    my $trait_pheno_file = $c->{stash}->{trait_phenodata_file};
     my $trait_data = $self->convert_to_arrayref($c, $trait_pheno_file);
 
     my $ret->{status} = 'failed';
@@ -1664,11 +1796,9 @@ sub phenotype_graph :Path('/phenotype/graph') Args(0) {
 #generates descriptive stat for a trait phenotype data
 sub trait_phenotype_stat {
     my ($self, $c) = @_;
-    my $trait_abbr = $c->stash->{trait_abbr};
-    my $pop_id = $c->stash->{pop_id};
-
-    $self->trait_phenotype_file($c, $pop_id, $trait_abbr);
-    my $trait_pheno_file = $c->{stash}->{trait_phenotype_file};
+  
+    $self->trait_phenodata_file($c);
+    my $trait_pheno_file = $c->{stash}->{trait_phenodata_file};
     my $trait_data = $self->convert_to_arrayref($c, $trait_pheno_file);
 
     my @pheno_data;   
@@ -1710,12 +1840,19 @@ sub gebv_graph :Path('/trait/gebv/graph') Args(0) {
 
     my $pop_id   = $c->req->param('pop_id');
     my $trait_id = $c->req->param('trait_id');
+    my $combo_pops_id = $c->req->param('combo_pops_id');
+    my $trait_combo_pops = $c->req->param('combined_populations');
+
     $c->stash->{pop_id} = $pop_id;
+    $c->stash->{combo_pops_id} = $combo_pops_id;
+    $c->stash->{trait_combo_pops} = $trait_combo_pops;
 
     $self->get_trait_name($c, $trait_id);
-       
+    
+    $c->stash->{data_set_type} = 'combined populations' if $combo_pops_id;
+
     $self->gebv_kinship_file($c);
-    my $gebv_file = $c->stash->{gebv_kinship_file};    
+    my $gebv_file = $c->stash->{gebv_kinship_file}; 
     my $gebv_data = $self->convert_to_arrayref($c, $gebv_file);
 
     my $ret->{status} = 'failed';
@@ -2218,18 +2355,28 @@ sub get_rrblup_output :Private{
        }    
     }
 
-    if (scalar(@traits) == 1) 
+    $c->stash->{combo_pops_analysis_result} = 0;
+
+    if($data_set_type !~ /combined populations/) 
     {
-        $self->gs_files($c);
-        $c->stash->{template} = 'population/trait.mas';
-    }
+        if (scalar(@traits) == 1) 
+        {
+            $self->gs_files($c);
+            $c->stash->{template} = 'population/trait.mas';
+        }
     
-    if (scalar(@traits) > 1)    
-    {
+    
+        if (scalar(@traits) > 1)    
+        {
        
-        $self->analyzed_traits($c);
-        $c->stash->{template}    = '/population/multiple_traits_output.mas'; 
-        $c->stash->{trait_pages} = \@trait_pages;
+            $self->analyzed_traits($c);
+            $c->stash->{template}    = '/population/multiple_traits_output.mas'; 
+            $c->stash->{trait_pages} = \@trait_pages;
+        }
+    }
+    else 
+    {
+        $c->stash->{combo_pops_analysis_result} = 1;
     }
 
 }
@@ -2381,7 +2528,8 @@ sub run_rrblup  {
 
 sub r_combine_populations  {
     my ($self, $c) = @_;
-       
+    
+    my $combo_pops_id = $c->stash->{combo_pops_id};
     my $trait_id     = $c->stash->{trait_id};
     my $trait_abbr   = $c->stash->{trait_abbr};
     my $trait_info   = $trait_id . "\t" . $trait_abbr;
@@ -2399,12 +2547,9 @@ sub r_combine_populations  {
    
         );
 
-    my $combined_pops_pheno_file = $self->create_tempfile($c, "phenotype_data_trait_${trait_id}_combined");
-    my $combined_pops_geno_file  = $self->create_tempfile($c, "genotype_data_trait_${trait_id}_combined");
+    my $combined_pops_pheno_file = $c->stash->{trait_combined_pheno_file};
+    my $combined_pops_geno_file  = $c->stash->{trait_combined_geno_file};
     
-    $c->stash->{trait_combined_pheno_file} = $combined_pops_pheno_file;
-    $c->stash->{trait_combined_geno_file}  = $combined_pops_geno_file;
-
     my $output_files = join ("\t", 
                              $combined_pops_pheno_file,
                              $combined_pops_geno_file,
