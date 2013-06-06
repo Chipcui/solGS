@@ -136,17 +136,32 @@ var confirmSelections =  function() {
                 var suc = res.status;
               
                 if (suc) {
-                    alert('combined pops');
+                    //alert('combined pops');
                     var comboPopsId = res.combo_pops_id;
                     var newUrl = '/model/combined/populations/' + comboPopsId + '/trait/' + trId;
                     
-                  var form = jQuery('<form action="' + newUrl + '" method="POST">' + '<input type="hidden" name="combined_populations" value="' + selections + '" />' + '</form>');
+                    var form = jQuery('<form action="' + newUrl + '" method="POST">' + 
+                                      '<input type="hidden" name="combined_populations" value="' + 
+                                       selections + '" />' + '</form>');
+
                     jQuery('body').append(form);
                     jQuery(form).submit();
                    
-                    jQuery.unblockUI(); 
-                   
-                }
+                    jQuery.unblockUI();
+                    
+                } else {
+                    
+                    if(res.not_matching_pops ){                        
+                        alert('populations ' + res.not_matching_pops + 
+                              ' were genotyped using different marker sets. ' + 
+                              'Please make new selections to combine.' );
+                        window.location.href =  '/search/result/populations/' + trId;
+                    }
+
+                    if (res.redirect_url) {
+                        window.location.href = res.redirect_url;
+                    }
+                } 
             }
         });
 
