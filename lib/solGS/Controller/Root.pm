@@ -1420,29 +1420,35 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
         $ids = $c->req->param("$trait_id");
         @pop_ids = split(/,/, $ids);
 
-        $c->stash->{trait_combo_pops} = $ids;
-        $c->stash->{trait_id} = $trait_id;
-        
         $self->get_trait_name($c, $trait_id);
     } 
-   
-    my $combo_pops_id =  crc(join('', split(/,/, $ids)));
-    $c->stash->{combo_pops_id} = $combo_pops_id;
-
-    $c->stash->{trait_combine_populations} = \@pop_ids;
-
-    $self->multi_pops_phenotype_data($c, \@pop_ids);
-    $self->multi_pops_genotype_data($c, \@pop_ids);
-
-    my $geno_files = $c->stash->{multi_pops_geno_files};
-    my @g_files = split(/\t/, $geno_files);
-
-    my $analysis_result;
-    if (scalar(@g_files) > 1)
+    else 
     {
-        my $same =  $self->compare_genotyping_platforms(\@g_files);
-        
-        if ($same) 
+    #throw_error message
+
+    }
+   
+    my $combo_pops_id;
+    my $ret->{status} = 0;
+
+    if (scalar(@pop_ids >1) )
+    {
+        $combo_pops_id =  crc(join('', @pop_ids));
+        $c->stash->{combo_pops_id} = $combo_pops_id;
+        $c->stash->{trait_combo_pops} = $ids;
+    
+        $c->stash->{trait_combine_populations} = \@pop_ids;
+
+        $self->multi_pops_phenotype_data($c, \@pop_ids);
+        $self->multi_pops_genotype_data($c, \@pop_ids);
+
+        my $geno_files = $c->stash->{multi_pops_geno_files};
+        my @g_files = split(/\t/, $geno_files);
+
+        $self->compare_genotyping_platforms($c, \@g_files);
+        my $not_matching_pops =  $c->stash->{pops_with_no_genotype_match};
+     
+        if (!$not_matching_pops) 
         {
 
             $self->cache_combined_pops_data($c);
@@ -1460,37 +1466,33 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
                        
             if (-s $combined_pops_pheno_file > 1 && -s $combined_pops_geno_file > 1) 
             {
-                  my $tr_abbr = $c->stash->{trait_abbr};  
-                  print STDERR "\nThere are combined phenotype and genotype datasets for trait $tr_abbr\n";
-                  $c->stash->{data_set_type} = 'combined populations';                
-                  $self->get_rrblup_output($c); 
-                  $analysis_result = $c->stash->{combo_pops_analysis_result};
-                  print STDERR "\ncombo analysis: $analysis_result\n";
-              }
-            
+                my $tr_abbr = $c->stash->{trait_abbr};  
+                print STDERR "\nThere are combined phenotype and genotype datasets for trait $tr_abbr\n";
+                $c->stash->{data_set_type} = 'combined populations';                
+                $self->get_rrblup_output($c); 
+                my $analysis_result = $c->stash->{combo_pops_analysis_result};
+                  
+                $ret->{pop_ids}       = $ids;
+                $ret->{combo_pops_id} = $combo_pops_id; 
+                $ret->{status}        = $analysis_result;
+
+              }           
         }
         else 
         {
-            $c->stash->{genotyping_platforms} = ' No match';
-            $analysis_result = 0;
-            print STDERR "\ngenotyping platforms don't match..\n";
+            $ret->{not_matching_pops} = $not_matching_pops;
         }
-
     }
     else 
     {
-        #
-        print STDERR "Only one population was selected. Running gs model based on the single population dataset $pop_ids[0] : $pop_ids[1]\n";
         #run gs model based on a single population
         my $pop_id = $pop_ids[0];
-        $c->res->redirect("/trait/$trait_id/population/$pop_id");
-        $c->detach;
+        $ret->{redirect_url} = "/trait/$trait_id/population/$pop_id";
     }
     
-    my $ret->{status}     = $analysis_result;
-    $ret->{pop_ids}       = $ids;
-    $ret->{combo_pops_id} = $combo_pops_id;       
-    
+   
+     
+ 
     $ret = to_json($ret);
     
     $c->res->content_type('application/json');
@@ -1579,15 +1581,18 @@ sub combined_pops_summary {
 
 
 sub compare_genotyping_platforms {
-    my ($self, $g_files) = @_;
+    my ($self, $c,  $g_files) = @_;
  
     my $combinations = combinations($g_files, 2);
+    my $not_matching_pops;
+
     while (my $pair = $combinations->next)
     {        
         open my $first_file, "<", $pair->[0] or die "cannot open genotype file:$!\n";
         my $first_markers = <$first_file>;
         $first_file->close;
 
+       
         open my $sec_file, "<", $pair->[1] or die "cannot open genotype file:$!\n";
         my $sec_markers = <$sec_file>;
         $sec_file->close;
@@ -1597,17 +1602,34 @@ sub compare_genotyping_platforms {
 
         my $f_cnt = scalar(@first_geno_markers);
         my $sec_cnt = scalar(@sec_geno_markers);
-        if (@first_geno_markers ~~ @sec_geno_markers) 
-        {     
-            print STDERR "\ngenotyping platforms match: $f_cnt vs $sec_cnt\n";
-            return 1;
-        } 
-        else
+        
+        unless (@first_geno_markers ~~ @sec_geno_markers)      
         {
+            no warnings 'uninitialized';
+            my $pop_id_1 = fileparse($pair->[0]);
+            my $pop_id_2 = fileparse($pair->[1]);
+          
+            map { s/genotype_data_|\.txt//g } $pop_id_1, $pop_id_2;
+                                                           
+            my @pop_names;
+            foreach ($pop_id_1, $pop_id_2)
+            {
+                my $pr_rs = $c->model('solGS')->project_details($c, $_);
+
+                while (my $row = $pr_rs->next)
+                {
+                    push @pop_names,  $row->name;
+                }         
+            }
+            
+            $not_matching_pops .= '[' . $pop_names[0]. ' and ' . $pop_names[1] . ' ]';
+        
             print STDERR "\ngenotyping platforms don't match: $f_cnt vs $sec_cnt\n";
-            return 0;
+         
         }       
     }
+
+    $c->stash->{pops_with_no_genotype_match} = $not_matching_pops;
       
 }
 
