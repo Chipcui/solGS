@@ -1489,10 +1489,7 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
         my $pop_id = $pop_ids[0];
         $ret->{redirect_url} = "/trait/$trait_id/population/$pop_id";
     }
-    
-   
      
- 
     $ret = to_json($ret);
     
     $c->res->content_type('application/json');
@@ -1584,10 +1581,19 @@ sub compare_genotyping_platforms {
     my ($self, $c,  $g_files) = @_;
  
     my $combinations = combinations($g_files, 2);
+    my $combo_cnt    = combinations($g_files, 2);
+    
     my $not_matching_pops;
+    my $cnt = 0;
+    my $cnt_pairs = 0;
+    
+    while ($combo_cnt->next)
+    {
+        $cnt_pairs++;  
+    }
 
     while (my $pair = $combinations->next)
-    {        
+    {            
         open my $first_file, "<", $pair->[0] or die "cannot open genotype file:$!\n";
         my $first_markers = <$first_file>;
         $first_file->close;
@@ -1603,6 +1609,8 @@ sub compare_genotyping_platforms {
         my $f_cnt = scalar(@first_geno_markers);
         my $sec_cnt = scalar(@sec_geno_markers);
         
+        $cnt++;
+
         unless (@first_geno_markers ~~ @sec_geno_markers)      
         {
             no warnings 'uninitialized';
@@ -1622,10 +1630,8 @@ sub compare_genotyping_platforms {
                 }         
             }
             
-            $not_matching_pops .= '[' . $pop_names[0]. ' and ' . $pop_names[1] . ' ]';
-        
-            print STDERR "\ngenotyping platforms don't match: $f_cnt vs $sec_cnt\n";
-         
+            $not_matching_pops .= '[ ' . $pop_names[0]. ' and ' . $pop_names[1] . ' ]'; 
+            $not_matching_pops .= ', ' if $cnt != $cnt_pairs;       
         }       
     }
 
