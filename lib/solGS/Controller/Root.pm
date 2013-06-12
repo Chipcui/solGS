@@ -1422,11 +1422,6 @@ sub combine_populations :Path('/combine/populations/trait') Args(1) {
 
         $self->get_trait_name($c, $trait_id);
     } 
-    else 
-    {
-    #throw_error message
-
-    }
    
     my $combo_pops_id;
     my $ret->{status} = 0;
@@ -1520,7 +1515,7 @@ sub display_combined_pops_result :Path('/model/combined/populations') Args(3){
     $self->top_markers($c);
     $self->combined_pops_summary($c);
 
-    $c->stash->{template} = '/combined/populations/trait.mas';
+    $c->stash->{template} = '/model/combined/populations/trait.mas';
 }
 
 
