@@ -1,0 +1,36 @@
+<%doc>
+
+displays list of prediction populations.
+
+</%doc>
+
+<%args>
+
+$result => undef;
+
+
+</%args>
+
+
+<&| /page/info_section.mas, 
+    collapsible => 1, 
+    collapsed   => 1, 
+    title       => "Prediction populations",
+&>
+
+<& /page/columnar_table.mas,
+     headings    => ['',  'Selection Population', 'Description', 'Generation', 'Year' ],
+     data        => [['', 'Cassava selection', 'half-sib population from...', 'F1', '2013']],
+    __alt_freq   => 2,
+    __alt_width  => 1,
+    __align      => 'l'
+&>
+ 
+</&>
+
+
+
+
+
+
+
