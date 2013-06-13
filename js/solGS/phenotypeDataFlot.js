@@ -21,7 +21,7 @@ jQuery(window).load( function() {
             params = 'combo_pops_id=' + comboPopsId + '&trait_id=' + traitId;  
         }
 
-        var action = '/phenotype/graph';
+        var action = '/solgs/phenotype/graph';
      
         var phenoPlotData        = [];
         phenoPlotData[0]         = [];  

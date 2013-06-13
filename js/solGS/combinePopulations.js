@@ -82,7 +82,7 @@ var selectedPops = function () {
             // alert('submited pops: ' +  cookieArrayData);
             if( cookieArrayData.length > 0 ) {
             
-                var action = "/search/result/populations/" + trId;
+                var action = "/solgs/search/result/populations/" + trId;
                 var selectedPops = trId + "=" + cookieArrayData + '&' + 'combine=confirm';
                 jQuery.ajax({  
                         type: 'POST',
@@ -93,7 +93,7 @@ var selectedPops = function () {
                               var suc = res.status;
                               if (suc == 'success') {
                                   var confirmPops = res.populations;
-                                  var url = '/combine/populations/trait/confirm/' + trId;
+                                  var url = '/solgs/combine/populations/trait/confirm/' + trId;
                                   var form = jQuery('<form action="' + url + '" method="POST">' +
                                                     '<input type="hidden" name="confirm_populations" value="' + confirmPops + '" />' +
                                                     '</form>'
@@ -121,7 +121,7 @@ var confirmSelections =  function() {
             selections.push(jQuery(this).val());
         });
      
-    var action = "/combine/populations/trait/" + trId;
+    var action = "/solgs/combine/populations/trait/" + trId;
     var selectedPops = trId + "=" + selections + '&' + 'combine=combine';
     
     jQuery.blockUI.defaults.applyPlatformOpacityRules = false;
@@ -138,7 +138,7 @@ var confirmSelections =  function() {
                 if (suc) {
                     //alert('combined pops');
                     var comboPopsId = res.combo_pops_id;
-                    var newUrl = '/model/combined/populations/' + comboPopsId + '/trait/' + trId;
+                    var newUrl = '/solgs/model/combined/populations/' + comboPopsId + '/trait/' + trId;
                     
                     var form = jQuery('<form action="' + newUrl + '" method="POST">' + 
                                       '<input type="hidden" name="combined_populations" value="' + 
@@ -155,7 +155,7 @@ var confirmSelections =  function() {
                         alert('populations ' + res.not_matching_pops + 
                               ' were genotyped using different marker sets. ' + 
                               'Please make new selections to combine.' );
-                        window.location.href =  '/search/result/populations/' + trId;
+                        window.location.href =  '/ssolgs/earch/result/populations/' + trId;
                     }
 
                     if (res.redirect_url) {

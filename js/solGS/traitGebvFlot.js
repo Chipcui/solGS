@@ -25,7 +25,7 @@ jQuery(window).load( function() {
             params = 'combo_pops_id=' + comboPopsId + '&trait_id='  + traitId + '&combined_populations=' + popsList;  
         }
        
-        var action = '/trait/gebv/graph';
+        var action = '/solgs/trait/gebv/graph';
        
         var graphArray      = [];
         graphArray[0]       = [];  
