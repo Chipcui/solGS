@@ -222,12 +222,21 @@ genoData <- read.table(genoFile,
 genoData   <- data.matrix(genoData[order(row.names(genoData)), ])
 print(genoData[1:10, 1:4])
 
-predictionFile <- grep("prediction_population",
+predictionTempFile <- grep("prediction_population",
                        inFiles,
                        ignore.case = TRUE,
                        fixed = FALSE,
                        value = TRUE
                        )
+
+predictionFile <- c()
+
+if (length(predictionTempFile) !=0 )
+  {
+    predictionFile <- scan(predictionTempFile,
+                       what="character"
+                       )
+}
 
 predictionPopGEBVsFile <- grep("prediction_pop_gebvs",
                        outFiles,
@@ -311,6 +320,32 @@ if (sum(is.na(genoDataMatrix)) > 0)
     genoDataMatrix <- data.matrix(genoDataMatrix)
   }
 
+#impute missing data in prediction data
+if (length(predictionData) != 0)
+  {
+    predictionData <- data.matrix(predictionData)
+    print('before imputation prediction data')
+    print(predictionData[1:10, 1:4])
+    if (sum(is.na(predictionData)) > 0)
+      {
+        print("sum of geno missing values")
+        print(sum(is.na(predictionData)))
+        predictionData <-kNNImpute(predictionData, 10)
+        predictionData <-as.data.frame(predictionData)
+
+        #extract columns with imputed values
+        predictionData <- subset(predictionData,
+                                 select = grep("^x", names(predictionData))
+                                 )
+
+        #remove prefix 'x.' from imputed columns
+        names(predictionData) <- sub("x.", "", names(predictionData))
+
+        predictionData <- round(predictionData, digits = 0)
+        predictionData <- data.matrix(predictionData)
+      }
+
+}
 
 #change genotype coding to [-1, 0, 1], to use the A.mat )
 genoDataMatrix <- genoDataMatrix - 1
