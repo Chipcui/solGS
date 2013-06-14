@@ -321,7 +321,8 @@ sub stock_genotype_values {
 
     my @markers = keys %$values;
     my $m_c = scalar(@markers); my $v_c = scalar(values %$values);
-    
+    print STDERR "count markers and values: $m_c\t$v_c\n"; 
+   
     my $round =  Math::Round::Var->new(0);
     
     foreach my $marker (keys %$values) 
@@ -334,6 +335,56 @@ sub stock_genotype_values {
     $geno_values .= "\n";        
 
     return $geno_values;
+}
+
+sub prediction_pops {
+  my ($self, $c, $training_pop_id) = @_;
+ 
+  my @tr_pop_markers;
+  
+  if ($training_pop_id) 
+  {
+      my $stock_subj_rs = $c->controller('Stock')->project_subject_stocks_rs($training_pop_id);
+      my $stock_obj_rs  = $c->controller('Stock')->stocks_object_rs($stock_subj_rs);
+      my $stock_genotype_rs = $self->stock_genotypes_rs($c, $stock_obj_rs);
+      my $markers   = $self->extract_project_markers($stock_genotype_rs);
+
+      @tr_pop_markers = split(/\t/, $markers);
+  }
+ 
+  my @sample_pred_projects;
+  my $cnt = 0;
+ 
+  my $projects_rs = $self->all_projects($c);
+
+  while (my $row = $projects_rs->next) 
+  {
+     
+      my $project_id = $row->id; 
+      
+      if ($project_id) 
+      {
+          my $stock_subj_rs = $c->controller('Stock')->project_subject_stocks_rs($project_id);
+          my $stock_obj_rs  = $c->controller('Stock')->stocks_object_rs($stock_subj_rs);
+      
+          my $stock_genotype_rs = $self->stock_genotypes_rs($c, $stock_obj_rs);
+   
+          my $markers   = $self->extract_project_markers($stock_genotype_rs);
+
+          my @pred_pop_markers = split(/\t/, $markers);
+           
+          if (@pred_pop_markers ~~ @tr_pop_markers) 
+          {
+              $cnt++;
+              push @sample_pred_projects, $project_id; 
+          }
+      }
+       
+      last if $cnt == 3;
+  }
+
+  return \@sample_pred_projects;
+  
 }
 
 
