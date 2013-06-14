@@ -15,21 +15,11 @@ var solGS = {
         jQuery.blockUI.defaults.applyPlatformOpacityRules = false;
         jQuery.blockUI({message: 'Please wait..'});
                         
-        if(location.reload()) 
+        if(window.onload()) 
             {
                 jQuery.unblockUI();
             }
     }, 
-
- 
-
-
-
-
-
-
-
-
                          
 ///////
 }
