@@ -1171,17 +1171,73 @@ sub trait_phenotype_file {
 #retrieve from db prediction pops relevant to the
 #training population
 sub list_of_prediction_pops {
-my ($self, $c, $training_pop_id, $download_prediction) = @_;
-   
-    my $prediction_pop_id = 268;
-    my $pred_pop_name = qq | <a href="/solgs/model/$training_pop_id/prediction/$prediction_pop_id" onclick="solGS.waitPage()">Barley prediction population test</a> |;
+    my ($self, $c, $training_pop_id, $download_prediction) = @_;
 
-    my $pred_pop = [ ['', $pred_pop_name, 'barley prediction population from crosses...', 'F1', '2013', $download_prediction]];
-    
-    $c->stash->{list_of_prediction_pops} = $pred_pop;
+    $self->list_of_prediction_pops_file($c, $training_pop_id);
+    my $pred_pops_file = $c->stash->{list_of_prediction_pops_file};
+
+    my @pred_pops_ids = split(/\n/, read_file($pred_pops_file));
+    my $pop_ids;
+
+    if(!@pred_pops_ids)
+    {
+        my $pred_pops_ids2 = $c->model('solGS')->prediction_pops($c, $training_pop_id);
+        @pred_pops_ids = @$pred_pops_ids2;
+
+        foreach (@pred_pops_ids)
+        {
+            $pop_ids .= $_ ."\n";
+        }
+        write_file($pred_pops_file, $pop_ids);
+    }
+
+    my @pred_pops;
+
+    foreach my $prediction_pop_id (@pred_pops_ids)
+
+    {
+        my $pred_pop_rs = $c->model('solGS')->project_details($c, $prediction_pop_id);
+        my $pred_pop_link;
+
+        while (my $row = $pred_pop_rs->next)
+        {
+            my $name = $row->name;
+            my $desc = $row->description;
+
+            $pred_pop_link = qq | <a href="/solgs/model/$training_pop_id/prediction/$prediction_pop_id" onclick="solGS.waitPage()">$name</a> |;
+
+            my $pr_yr_rs = $c->model('solGS')->project_year($c, $prediction_pop_id);
+            my $project_yr;
+
+            while ( my $yr_r = $pr_yr_rs->next )
+            {
+                $project_yr = $yr_r->value;
+
+            }
+
+            $self->download_prediction_urls($c, $training_pop_id, $prediction_pop_id);
+            my $download_prediction = $c->stash->{download_prediction};
+
+            push @pred_pops,  ['', $pred_pop_link, $desc, 'F1', $project_yr, $download_prediction];
+        }
+    }
+
+    $c->stash->{list_of_prediction_pops} = \@pred_pops;
 
 }
-    
+
+
+sub list_of_prediction_pops_file {
+    my ($self, $c, $training_pop_id)= @_;
+
+    my $cache_data = {key       => 'list_of_prediction_pops' . $training_pop_id,
+                      file      => 'list_of_prediction_pops_' . $training_pop_id,
+                      stash_key => 'list_of_prediction_pops_file'
+    };
+
+    $self->cache_file($c, $cache_data);
+
+}
 
 
 sub prediction_population_file {
