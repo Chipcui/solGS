@@ -439,6 +439,13 @@ sub trait :Path('/solgs/trait') Args(3) {
 
         $self->trait_phenotype_stat($c);
         
+        $self->download_prediction_urls($c);     
+        my $download_prediction = $c->stash->{download_prediction};
+     
+        #get prediction populations list..     
+        $self->list_of_prediction_pops($c, $pop_id, $download_prediction);
+     
+        $self->get_trait_name($c, $trait_id);
         $c->stash->{template} = $self->template("/population/trait.mas");
     }
     else 
@@ -889,13 +896,24 @@ sub download_prediction_urls {
     my ($self, $c, $training_pop_id, $prediction_pop_id) = @_;
   
     my $trait_ids;
+    my $page_trait_id = $c->stash->{trait_id};
+    my $page = $c->req->path;
+         
     if($prediction_pop_id)
     {
         $self->prediction_pop_analyzed_traits($c, $training_pop_id, $prediction_pop_id);
         $trait_ids = $c->stash->{prediction_pop_analyzed_traits};
+        
     } 
- 
+  
+    my $trait_is_predicted = grep {/$page_trait_id/ } @$trait_ids;
+
     my $download_url;# = $c->stash->{download_prediction};
+
+    if ($page =~ /solgs\/trait\//)
+    {
+        $trait_ids = [$page_trait_id];
+    }
 
     foreach my $trait_id (@$trait_ids) 
     {
@@ -906,6 +924,7 @@ sub download_prediction_urls {
         
         $download_url   .= " | " if $download_url;        
         $download_url   .= qq | <a href="/solgs/download/prediction/model/$training_pop_id/prediction/$prediction_pop_id/$trait_id">$trait_abbr</a> | if $trait_id;
+        $download_url = '' if (!$trait_is_predicted);
     }
 
     if ($download_url) 
@@ -1163,7 +1182,7 @@ sub trait_phenotype_file {
     my $dir = $c->stash->{solgs_cache_dir};
     my $exp = "phenotype_trait_${trait}_${pop_id}";
     my $file = $self->grep_file($dir, $exp);
-    print STDERR "\n trait pheno file: $file\n";
+   
     $c->stash->{trait_phenotype_file} = $file;
 
 }
@@ -1277,7 +1296,7 @@ sub traits_to_analyze :Regex('^solgs/analyze/traits/population/([\d]+)(?:/([\d+]
     {
         $c->stash->{model_id} = $pop_id; 
         $self->analyzed_traits($c);
-        @selected_traits = @{$c->stash->{analyzed_traits}};
+        @selected_traits = @{$c->stash->{analyzed_traits}};       
     }
 
     if (!@selected_traits)
@@ -1286,8 +1305,37 @@ sub traits_to_analyze :Regex('^solgs/analyze/traits/population/([\d]+)(?:/([\d+]
     }
     elsif (scalar(@selected_traits) == 1)
     {
-        $single_trait_id = $selected_traits[0]; 
-        $c->res->redirect("/solgs/trait/$single_trait_id/population/$pop_id");
+        $single_trait_id = $selected_traits[0];
+        if (!$prediction_id)
+        {
+            $c->res->redirect("/solgs/trait/$single_trait_id/population/$pop_id");
+        } 
+        else
+        {
+    
+            my $name  = "trait_info_${single_trait_id}_pop_${pop_id}";
+            my $file2 = $self->create_tempfile($c, $name);
+       
+            $c->stash->{trait_file} = $file2;
+            $c->stash->{trait_abbr} = $selected_traits[0];
+           
+            my $acronym_pairs = $self->get_acronym_pairs($c);                   
+            if ($acronym_pairs)
+            {
+                foreach my $r (@$acronym_pairs) 
+                {
+                    if ($r->[0] eq $selected_traits[0]) 
+                    {
+                        my $trait_name =  $r->[1];
+                        $trait_name    =~ s/\n//g;                                
+                        my $trait_id   =  $c->model('solGS')->get_trait_id($c, $trait_name);
+                        $self->get_trait_name($c, $trait_id);
+                    }
+                }
+            }
+            
+            $c->forward('get_rrblup_output');
+        }
     }
     elsif(scalar(@selected_traits) > 1)
     {
@@ -1347,7 +1395,11 @@ sub traits_to_analyze :Regex('^solgs/analyze/traits/population/([\d]+)(?:/([\d+]
         $c->forward('get_rrblup_output');
   
     }
-
+    # else
+#     {
+    
+#     print STDERR "\ndo nothing for now..\n";
+#     }
     $c->res->redirect("/solgs/traits/all/population/$pop_id/$prediction_id");
 
 }
@@ -1368,13 +1420,11 @@ sub all_traits_output :Regex('^solgs/traits/all/population/([\d]+)(?:/([\d+]+))?
          $c->stash->{population_is} = 'prediction population';
          $self->prediction_population_file($c, $pred_pop_id);
          
-         print STDERR "\nprediction_pop_id: $pred_pop_id\n";
          my $pr_rs = $c->model('solGS')->project_details($c, $pred_pop_id);
-           print STDERR "\nprediction_pop_id: $pred_pop_id\n";
+         
          while (my $row = $pr_rs->next) 
          {
              $c->stash->{prediction_pop_name} = $row->name;
-             print STDERR "\nprediction_pop_id: $pred_pop_id\n";
          }
      }
      else
@@ -1387,6 +1437,8 @@ sub all_traits_output :Regex('^solgs/traits/all/population/([\d]+)(?:/([\d+]+))?
      $self->analyzed_traits($c);
      my @analyzed_traits = @{$c->stash->{analyzed_traits}};
  
+     print STDERR "all_traits_out prediction pop: $analyzed_traits[0]\n";
+
      if (!@analyzed_traits) 
      {
          $c->res->redirect("/solgs/population/$pop_id/selecttraits/");
@@ -2460,7 +2512,7 @@ sub get_rrblup_output :Private{
     my ($traits_file, @traits, @trait_pages);
     my $prediction_id = $c->stash->{prediction_pop_id};
    
-    if ($trait_name)     
+    if ($trait_abbr)     
     {
         $self->run_rrblup_trait($c, $trait_abbr);
     }
