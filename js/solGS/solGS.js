@@ -7,6 +7,7 @@
 
 
 JSAN.use('jquery.blockUI');
+JSAN.use('jquery');
 
 var solGS = {
              
@@ -14,11 +15,11 @@ var solGS = {
     {                    
         jQuery.blockUI.defaults.applyPlatformOpacityRules = false;
         jQuery.blockUI({message: 'Please wait..'});
-                        
-        if(window.onload()) 
-            {
-                jQuery.unblockUI();
-            }
+         
+
+        jQuery(window).unload(function()  {
+                jQuery.unblockUI();            
+            });
     }, 
                          
 ///////
