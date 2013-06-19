@@ -1,4 +1,4 @@
-package solGS::Controller::Stock;
+package solGS::Controller::solgsStock;
 
 =head1 NAME
 

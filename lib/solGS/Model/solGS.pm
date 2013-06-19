@@ -92,7 +92,7 @@ sub search_populations {
         ->search_related('nd_experiment_stocks')
         ->search_related('stock');
 
-    my $pr_rs = $c->controller('Stock')->stock_projects_rs($rs);
+    my $pr_rs = $c->controller('solgsStock')->stock_projects_rs($rs);
 
     $pr_rs = $pr_rs->search(
         {},                                
@@ -214,7 +214,7 @@ sub phenotype_data {
      if ($pop_id) 
      {
          my $results  = [];   
-         my $stock_rs = $c->controller('Stock')->project_subject_stocks_rs($pop_id);
+         my $stock_rs = $c->controller('solgsStock')->project_subject_stocks_rs($pop_id);
          $results     = $self->schema($c)->resultset("Stock::Stock")->recursive_phenotypes_rs($stock_rs, $results);
          my $data     = $self->phenotypes_by_trait($c, $results);
       
@@ -228,8 +228,8 @@ sub genotype_data {
     
     if ($project_id) 
     {
-        my $stock_subj_rs = $c->controller('Stock')->project_subject_stocks_rs($project_id);
-        my $stock_obj_rs  = $c->controller('Stock')->stocks_object_rs($stock_subj_rs);
+        my $stock_subj_rs = $c->controller('solgsStock')->project_subject_stocks_rs($project_id);
+        my $stock_obj_rs  = $c->controller('solgsStock')->stocks_object_rs($stock_subj_rs);
       
         my $stock_genotype_rs = $self->stock_genotypes_rs($c, $stock_obj_rs);
    
@@ -344,8 +344,8 @@ sub prediction_pops {
   
   if ($training_pop_id) 
   {
-      my $stock_subj_rs = $c->controller('Stock')->project_subject_stocks_rs($training_pop_id);
-      my $stock_obj_rs  = $c->controller('Stock')->stocks_object_rs($stock_subj_rs);
+      my $stock_subj_rs = $c->controller('solgsStock')->project_subject_stocks_rs($training_pop_id);
+      my $stock_obj_rs  = $c->controller('solgsStock')->stocks_object_rs($stock_subj_rs);
       my $stock_genotype_rs = $self->stock_genotypes_rs($c, $stock_obj_rs);
       my $markers   = $self->extract_project_markers($stock_genotype_rs);
 
@@ -364,8 +364,8 @@ sub prediction_pops {
       
       if ($project_id) 
       {
-          my $stock_subj_rs = $c->controller('Stock')->project_subject_stocks_rs($project_id);
-          my $stock_obj_rs  = $c->controller('Stock')->stocks_object_rs($stock_subj_rs);
+          my $stock_subj_rs = $c->controller('solgsStock')->project_subject_stocks_rs($project_id);
+          my $stock_obj_rs  = $c->controller('solgsStock')->stocks_object_rs($stock_subj_rs);
       
           my $stock_genotype_rs = $self->stock_genotypes_rs($c, $stock_obj_rs);
    
@@ -447,7 +447,7 @@ sub phenotypes_by_trait {
         # print the value by cvterm name
 
         my $subject_id       = $phen_hashref->{$key}{stock_id};
-        my $stock_object_row = $c->controller('Stock')->map_subject_to_object($c, $subject_id)->single;       
+        my $stock_object_row = $c->controller('solgsStock')->map_subject_to_object($c, $subject_id)->single;       
         my $object_name      = $stock_object_row->name;
         my $object_id        = $stock_object_row->stock_id;
                 
